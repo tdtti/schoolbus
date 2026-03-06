@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>School Bus Manager</title>
+  <!-- Bootstrap 5 + Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* (same styles as before) */
+    * { font-family: 'Inter', sans-serif; }
+    body { background: #f4f7fc; }
+    .login-container { max-width: 500px; margin: 50px auto; }
+    .card { border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    .btn-login { background: #4361ee; color: white; font-weight: 600; padding: 12px; border-radius: 12px; }
+    .btn-login:hover { background: #3a56d4; }
+    .tab-content { background: white; border-radius: 0 0 20px 20px; padding: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+    .nav-tabs .nav-link { font-weight: 600; color: #6c757d; border: none; padding: 12px 20px; }
+    .nav-tabs .nav-link.active { color: #4361ee; background: transparent; border-bottom: 3px solid #4361ee; }
+    .table th { background: #f8f9fa; font-weight: 600; }
+    .spinner-wrapper { display: none; justify-content: center; align-items: center; padding: 40px; }
+    .badge-role { background: #e9ecef; padding: 5px 12px; border-radius: 50px; font-size: 0.9rem; }
+    .header-greeting { background: white; padding: 15px 25px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+    .logout-timer { color: #dc3545; font-weight: 600; }
+    .full-width-msg { background: #d1e7ff; padding: 15px 25px; border-radius: 12px; margin-bottom: 20px; color: #084298; }
+  </style>
+</head>
+<body>
+  <div class="container-fluid px-4 py-4">
+    <!-- LOGIN SECTION (shown when not logged in) -->
+    <div id="loginSection" class="login-container">
+      <div class="card p-4">
+        <div class="text-center mb-4">
+          <img src="https://via.placeholder.com/80" alt="School Logo" style="width: 80px;">
+          <h3 class="mt-3 fw-bold">School Bus Portal</h3>
+        </div>
+        
+        <!-- Student Login -->
+        <div class="mb-4">
+          <h5 class="fw-semibold"><i class="bi bi-person-badge me-2"></i>Student Login</h5>
+          <div class="input-group mb-3">
+            <input type="text" id="studentSearch" class="form-control" placeholder="Phone or Name">
+            <button class="btn btn-primary" id="studentLoginBtn" onclick="studentLogin()">Search</button>
+          </div>
+        </div>
+
+        <!-- Official Login -->
+        <div>
+          <h5 class="fw-semibold"><i class="bi bi-shield-lock me-2"></i>Official Login</h5>
+          <select id="officialType" class="form-select mb-2">
+            <option value="bus">Bus</option>
+            <option value="teacher">Teacher</option>
+            <option value="school">School</option>
+            <option value="manager">Manager</option>
+            <option value="admin">Admin</option>
+          </select>
+          <input type="text" id="userId" class="form-control mb-2" placeholder="User ID (e.g., Bus ID / Class-Div / School)">
+          <input type="password" id="password" class="form-control mb-2" placeholder="Password">
+          <div class="form-check mb-3">
+            <input type="checkbox" class="form-check-input" id="keepMeLoggedIn">
+            <label class="form-check-label" for="keepMeLoggedIn">Keep me logged in</label>
+          </div>
+          <button class="btn btn-login w-100" onclick="officialLogin()">Login</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN APP (hidden until login) -->
+    <div id="appSection" style="display: none;">
+      <!-- Header with greeting and logout -->
+      <div class="header-greeting d-flex flex-wrap justify-content-between align-items-center">
+        <div>
+          <h4 class="mb-1">Hello, <span id="userNameDisplay"></span>!</h4>
+          <span class="badge-role" id="userRoleDisplay"></span>
+        </div>
+        <div class="d-flex gap-3 align-items-center">
+          <span class="logout-timer" id="timerDisplay">Session: 01:00</span>
+          <button class="btn btn-outline-danger btn-sm" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+        </div>
+      </div>
+
+      <!-- Tabs Navigation (dynamic based on role) -->
+      <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+        <li class="nav-item" role="presentation" id="tab1"><button class="nav-link" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button" role="tab">Students Record</button></li>
+        <li class="nav-item" role="presentation" id="tab2"><button class="nav-link" id="attendance-tab" data-bs-toggle="tab" data-bs-target="#attendance" type="button" role="tab">Attendance</button></li>
+        <li class="nav-item" role="presentation" id="tab3"><button class="nav-link" id="data-tab" data-bs-toggle="tab" data-bs-target="#data" type="button" role="tab">Data</button></li>
+        <li class="nav-item" role="presentation" id="tab4"><button class="nav-link" id="fee-tab" data-bs-toggle="tab" data-bs-target="#fee" type="button" role="tab">Fee</button></li>
+      </ul>
+
+      <!-- Tab Content -->
+      <div class="tab-content" id="mainTabContent">
+        <!-- Students Record Tab -->
+        <div class="tab-pane fade" id="students" role="tabpanel">
+          <h5 class="mb-3">Add / Edit Student</h5>
+          <form id="studentForm" class="row g-3 mb-4">
+            <input type="hidden" id="editStudentId">
+            <div class="col-md-3">
+              <select id="busId" class="form-select" required>
+                <option value="">Bus ID</option>
+                <option>Kl 32S 3091</option><option>Kl 32P 2526</option><option>KL 32Q 2536</option>
+                <option>KL 32G 8699</option><option>KL 32K 5655</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <select id="school" class="form-select" required>
+                <option value="">School</option>
+                <option>TDEMNS</option><option>GTDLPS</option><option>TDTTI</option><option>TDHS</option>
+              </select>
+            </div>
+            <div class="col-md-3"><input type="text" id="studentName" class="form-control" placeholder="Student Name" required></div>
+            <div class="col-md-2">
+              <select id="class" class="form-select" required>
+                <option value="">Class</option><option>PRE</option><option>LKG</option><option>UKG</option><option>STD1</option><option>STD2</option><option>STD3</option><option>STD4</option><option>STD5</option><option>STD6</option><option>STD7</option><option>STD8</option><option>STD9</option><option>STD10</option>
+              </select>
+            </div>
+            <div class="col-md-1">
+              <select id="div" class="form-select" required>
+                <option value="">Div</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option><option>I</option><option>J</option><option>K</option>
+              </select>
+            </div>
+            <div class="col-md-3"><input type="text" id="parentName" class="form-control" placeholder="Parent Name" required></div>
+            <div class="col-md-3"><input type="text" id="phone" class="form-control" placeholder="Phone" required></div>
+            <div class="col-md-3"><input type="text" id="entry" class="form-control" placeholder="Entry Stop"></div>
+            <div class="col-md-3"><input type="text" id="exit" class="form-control" placeholder="Exit Stop"></div>
+            <div class="col-md-2">
+              <select id="status" class="form-select">
+                <option>Both Time</option><option>Morning Only</option><option>Evening Only</option>
+              </select>
+            </div>
+            <div class="col-md-2"><input type="number" id="fee" class="form-control" placeholder="Monthly Fee"></div>
+            <div class="col-md-12">
+              <button type="submit" class="btn btn-primary me-2">Save Student</button>
+              <button type="button" class="btn btn-secondary" onclick="resetStudentForm()">Clear</button>
+            </div>
+          </form>
+
+          <h5 class="mb-3">Student List</h5>
+          <div class="mb-3"><input type="text" id="studentSearchInput" class="form-control" placeholder="Search by Name or Phone" onkeyup="filterStudentTable()"></div>
+          <div class="table-responsive">
+            <table class="table table-hover" id="studentTable">
+              <thead><tr><th>BusId</th><th>School</th><th>Name</th><th>Class</th><th>Div</th><th>Parent</th><th>Phone</th><th>Entry</th><th>Exit</th><th>Status</th><th>Fee</th><th>Actions</th></tr></thead>
+              <tbody id="studentTableBody"></tbody>
+            </table>
+          </div>
+          <div class="spinner-wrapper" id="studentSpinner"><div class="spinner-border text-primary"></div></div>
+        </div>
+
+        <!-- Attendance Tab -->
+        <div class="tab-pane fade" id="attendance" role="tabpanel">
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <select id="attendanceBusId" class="form-select" onchange="loadAttendanceList()">
+                <option value="">Select Bus</option>
+                <option>Kl 32S 3091</option><option>Kl 32P 2526</option><option>KL 32Q 2536</option>
+                <option>KL 32G 8699</option><option>KL 32K 5655</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <select id="attendanceSection" class="form-select">
+                <option value="FN">FN (Morning)</option><option value="AN">AN (Afternoon)</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <button class="btn btn-success" onclick="saveAttendance()">Save Attendance</button>
+              <button class="btn btn-outline-success" onclick="shareAttendance()"><i class="bi bi-whatsapp"></i> Share</button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table" id="attendanceTable">
+              <thead><tr><th>Name</th><th>School</th><th>Class</th><th>Div</th><th>Present</th></tr></thead>
+              <tbody id="attendanceBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Data Tab -->
+        <div class="tab-pane fade" id="data" role="tabpanel">
+          <div class="row g-3 mb-3">
+            <div class="col-md-3">
+              <select id="searchBus" class="form-select"><option value="">All Buses</option><option>Kl 32S 3091</option><option>Kl 32P 2526</option><option>KL 32Q 2536</option><option>KL 32G 8699</option><option>KL 32K 5655</option></select>
+            </div>
+            <div class="col-md-3">
+              <select id="searchSchool" class="form-select"><option value="">All Schools</option><option>TDEMNS</option><option>GTDLPS</option><option>TDTTI</option><option>TDHS</option></select>
+            </div>
+            <div class="col-md-3"><input type="text" id="searchName" class="form-control" placeholder="Student Name"></div>
+            <div class="col-md-3"><button class="btn btn-primary" onclick="searchData()">Search</button></div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm" id="dataTable"><thead><tr><th>BusId</th><th>School</th><th>Name</th><th>Class</th><th>Div</th><th>Parent</th><th>Phone</th><th>Entry</th><th>Exit</th><th>Status</th><th>Fee</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Total</th><th>Balance</th></tr></thead><tbody id="dataBody"></tbody></table>
+          </div>
+        </div>
+
+        <!-- Fee Tab -->
+        <div class="tab-pane fade" id="fee" role="tabpanel">
+          <div class="row mb-3">
+            <div class="col-md-6"><input type="text" id="feeSearch" class="form-control" placeholder="Enter Phone or Name" onkeyup="searchStudentFee()"></div>
+          </div>
+          <div id="feeStudentInfo" class="full-width-msg mb-3"></div>
+          <div class="table-responsive">
+            <table class="table" id="feeTable">
+              <thead><tr><th>Month</th><th>Fee (Amount)</th><th>Receipt No</th><th>Date & Time</th><th>Action</th></tr></thead>
+              <tbody id="feeBody"></tbody>
+            </table>
+          </div>
+          <div class="row mt-3">
+            <div class="col-md-4"><strong>Paid: </strong><span id="totalPaid">0</span></div>
+            <div class="col-md-4"><strong>Total Payable: </strong><span id="totalPayable">0</span></div>
+            <div class="col-md-4"><strong>Balance: </strong><span id="balanceDue">0</span></div>
+          </div>
+          <div class="mt-3">
+            <button class="btn btn-outline-primary" onclick="downloadFeePDF()">Download PDF</button>
+            <button class="btn btn-outline-success" onclick="whatsappFee()">WhatsApp</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // ========== CONFIGURATION ==========
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIEfkFmRu-B9IU0nU0VZKpCevcNnEKhe_dFmb6gWwqh3AE8SiFvdF_IMrIZlx17uXT/exec';  // <--- REPLACE WITH YOUR APPS SCRIPT WEB APP URL
+
+    // ========== GLOBAL STATE ==========
+    let currentUser = null;
+    let sessionTimer = null;
+    let logoutTimer = null;
+    const TIMEOUT = 60000; // 1 min
+    let activeSessionId = null;
+
+    // Hardcoded official logins (type: { userId, password, name, context })
+    const officialUsers = [
+      { type: 'bus', userId: 'KL32S3091', password: 'bus123', name: 'Bus 1', context: { busId: 'Kl 32S 3091' } },
+      { type: 'bus', userId: 'KL32P2526', password: 'bus123', name: 'Bus 2', context: { busId: 'Kl 32P 2526' } },
+      { type: 'teacher', userId: 'STD5-A', password: 'teacher', name: 'Mr. Sharma', context: { class: 'STD5', div: 'A' } },
+      { type: 'teacher', userId: 'STD3-B', password: 'teacher', name: 'Ms. Gupta', context: { class: 'STD3', div: 'B' } },
+      { type: 'school', userId: 'TDEMNS', password: 'school', name: 'TDEMNS Admin', context: { school: 'TDEMNS' } },
+      { type: 'school', userId: 'GTDLPS', password: 'school', name: 'GTDLPS Admin', context: { school: 'GTDLPS' } },
+      { type: 'manager', userId: 'manager', password: 'mgr', name: 'Manager', context: {} },
+      { type: 'admin', userId: 'admin', password: 'admin', name: 'Admin', context: {} }
+    ];
+
+    // Role tab mapping
+    const roleTabs = {
+      bus: [2],
+      teacher: [1,2,4],
+      school: [1,3,4],
+      manager: [1,2,3,4],
+      admin: [1,2,3,4],
+      student: []
+    };
+
+    // ========== HELPER: fetch wrapper ==========
+    async function callAppScript(action, payload) {
+      showLoader('global');
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, ...payload })
+        });
+        const data = await response.json();
+        if (data.error) throw new Error(data.error);
+        return data;
+      } catch (err) {
+        showError(err.message);
+        throw err;
+      } finally {
+        hideLoader('global');
+      }
+    }
+
+    // ========== LOGIN FUNCTIONS ==========
+    async function studentLogin() {
+      const query = document.getElementById('studentSearch').value.trim();
+      if (!query) return alert('Enter phone or name');
+      try {
+        const result = await callAppScript('getStudents', { role: 'student', context: { query } });
+        if (result.rows.length === 0) return alert('Student not found');
+        const student = result.rows[0].data;
+        const user = {
+          type: 'student',
+          name: student[2],
+          userId: student[6],
+          context: { studentId: student[0], row: student }
+        };
+        loginSuccess(user);
+      } catch (err) {
+        alert('Login failed: ' + err.message);
+      }
+    }
+
+    function officialLogin() {
+      const type = document.getElementById('officialType').value;
+      const userId = document.getElementById('userId').value.trim();
+      const pwd = document.getElementById('password').value.trim();
+      const user = officialUsers.find(u => u.type === type && u.userId === userId && u.password === pwd);
+      if (!user) return alert('Invalid credentials');
+      loginSuccess(user);
+    }
+
+    async function loginSuccess(user) {
+      currentUser = user;
+      document.getElementById('loginSection').style.display = 'none';
+      document.getElementById('appSection').style.display = 'block';
+      document.getElementById('userNameDisplay').innerText = user.name;
+      document.getElementById('userRoleDisplay').innerText = user.type.toUpperCase();
+
+      // Record login in sheet
+      try {
+        const result = await callAppScript('recordLogin', { userType: user.type, userId: user.userId, name: user.name });
+        activeSessionId = result.sessionId;
+      } catch (err) {
+        console.warn('Could not record login:', err);
+      }
+
+      // Setup tabs based on role
+      setupTabsForRole(user.type);
+      const firstTab = roleTabs[user.type]?.[0] || 1;
+      document.querySelectorAll('.nav-link')[firstTab-1]?.click();
+
+      // Start inactivity timer
+      resetTimer();
+      document.addEventListener('mousemove', resetTimer);
+      document.addEventListener('keypress', resetTimer);
+
+      // Load initial data for default tab
+      if (user.type === 'student') {
+        displayStudentDashboard(user.context.studentId);
+      } else {
+        if (firstTab === 1) loadStudentTable();
+        else if (firstTab === 2) loadAttendanceList();
+      }
+    }
+
+    function setupTabsForRole(role) {
+      const allowed = roleTabs[role] || [];
+      for (let i = 1; i <= 4; i++) {
+        const tab = document.getElementById(`tab${i}`);
+        if (tab) tab.style.display = allowed.includes(i) ? 'block' : 'none';
+      }
+    }
+
+    function resetTimer() {
+      if (logoutTimer) clearTimeout(logoutTimer);
+      logoutTimer = setTimeout(logout, TIMEOUT);
+      startTimerDisplay();
+    }
+
+    function startTimerDisplay() {
+      if (sessionTimer) clearInterval(sessionTimer);
+      const end = Date.now() + TIMEOUT;
+      sessionTimer = setInterval(() => {
+        const remaining = end - Date.now();
+        if (remaining <= 0) {
+          clearInterval(sessionTimer);
+          document.getElementById('timerDisplay').innerText = 'Session expired';
+        } else {
+          const secs = Math.floor(remaining / 1000);
+          const mins = Math.floor(secs / 60);
+          const sec = secs % 60;
+          document.getElementById('timerDisplay').innerText = `Session: ${mins.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+        }
+      }, 500);
+    }
+
+    async function logout() {
+      if (activeSessionId) {
+        try {
+          await callAppScript('recordLogout', { sessionId: activeSessionId });
+        } catch (err) {
+          console.warn('Logout recording failed:', err);
+        }
+      }
+      clearInterval(sessionTimer);
+      clearTimeout(logoutTimer);
+      currentUser = null;
+      document.getElementById('loginSection').style.display = 'block';
+      document.getElementById('appSection').style.display = 'none';
+    }
+
+    // ========== STUDENTS RECORD TAB ==========
+    async function loadStudentTable() {
+      const role = currentUser.type;
+      let context = {};
+      if (role === 'teacher') context = { class: currentUser.context.class, div: currentUser.context.div };
+      else if (role === 'school') context = { school: currentUser.context.school };
+      else if (role === 'student') return;
+      try {
+        const result = await callAppScript('getStudents', { role, context });
+        renderStudentTable(result);
+      } catch (err) {
+        alert('Error loading students: ' + err.message);
+      }
+    }
+
+    function renderStudentTable(result) {
+      const tbody = document.getElementById('studentTableBody');
+      tbody.innerHTML = '';
+      result.rows.forEach(r => {
+        const d = r.data;
+        const row = `<tr>
+          <td>${d[1]}</td><td>${d[2]}</td><td>${d[3]}</td><td>${d[4]}</td><td>${d[5]}</td><td>${d[6]}</td><td>${d[7]}</td>
+          <td>${d[8]}</td><td>${d[9]}</td><td>${d[10]}</td><td>${d[11]}</td>
+          <td><button class="btn btn-sm btn-outline-primary" onclick="editStudent('${d[0]}')">Edit</button>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteStudent('${d[0]}')">Del</button></td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+
+    async function deleteStudent(id) {
+      if (confirm('Delete this student?')) {
+        try {
+          await callAppScript('deleteStudent', { studentId: id });
+          loadStudentTable();
+        } catch (err) {
+          alert('Delete failed: ' + err.message);
+        }
+      }
+    }
+
+    // ========== ATTENDANCE TAB ==========
+    async function loadAttendanceList() {
+      const busId = document.getElementById('attendanceBusId').value;
+      if (!busId) return;
+      try {
+        const result = await callAppScript('getStudentsForAttendance', { busId });
+        renderAttendance(result.students);
+      } catch (err) {
+        alert('Error loading attendance list: ' + err.message);
+      }
+    }
+
+    function renderAttendance(students) {
+      const tbody = document.getElementById('attendanceBody');
+      tbody.innerHTML = '';
+      students.forEach(s => {
+        const row = `<tr>
+          <td>${s.name}</td><td>${s.school}</td><td>${s.class}</td><td>${s.div}</td>
+          <td><input type="checkbox" class="attendance-check" data-id="${s.studentId}"></td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+
+    async function saveAttendance() {
+      const busId = document.getElementById('attendanceBusId').value;
+      const section = document.getElementById('attendanceSection').value;
+      const checks = document.querySelectorAll('.attendance-check');
+      const data = [];
+      checks.forEach(c => {
+        if (c.checked) {
+          const row = c.closest('tr');
+          const cells = row.cells;
+          data.push({
+            busId, section,
+            studentId: c.dataset.id,
+            name: cells[0].innerText,
+            school: cells[1].innerText,
+            class: cells[2].innerText,
+            div: cells[3].innerText,
+            status: 'Present'
+          });
+        }
+      });
+      try {
+        await callAppScript('saveAttendance', { attendanceList: data });
+        alert('Attendance saved');
+      } catch (err) {
+        alert('Error saving attendance: ' + err.message);
+      }
+    }
+
+    // ========== FEE TAB ==========
+    async function searchStudentFee() {
+      const query = document.getElementById('feeSearch').value.trim();
+      if (!query) return;
+      try {
+        const result = await callAppScript('getStudents', { role: 'student', context: { query } });
+        if (result.rows.length === 0) return alert('No student found');
+        renderFeeInfo(result.rows[0].data);
+      } catch (err) {
+        alert('Error searching: ' + err.message);
+      }
+    }
+
+    function renderFeeInfo(s) {
+      document.getElementById('feeStudentInfo').innerHTML = `<strong>${s[2]}</strong> | ${s[1]} | Class ${s[3]}-${s[4]} | Bus ${s[0]} | Fee: ₹${s[11]}`;
+      const months = ['Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
+      const tbody = document.getElementById('feeBody');
+      tbody.innerHTML = '';
+      let totalPaid = 0;
+      months.forEach((m, idx) => {
+        const amount = s[12 + idx*3] || 0;
+        const receipt = s[13 + idx*3] || '';
+        const dt = s[14 + idx*3] || '';
+        totalPaid += Number(amount);
+        tbody.innerHTML += `<tr>
+          <td>${m}</td>
+          <td><input type="number" class="form-control fee-amount" data-month="${m}" value="${amount}" placeholder="Amount"></td>
+          <td><input type="text" class="form-control fee-receipt" data-month="${m}" value="${receipt}" placeholder="Receipt No"></td>
+          <td>${dt}</td>
+          <td><button class="btn btn-sm btn-primary" onclick="updateFeeMonth('${s[0]}','${m}')">Update</button></td>
+        </tr>`;
+      });
+      const totalPayable = s[11] * 10;
+      const balance = totalPayable - totalPaid;
+      document.getElementById('totalPaid').innerText = totalPaid;
+      document.getElementById('totalPayable').innerText = totalPayable;
+      document.getElementById('balanceDue').innerText = balance;
+    }
+
+    async function updateFeeMonth(studentId, month) {
+      const amount = document.querySelector(`.fee-amount[data-month="${month}"]`).value;
+      const receipt = document.querySelector(`.fee-receipt[data-month="${month}"]`).value;
+      try {
+        await callAppScript('updateFee', { studentId, month, amount, receiptNo: receipt });
+        searchStudentFee(); // refresh
+      } catch (err) {
+        alert('Update failed: ' + err.message);
+      }
+    }
+
+    // ========== UTILS ==========
+    function showLoader(section) {
+      if (section === 'global') {
+        // you can create a global spinner overlay if needed
+      } else {
+        document.getElementById(section+'Spinner').style.display = 'flex';
+      }
+    }
+    function hideLoader(section) {
+      if (section === 'global') {
+        // hide global spinner
+      } else {
+        document.getElementById(section+'Spinner').style.display = 'none';
+      }
+    }
+    function showError(err) { alert('Error: ' + err); }
+
+    // Stub functions for unimplemented features
+    function editStudent(id) { alert('Edit not fully implemented'); }
+    function resetStudentForm() { document.getElementById('studentForm').reset(); }
+    function filterStudentTable() { /* implement client-side filter */ }
+    function shareAttendance() { alert('WhatsApp share not implemented'); }
+    function searchData() { alert('Data search not implemented'); }
+    function downloadFeePDF() { alert('PDF download not implemented'); }
+    function whatsappFee() { alert('WhatsApp fee not implemented'); }
+    function displayStudentDashboard(id) { alert('Student dashboard not implemented'); }
+
+    // On page load, check localStorage for "keep me logged in"
+    window.onload = function() {
+      // optional: implement persistence
+    };
+  </script>
+</body>
+</html>
