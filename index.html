@@ -18,7 +18,7 @@
         border: 1px solid #000; padding: 10px;
     }
 }
-.receipt-card { width: 105mm; min-height: 148mm; border: 2px dashed #cbd5e1; margin: 0 auto; padding: 15px; background: #fff; }
+
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans">
@@ -61,12 +61,12 @@
     </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbx4_3QmCVd_OdbQARtz6Ah3WNgVMTOWj0qOPfJDkWZOSF4mosKD0dHt_dy4g5WL9zATTg/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbydJ-oWqwreVsSeallYrvwobFatqbrp9In1s7EarTbSE0Z7SvgnglzYXkaGI8dNEPdoGw/exec";
     const users = {
         "bus1": { pass: "buspass", role: "Bus", name: "Bus KL 32S 3091", filter: "KL 32S 3091", access: [2] },
         "teacher1": { pass: "teachpass", role: "Teacher", name: "Teacher A", tClass: "STD5", tDiv: "A", access: [1,2,4] },
         "school1": { pass: "schpass", role: "School", name: "TDEMNS Admin", tSchool: "TDEMNS", access: [1,3,4] },
-        "admin": { pass: "adminpass", role: "Admin", name: "Super Admin", access: [1,2,3,4] }
+        "admin": { pass: "adminpass", role: "Admin", name: "Super Admin", access: [1,2,3,4,5,6] }
     };
     
     let curUser=null, loginDT=null, durInt=null, inactTimer=null;
@@ -135,7 +135,7 @@
     function renderTabs() {
         const t = document.getElementById('tabs'); t.innerHTML = '';
         if(curUser.role === "Student") { loadTab(0); return; }
-        const n = {1:"Students Record", 2:"Attendance", 3:"Data", 4:"Fee"};
+        const n = {1:"Students Record", 2:"Attendance", 3:"Data", 4:"Fee", 5:"Receipt Management", 6:"Settings"};
         curUser.access.forEach(id => {
             const b = document.createElement('button');
             b.className = "px-4 py-2 bg-gray-200 hover:bg-blue-200 font-bold rounded text-sm";
@@ -151,6 +151,8 @@
         if(id === 2) renderTab2(c);
         if(id === 3) renderTab3(c);
         if(id === 4) renderTab4(c);
+        if(id === 5) renderTab5(c);
+        if(id === 6) renderTab6(c);
     }
 
     // --- Filters ---
@@ -181,6 +183,8 @@
         `;
     }
 
+
+
     // --- Tab 1: Students Record ---
     function renderTab1(c) {
         const fDB = getFilteredDB();
@@ -210,6 +214,7 @@
         `;
     }
 
+
     async function saveS(e) {
         e.preventDefault();
         const d = { BusId:v('f1'), School:v('f2'), Class:v('f3'), Div:v('f4'), StudentName:v('f5'), ParentName:v('f6'), Phone:v('f7'), Entry:v('f8'), Exit:v('f9'), Status:v('f10'), Fee:v('f11') };
@@ -231,6 +236,8 @@
         await fetchData(); hideLoad(); renderTab1(document.getElementById('tabContent'));
     }
     function searchT1(q) { Array.from(document.getElementById('t1Body').rows).forEach(r=> r.style.display = r.innerText.toLowerCase().includes(q.toLowerCase())?'':'none'); }
+
+
 
     // --- Tab 2: Attendance ---
     function renderTab2(c) {
@@ -269,58 +276,22 @@
 
     // --- Tab 3: Data ---
     function renderTab3(c) {
-    const fDB = getFilteredDB();
-    c.innerHTML = `
-        <h2 class="text-2xl font-bold mb-4">Master Data & History</h2>
-        <div class="flex gap-2 mb-4">
-            <input id="dSearch" onkeyup="searchT3()" placeholder="Search Name, Phone, or Bus..." class="w-full p-2 border-2 border-blue-100 rounded-lg outline-none focus:border-blue-500">
-        </div>
-        <div class="overflow-x-auto bg-white rounded-lg border shadow-sm">
-            <table class="w-full text-left text-xs border-collapse">
-                <tr class="bg-gray-800 text-white">
-                    <th class="p-3">Bus/School</th>
-                    <th class="p-3">Student Name</th>
-                    <th class="p-3">Phone</th>
-                    <th class="p-3">Paid/Bal</th>
-                    <th class="p-3">History</th>
-                </tr>
-                <tbody id="t3Body">
-                    ${fDB.map(s => `
-                        <tr class="border-b hover:bg-gray-50">
-                            <td class="p-3">${s.BusId}<br><span class="text-gray-400">${s.School}</span></td>
-                            <td class="p-3 font-bold">${s.StudentName}<br><span class="font-normal text-gray-500">${s.Class}-${s.Div}</span></td>
-                            <td class="p-3">${s.Phone}</td>
-                            <td class="p-3">
-                                <span class="text-green-600">P: ₹${s.Total || 0}</span><br>
-                                <span class="text-red-500">B: ₹${s.Balance || 0}</span>
-                            </td>
-                            <td class="p-3">
-                                <button onclick="gotoReceipts('${s.Phone}')" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold hover:bg-blue-200 transition">View Receipts</button>
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </div>
-    `;
-}
+        const fDB = getFilteredDB();
+        c.innerHTML = `
+            <h2 class="text-2xl font-bold mb-4">Master Data</h2>
+            <div class="flex gap-2 mb-4"><input id="dSearch" onkeyup="searchT3()" placeholder="Search Name, Phone..." class="w-full p-2 border rounded"></div>
+            <div class="overflow-x-auto"><table class="w-full text-left text-xs border whitespace-nowrap"><tr class="bg-gray-800 text-white"><th class="p-2">Name</th><th class="p-2">Class</th><th class="p-2">Phone</th><th class="p-2">Total</th><th class="p-2">Balance</th><th class="p-2">Action</th></tr>
+            <tbody id="t3Body">${fDB.map(s=>`<tr><td class="p-2 border-b font-bold">${s.StudentName}</td><td class="p-2 border-b">${s.Class}-${s.Div}</td><td class="p-2 border-b">${s.Phone}</td><td class="p-2 border-b">₹${s.Total||0}</td><td class="p-2 border-b font-bold text-red-500">₹${s.Balance||0}</td><td class="p-2 border-b"><button onclick="gotoReceipts('${s.Phone}')" class="bg-blue-600 text-white px-3 py-1 rounded text-[10px] font-bold">VIEW RECEIPTS</button></td></tr>`).join('')}</tbody></table></div>
+        `;
+    }
 
-function gotoReceipts(phone) {
-    // 1. Switch Tab
-    loadTab(5); 
-
-    // 2. Use a robust check to see if the element is ready
-    let attempts = 0;
-    const checkExist = setInterval(() => {
-        const searchInput = document.getElementById('rSearch');
-        if (searchInput) {
-            clearInterval(checkExist);
-            searchInput.value = phone;
-            findReceiptStu(); // Trigger the actual search
-        }
-        if (++attempts > 10) clearInterval(checkExist); // Stop after 2 seconds if fail
-    }, 200); 
-}
+    function gotoReceipts(phone) {
+        loadTab(5);
+        const check = setInterval(() => {
+            const input = document.getElementById('rSearch');
+            if(input) { clearInterval(check); input.value = phone; findReceiptStu(); }
+        }, 100);
+    }
 
     function searchT3() { const q=document.getElementById('dSearch').value.toLowerCase(); Array.from(document.getElementById('t3Body').rows).forEach(r=> r.style.display = r.innerText.toLowerCase().includes(q)?'':'none'); }
 
@@ -359,122 +330,113 @@ function gotoReceipts(phone) {
     }
     
     function renderTab5(c) {
-    c.innerHTML = `
-        <div class="p-4">
-            <h2 class="text-2xl font-bold mb-4 text-blue-800 border-b-2 border-blue-100 pb-2">Receipt Management</h2>
-            
-            <div class="flex gap-2 mb-6 bg-white p-4 rounded-xl shadow-sm border">
-                <div class="flex-1">
-                    <label class="text-[10px] uppercase font-bold text-gray-400 ml-1">Search by Phone</label>
-                    <input type="text" id="rSearch" placeholder="9876543210" 
-                           class="w-full p-2 border-2 rounded-lg outline-none focus:border-blue-500 text-lg">
+        c.innerHTML = `
+            <h2 class="text-2xl font-bold mb-4">Receipt Management</h2>
+            <div class="flex gap-2 mb-6"><input type="text" id="rSearch" placeholder="Phone No" class="p-2 border rounded w-1/2"><button onclick="findReceiptStu()" class="bg-blue-600 text-white px-6 rounded font-bold">Search</button></div>
+            <div id="receiptResult" class="hidden">
+                <div class="grid grid-cols-2 gap-4 mb-4 p-4 bg-blue-50 rounded border" id="rStuInfo"></div>
+                <div class="overflow-x-auto mb-6">
+                    <table class="w-full text-sm border"><tr class="bg-gray-100"><th class="p-2 border">Month</th><th class="p-2 border">Amount</th><th class="p-2 border">Receipt No</th><th class="p-2 border">Action</th></tr>
+                    <tbody id="rPaymentTbl"></tbody></table>
                 </div>
-                <button onclick="findReceiptStu()" class="self-end bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded-lg font-bold shadow-md transition-all">
-                    Search
-                </button>
+                <h3 class="font-bold text-sm mb-2 text-gray-500 uppercase">Generated History</h3>
+                <div id="historyArea" class="space-y-2"></div>
             </div>
-
-            <div id="receiptResult" class="hidden space-y-6">
-                <div id="rStuInfo" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-
-                <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
-                    <div class="bg-gray-50 px-4 py-3 border-b">
-                        <h3 class="font-bold text-gray-700">Generate New Receipt</h3>
-                    </div>
-                    <table class="w-full text-left text-sm">
-                        <thead>
-                            <tr class="bg-gray-100 text-gray-600 uppercase text-[10px] tracking-wider">
-                                <th class="p-3">Month</th>
-                                <th class="p-3">Paid Amount</th>
-                                <th class="p-3">Ref No.</th>
-                                <th class="p-3 text-center">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="rPaymentTbl"></tbody>
-                    </table>
-                </div>
-
-                <div>
-                    <h3 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
-                        <span class="w-2 h-2 bg-green-500 rounded-full"></span> 
-                        Generated History
-                    </h3>
-                    <div id="historyArea" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <p class="text-gray-400 italic text-sm">No history loaded.</p>
-                    </div>
-                </div>
-            </div>
-            
             <div id="receiptPrintArea" class="hidden"></div>
-        </div>
-    `;
-}
-
-let curRStu = null;
-
-async function findReceiptStu() {
-    const q = document.getElementById('rSearch').value.trim();
-    if (!q) return;
-
-    // Normalize phone numbers by removing any non-digit characters for comparison
-    const cleanQ = q.replace(/\D/g, '');
-    
-    curRStu = db.find(x => {
-        const cleanPhone = String(x.Phone).replace(/\D/g, '');
-        return cleanPhone === cleanQ || String(x.StudentName).toLowerCase().includes(q.toLowerCase());
-    });
-
-    if (!curRStu) {
-        msg("Not Found", "No student matches this phone or name in your current records.", "warning");
-        document.getElementById('receiptResult').classList.add('hidden');
-        return;
+        `;
     }
 
-    // Show the result section
-    document.getElementById('receiptResult').classList.remove('hidden');
-    
-    // Update Student Info Header
-    document.getElementById('rStuInfo').innerHTML = `
-        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h3 class="text-lg font-bold text-blue-800">${curRStu.StudentName}</h3>
-            <p class="text-sm"><b>School:</b> ${curRStu.School} | <b>Bus:</b> ${curRStu.BusId}</p>
-            <p class="text-sm"><b>Class:</b> ${curRStu.Class}-${curRStu.Div} | <b>Phone:</b> ${curRStu.Phone}</p>
-        </div>
-        <div class="p-4 bg-green-50 rounded-lg border border-green-200 text-right">
-            <p class="text-sm"><b>Monthly Fee:</b> ₹${curRStu.Fee}</p>
-            <p class="text-lg font-bold text-green-700">Paid: ₹${curRStu.Total || 0}</p>
-            <p class="text-lg font-bold text-red-600">Balance: ₹${curRStu.Balance || 0}</p>
-        </div>
-    `;
+    async function findReceiptStu() {
+        const q = document.getElementById('rSearch').value;
+        curRStu = db.find(x => String(x.Phone) === q || String(x.StudentName).toLowerCase().includes(q.toLowerCase()));
+        if(!curRStu) return msg("Not Found","Student not found.","warning");
+        
+        document.getElementById('receiptResult').classList.remove('hidden');
+        document.getElementById('rStuInfo').innerHTML = `<div><b>${curRStu.StudentName}</b><br>${curRStu.School}<br>${curRStu.Class}-${curRStu.Div}</div><div class="text-right">Fee: ₹${curRStu.Fee}<br>Paid: ₹${curRStu.Total||0}<br><span class="text-red-600">Bal: ₹${curRStu.Balance||0}</span></div>`;
+        
+        const m = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+        document.getElementById('rPaymentTbl').innerHTML = m.filter(x => curRStu[x]).map(x => `<tr><td class="p-2 border">${x}</td><td class="p-2 border">₹${curRStu[x]}</td><td class="p-2 border">${curRStu[x+'Receipt']}</td><td class="p-2 border text-center"><button onclick="generateReceiptUI('${x}')" class="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold">GENERATE</button></td></tr>`).join('');
+        
+        // Load History
+        showLoad();
+        const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getReceipts", phone:curRStu.Phone})}).then(r=>r.json());
+        hideLoad();
+        document.getElementById('historyArea').innerHTML = res.data.map(r => `<div class="p-2 border bg-white rounded flex justify-between text-xs"><span><b>${r[0]}</b> - ${r[7]} (${new Date(r[1]).toLocaleDateString()})</span><button onclick="reprint('${r[0]}')" class="text-blue-600 font-bold">REPRINT</button></div>`).join('');
+    }
 
-    // Render the Payments Table
-    const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
-    const tbody = document.getElementById('rPaymentTbl');
-    tbody.innerHTML = '';
+    async function generateReceiptUI(mon) {
+    showLoad();
+    try {
+        // Send to Apps Script to save and get the sequential ID
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: "saveFee",
+                rIdx: curRStu.rowIdx, // Ensure your student object has its row index
+                data: { month: mon, amount: curRStu.Fee }
+            })
+        }).then(res => res.json());
 
-    let hasPayments = false;
-    months.forEach(m => {
-        if (curRStu[m] && parseFloat(curRStu[m]) > 0) {
-            hasPayments = true;
-            tbody.innerHTML += `
-                <tr class="hover:bg-gray-50">
-                    <td class="p-3 border font-bold">${m}</td>
-                    <td class="p-3 border text-green-600 font-bold">₹${curRStu[m]}</td>
-                    <td class="p-3 border text-gray-500">${curRStu[m+'Receipt'] || 'N/A'}</td>
-                    <td class="p-3 border text-center">
-                        <button onclick="generateReceiptUI('${m}')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded shadow-sm text-xs font-bold uppercase">Generate</button>
-                    </td>
-                </tr>`;
+        if (response.success) {
+            const rData = {
+                ReceiptNo: response.receiptNo, // This will be 001/2026
+                Date: new Date().toLocaleString(),
+                Name: curRStu.StudentName,
+                Phone: curRStu.Phone,
+                School: curRStu.School,
+                Class: curRStu.Class + "-" + curRStu.Div,
+                Months: mon,
+                Amount: curRStu.Fee,
+                Total: response.totalPaid || curRStu.Fee
+            };
+            
+            printReceipt(rData);
+            findReceiptStu(); // Refresh the list to show the new history
         }
-    });
+    } catch (e) {
+        msg("Error", "Failed to generate sequence.", "error");
+    }
+    hideLoad();
+}
 
-    if (!hasPayments) {
-        tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-400 italic">No payments recorded for this student yet.</td></tr>`;
+    function printReceipt(r) {
+        const html = `
+            <div style="width:105mm; height:148mm; padding:10mm; border:1px solid #eee; font-family:sans-serif; background:white;">
+                <div style="text-align:center; border-bottom:2px solid #333; padding-bottom:10px; margin-bottom:10px;">
+                    <h2 style="margin:0;">${r.School}</h2>
+                    <p style="font-size:10px; margin:2px;">SCHOOL BUS TRANSPORTATION RECEIPT</p>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:10px;">
+                    <span><b>No:</b> ${r.ReceiptNo}</span>
+                    <span><b>Date:</b> ${new Date().toLocaleDateString()}</span>
+                </div>
+                <div style="font-size:13px; margin-bottom:15px;">
+                    <p><b>Name:</b> ${r.Name}</p>
+                    <p><b>Class:</b> ${r.Class} | <b>Phone:</b> ${r.Phone}</p>
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                    <tr style="background:#f4f4f4;"><th style="border:1px solid #ddd; padding:8px; text-align:left;">Particulars</th><th style="border:1px solid #ddd; padding:8px; text-align:right;">Amount</th></tr>
+                    <tr><td style="border:1px solid #ddd; padding:8px;">Bus Fee for ${r.Months}</td><td style="border:1px solid #ddd; padding:8px; text-align:right;">₹${r.Amount}</td></tr>
+                    <tr style="font-bold; background:#eee;"><td style="border:1px solid #ddd; padding:8px; text-align:right;"><b>TOTAL</b></td><td style="border:1px solid #ddd; padding:8px; text-align:right;"><b>₹${r.Total}</b></td></tr>
+                </table>
+                <div style="margin-top:40px; display:flex; justify-content:space-between; font-size:10px;">
+                    <div><i>Thank you!</i></div>
+                    <div style="text-align:center; border-top:1px solid #000; width:100px; padding-top:5px;">Authorized Sig.</div>
+                </div>
+            </div>`;
+        
+        document.getElementById('receiptPrintArea').innerHTML = html;
+        Swal.fire({
+            title: 'Receipt Ready',
+            html: html + `<div class="mt-4 flex gap-2 justify-center no-print"><button onclick="window.print()" class="bg-gray-800 text-white px-4 py-2 rounded">Print (1/4 A4)</button><button onclick="shareWA('${r.Months}', '${r.Total}')" class="bg-green-600 text-white px-4 py-2 rounded">WhatsApp</button></div>`,
+            showConfirmButton: false, width:'auto'
+        });
     }
 
-    // Fetch and show history from the "Receipts" sheet
-    fetchHistory(cleanQ);
-}
+    function shareWA(m, a) {
+        const txt = `*Fee Receipt - ${curRStu.School}*\nStudent: ${curRStu.StudentName}\nMonth: ${m}\nAmount: ₹${a}\nStatus: PAID`;
+        window.open(`https://wa.me/${curRStu.Phone}?text=${encodeURIComponent(txt)}`, '_blank');
+    }
 
 
 
@@ -593,6 +555,57 @@ async function fetchHistory(phone) {
     }
 }
 
+function addAdminControls(container) {
+    const adminDiv = document.createElement('div');
+    adminDiv.className = "mt-8 p-6 bg-red-50 border-2 border-red-100 rounded-2xl";
+    adminDiv.innerHTML = `
+        <h3 class="text-lg font-bold text-red-800 mb-2">System Controls</h3>
+        <p class="text-sm text-red-600 mb-4">Warning: Resetting the counter will start the next receipt at 001/${new Date().getFullYear()}.</p>
+        <button onclick="confirmResetCounter()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-xl font-bold shadow-lg transition-all">
+            Reset Receipt Counter
+        </button>
+    `;
+    container.appendChild(adminDiv);
+}
+
+function renderTab6(c) {
+    c.innerHTML = `
+        <div class="max-w-2xl mx-auto p-4 space-y-6">
+            <h2 class="text-2xl font-black text-gray-800 mb-6">System Settings</h2>
+            
+            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800">Receipt Counter</h3>
+                        <p class="text-xs text-gray-500">Reset the sequence back to 001</p>
+                    </div>
+                </div>
+                
+                <div class="p-4 bg-red-50 rounded-2xl border border-red-100">
+                    <p class="text-sm text-red-700 leading-relaxed">
+                        <b>Warning:</b> This will insert a marker in the database. The very next fee receipt generated will be numbered <b>001/${new Date().getFullYear()}</b>. Use this only at the start of a new term or if numbering correction is required.
+                    </p>
+                </div>
+
+                <button onclick="confirmResetCounter()" class="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-2xl font-bold shadow-lg shadow-red-200 transition-all transform active:scale-95">
+                    Reset Counter to 001
+                </button>
+            </div>
+
+            <div class="bg-blue-600 p-6 rounded-3xl text-white shadow-lg shadow-blue-200">
+                <h3 class="font-bold mb-1">Backup Recommendation</h3>
+                <p class="text-blue-100 text-xs leading-relaxed">
+                    It is recommended to download your current "Receipts" sheet as a PDF before resetting the counter for your annual audits.
+                </p>
+            </div>
+        </div>
+    `;
+}
 
 </script>
 </body>
