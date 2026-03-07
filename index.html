@@ -19,6 +19,55 @@
     }
 }
 
+/* Profile Modern UI */
+.profile-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+.contact-chip {
+    display: inline-flex;
+    align-items: center;
+    background: #f0fdf4;
+    color: #166534;
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    border: 1px solid #bbf7d0;
+    text-decoration: none;
+    transition: 0.2s;
+}
+.contact-chip:hover { background: #dcfce7; }
+
+/* Fixed A4 Portrait Print Logic */
+/* Fixed A4 Portrait Print Logic */
+@media print {
+    /* Forces the browser to remove headers/footers (URLs and dates) */
+    @page { 
+        size: A4 portrait; 
+        margin: 0; 
+    }
+    
+    body { 
+        margin: 1cm; /* This adds margin to the content instead of the page */
+    }
+
+    /* Hide everything except the profile content */
+    body * { visibility: hidden; }
+    #tabContent, #tabContent * { visibility: visible; }
+    
+    #tabContent { 
+        position: absolute; 
+        left: 0; 
+        top: 0; 
+        width: 100%; 
+        padding: 20px;
+    }
+
+    /* Specifically hide the download button during the print process */
+    .no-print { display: none !important; }
+}
+
+
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans">
@@ -61,12 +110,12 @@
     </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbydJ-oWqwreVsSeallYrvwobFatqbrp9In1s7EarTbSE0Z7SvgnglzYXkaGI8dNEPdoGw/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbwFlgdSjieGK_sTyKOTv3QPOeAoB3HCFVVEljbPHDIP83nNSSM54i7tpamXVxSYIPj17A/exec";
     const users = {
         "bus1": { pass: "buspass", role: "Bus", name: "Bus KL 32S 3091", filter: "KL 32S 3091", access: [2] },
         "teacher1": { pass: "teachpass", role: "Teacher", name: "Teacher A", tClass: "STD5", tDiv: "A", access: [1,2,4] },
         "school1": { pass: "schpass", role: "School", name: "TDEMNS Admin", tSchool: "TDEMNS", access: [1,3,4] },
-        "admin": { pass: "adminpass", role: "Admin", name: "Super Admin", access: [1,2,3,4,5,6] }
+        "admin": { pass: "adminpass", role: "Admin", name: "Super Admin", access: [1,2,3,4,5] }
     };
     
     let curUser=null, loginDT=null, durInt=null, inactTimer=null;
@@ -135,7 +184,7 @@
     function renderTabs() {
         const t = document.getElementById('tabs'); t.innerHTML = '';
         if(curUser.role === "Student") { loadTab(0); return; }
-        const n = {1:"Students Record", 2:"Attendance", 3:"Data", 4:"Fee", 5:"Receipt Management", 6:"Settings"};
+        const n = {1:"Students Record", 2:"Attendance", 3:"Data", 4:"Fee", 5:"Receipt Management"};
         curUser.access.forEach(id => {
             const b = document.createElement('button');
             b.className = "px-4 py-2 bg-gray-200 hover:bg-blue-200 font-bold rounded text-sm";
@@ -152,7 +201,7 @@
         if(id === 3) renderTab3(c);
         if(id === 4) renderTab4(c);
         if(id === 5) renderTab5(c);
-        if(id === 6) renderTab6(c);
+        
     }
 
     // --- Filters ---
@@ -168,21 +217,132 @@
 
     // --- Student Dashboard (Login 1) ---
     function renderStudentDash(c) {
-        const d = curUser.data;
-        const m = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
-        let trs = m.map(x => `<tr class="border-b"><td class="p-2">${x}</td><td class="p-2 text-green-600 font-bold">₹${d[x]||0}</td><td class="p-2 text-xs">${d[x+'Receipt']||'-'}</td><td class="p-2 text-xs">${d[x+'DateTime']||'-'}</td></tr>`).join('');
-        c.innerHTML = `
-            <div class="bg-blue-50 p-4 rounded mb-4">
-                <h2 class="text-xl font-bold mb-2">My Profile</h2>
-                <p><b>Name:</b> ${d.StudentName} | <b>School:</b> ${d.School} | <b>Class:</b> ${d.Class}-${d.Div}</p>
-                <p><b>Entry:</b> ${d.Entry} | <b>Exit:</b> ${d.Exit}</p>
-                <p class="mt-2 text-lg"><b>Total Paid:</b> ₹${d.Total||0} <span class="ml-4 text-red-500"><b>Balance:</b> ₹${d.Balance||0}</span></p>
-            </div>
-            <button class="bg-indigo-500 text-white px-4 py-2 rounded text-sm mb-4">Download PDF</button>
-            <div class="overflow-x-auto"><table class="w-full text-left border"><tr class="bg-gray-800 text-white"><th class="p-2">Month</th><th class="p-2">Fee Paid</th><th class="p-2">Receipt</th><th class="p-2">Date/Time</th></tr>${trs}</table></div>
-        `;
-    }
+    const d = curUser.data;
+    const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+    
+    // Format rows: Extracting only Date from the Sheet's DateTime string
+    let trs = months.map(m => {
+        const paid = d[m] && parseFloat(d[m]) > 0;
+        // Use the new helper function here
+        let dateOnly = paid ? formatMyDate(d[m+'DateTime']) : '-';
 
+        return `
+            <tr class="border-b text-sm hover:bg-gray-50">
+                <td class="p-4 font-bold text-gray-700">${m}</td>
+                <td class="p-4 font-bold ${paid ? 'text-green-600':'text-gray-300'}">
+                    ${paid ? '₹'+d[m] : '---'}
+                </td>
+                <td class="p-4 text-gray-600 font-medium">${dateOnly}</td>
+                <td class="p-4 text-gray-400 text-xs tracking-wider">${d[m+'Receipt'] || '-'}</td>
+            </tr>`;
+    }).join('');
+
+    c.innerHTML = `
+        <div class="max-w-4xl mx-auto space-y-6 animate-fade-in">
+            <div class="profile-card p-6 border border-gray-100">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="h-16 w-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center text-2xl font-black shadow-lg">
+                            ${d.StudentName.charAt(0)}
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-black text-gray-800">${d.StudentName}</h2>
+                            <p class="text-gray-500 text-sm font-medium uppercase tracking-tight">${d.School} • Bus ${d.BusId}</p>
+                        </div>
+                    </div>
+                    <button onclick="window.print()" class="no-print bg-gray-800 text-white px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-black transition">
+                        <span>📥</span> Download PDF (A4)
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 border-t pt-6">
+                    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Class</p><p class="font-bold">${d.Class}-${d.Div}</p></div>
+                    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Phone</p><p class="font-bold">${d.Phone}</p></div>
+                    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Paid</p><p class="font-bold text-green-600">₹${d.Total || 0}</p></div>
+                    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Balance</p><p class="font-bold text-red-600">₹${d.Balance || 0}</p></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-[10px] uppercase text-gray-400 font-bold tracking-widest">
+                            <th class="p-4">Month</th><th class="p-4">Amt</th><th class="p-4">Date</th><th class="p-4">Receipt</th>
+                        </tr>
+                    </thead>
+                    <tbody>${trs}</tbody>
+                </table>
+            </div>
+
+            <div class="p-6 bg-blue-50 rounded-2xl border border-blue-100 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div>
+                    <h4 class="font-bold text-blue-900 text-sm">For More Details Contact:</h4>
+                    <p class="text-blue-700 text-lg font-black">G Mahesh Kumar</p>
+                </div>
+                <a href="tel:9497731772" class="contact-chip shadow-sm">
+                    <span class="mr-2">📞</span> 
+                    <span class="font-black text-lg">9497731772</span>
+                </a>
+            </div>
+        </div>
+    `;
+}
+
+function downloadStudentPDF() {
+    // 1. Prepare the Print Area with a "Statement" layout
+    const d = curUser.data;
+    const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+    
+    let html = `
+        <div style="padding: 20px; font-family: sans-serif; color: #333;">
+            <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px;">
+                <h1 style="margin: 0; font-size: 24px;">${d.School}</h1>
+                <p style="margin: 5px 0;">FEE STATEMENT / STUDENT PROFILE</p>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+                <div>
+                    <p><b>Student:</b> ${d.StudentName}</p>
+                    <p><b>Class:</b> ${d.Class}-${d.Div}</p>
+                    <p><b>Phone:</b> ${d.Phone}</p>
+                </div>
+                <div style="text-align: right;">
+                    <p><b>Bus ID:</b> ${d.BusId}</p>
+                    <p><b>Date:</b> ${new Date().toLocaleDateString()}</p>
+                </div>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <thead>
+                    <tr style="background: #f0f0f0;">
+                        <th style="border: 1px solid #ccc; padding: 10px; text-align: left;">Month</th>
+                        <th style="border: 1px solid #ccc; padding: 10px; text-align: left;">Amount</th>
+                        <th style="border: 1px solid #ccc; padding: 10px; text-align: left;">Receipt No</th>
+                        <th style="border: 1px solid #ccc; padding: 10px; text-align: left;">Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${months.map(m => `
+                        <tr>
+                            <td style="border: 1px solid #ccc; padding: 10px;">${m}</td>
+                            <td style="border: 1px solid #ccc; padding: 10px;">₹${d[m] || '0'}</td>
+                            <td style="border: 1px solid #ccc; padding: 10px;">${d[m+'Receipt'] || '---'}</td>
+                            <td style="border: 1px solid #ccc; padding: 10px;">${(d[m+'DateTime'] || '').split(',')[0]}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+
+            <div style="display: flex; justify-content: flex-end; gap: 20px; font-size: 18px;">
+                <p><b>Total Paid:</b> ₹${d.Total || 0}</p>
+                <p style="color: red;"><b>Balance:</b> ₹${d.Balance || 0}</p>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('receiptPrintArea').innerHTML = html;
+    window.print(); // Browser will open PDF Print dialog
+}
 
 
     // --- Tab 1: Students Record ---
@@ -305,13 +465,15 @@
                 <div class="flex gap-2 mb-4 bg-gray-50 p-4 rounded border">
                     <select id="feeMon" class="p-2 border rounded"><option>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option><option>Oct</option><option>Nov</option><option>Dec</option><option>Jan</option><option>Feb</option><option>Mar</option></select>
                     <input type="number" id="feeAmt" placeholder="Amount" class="p-2 border rounded">
-                    <button onclick="payFee()" class="bg-green-600 text-white px-6 rounded font-bold hover:bg-green-700">Enter Fee</button>
-                    <button class="bg-indigo-500 text-white px-4 rounded ml-auto text-sm">PDF / WA</button>
+                    <button onclick="payFee()" class="bg-green-600 text-white px-6 rounded font-bold hover:bg-green-700">ADD</button>
+                    <button onclick="shareReport()" class="bg-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 no-print">
+    Share</button>
                 </div>
                 <div class="overflow-x-auto"><table class="w-full text-left text-sm border bg-white"><tr class="bg-gray-800 text-white"><th class="p-2">Month</th><th class="p-2">Amount Paid</th><th class="p-2">Receipt</th><th class="p-2">Date/Time</th></tr><tbody id="feeTable"></tbody></table></div>
             </div>
         `;
     }
+    
     let curFeeS = null;
     function findFeeStu() {
         const q = document.getElementById('fSearch').value.toLowerCase();
@@ -320,7 +482,8 @@
         document.getElementById('feeArea').classList.remove('hidden');
         document.getElementById('feeDetails').innerHTML = `<h3 class="text-lg font-bold">${curFeeS.StudentName}</h3><p class="text-sm">${curFeeS.School} | ${curFeeS.Class}-${curFeeS.Div} | Bus: ${curFeeS.BusId}</p><p class="mt-2 text-blue-700 font-bold">Monthly Fee Base: ₹${curFeeS.Fee}</p><div class="flex justify-between mt-2 pt-2 border-t border-blue-200"><span class="font-bold text-green-700">Total Paid: ₹${curFeeS.Total||0}</span><span class="font-bold text-red-600">Balance: ₹${curFeeS.Balance||0}</span></div>`;
         const m = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
-        document.getElementById('feeTable').innerHTML = m.map(x => `<tr class="border-b"><td class="p-2">${x}</td><td class="p-2 font-bold text-green-600">₹${curFeeS[x]||0}</td><td class="p-2 text-xs">${curFeeS[x+'Receipt']||'-'}</td><td class="p-2 text-xs">${curFeeS[x+'DateTime']||'-'}</td></tr>`).join('');
+        document.getElementById('feeTable').innerHTML = m.map(x => `<tr class="border-b"><td class="p-2">${x}</td><td class="p-2 font-bold text-green-600">₹${curFeeS[x]||0}</td><td class="p-2 text-xs">${curFeeS[x+'Receipt']||'-'}</td><td class="p-2 text-xs">${formatMyDate(curFeeS[x+'DateTime'])||'-'}</td>
+</tr>`).join('');
     }
     async function payFee() {
         const m = document.getElementById('feeMon').value, a = document.getElementById('feeAmt').value;
@@ -328,6 +491,47 @@
         showLoad(); await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"saveFee", rowIndex:curFeeS._rowIndex, data:{month:m, amount:a}})});
         await fetchData(); hideLoad(); findFeeStu(); msg("Success","Fee updated instantly!","success");
     }
+    
+    function shareReport() {
+    const d = curUser.data;
+    
+    // 1. Trigger the A4 PDF Print (Cleaned via CSS)
+    window.print();
+
+    // 2. Prepare the WhatsApp Summary
+    const contactNo = d.Phone; 
+    const message = `*TRANSPORTATION REPORT - TDTTI THURAVOOR*%0A` +
+                    `-----------------------------------%0A` +
+                    `*Student:* ${d.StudentName}%0A` +
+                    `*Class:* ${d.Class}-${d.Div}%0A` +
+                    `*Total Paid:* ₹${d.Total || 0}%0A` +
+                    `*Balance:* ₹${d.Balance || 0}%0A` +
+                    `*Status:* ${d.Status || 'Active'}%0A` +
+                    `-----------------------------------%0A` +
+                    `_Please keep the downloaded PDF for your records._`;
+
+    // 3. Open WhatsApp after a small delay to allow print dialog to initialize
+    setTimeout(() => {
+        const waUrl = `https://wa.me/${contactNo}?text=${message}`;
+        window.open(waUrl, '_blank');
+    }, 500);
+}
+    
+    
+
+function preparePDFView(s) {
+    // This reuses your print styles to show a clean A4 report
+    // We temporarily hide the UI and trigger the print dialog
+    curUser.data = s; // Temporarily set as "current" to use the profile template
+    renderStudentDash(document.getElementById('tabContent'));
+    
+    setTimeout(() => {
+        window.print();
+        // Refresh the current tab to return to the list view
+        loadTab(1); 
+    }, 500);
+}
+
     
     function renderTab5(c) {
         c.innerHTML = `
@@ -345,6 +549,32 @@
             <div id="receiptPrintArea" class="hidden"></div>
         `;
     }
+function shareFeeStatus(phone) {
+    // Find the student in the database
+    const s = db.find(x => String(x.Phone) === String(phone));
+    if (!s) return msg("Error", "Student data not found", "error");
+
+    const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+    let paidMonths = months.filter(m => s[m] && parseFloat(s[m]) > 0).join(", ");
+    
+    // Construct the Message
+    const text = `*FEE STATUS REPORT - ${s.School}*\n\n` +
+                 `*Student:* ${s.StudentName}\n` +
+                 `*Class:* ${s.Class}-${s.Div}\n` +
+                 `--------------------------\n` +
+                 `*Monthly Fee:* ₹${s.Fee}\n` +
+                 `*Total Paid:* ₹${s.Total || 0}\n` +
+                 `*Pending Balance:* ₹${s.Balance || 0}\n` +
+                 `--------------------------\n` +
+                 `*Paid Months:* ${paidMonths || 'None'}\n\n` +
+                 `_For digital receipts, please login to the student portal._\n` +
+                 `*Contact:* G Mahesh Kumar - 9497731772`;
+
+    const encodedText = encodeURIComponent(text);
+    const waUrl = `https://wa.me/91${s.Phone}?text=${encodedText}`;
+    
+    window.open(waUrl, '_blank');
+}
 
     async function findReceiptStu() {
         const q = document.getElementById('rSearch').value;
@@ -555,57 +785,19 @@ async function fetchHistory(phone) {
     }
 }
 
-function addAdminControls(container) {
-    const adminDiv = document.createElement('div');
-    adminDiv.className = "mt-8 p-6 bg-red-50 border-2 border-red-100 rounded-2xl";
-    adminDiv.innerHTML = `
-        <h3 class="text-lg font-bold text-red-800 mb-2">System Controls</h3>
-        <p class="text-sm text-red-600 mb-4">Warning: Resetting the counter will start the next receipt at 001/${new Date().getFullYear()}.</p>
-        <button onclick="confirmResetCounter()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-xl font-bold shadow-lg transition-all">
-            Reset Receipt Counter
-        </button>
-    `;
-    container.appendChild(adminDiv);
+
+function formatMyDate(dateStr) {
+    if (!dateStr || dateStr === '-') return '-';
+    try {
+        const d = new Date(dateStr);
+        // Returns date in DD/MM/YYYY format
+        return d.toLocaleDateString('en-GB'); 
+    } catch (e) {
+        // If it's already a simple string, return the first part
+        return dateStr.split(',')[0];
+    }
 }
 
-function renderTab6(c) {
-    c.innerHTML = `
-        <div class="max-w-2xl mx-auto p-4 space-y-6">
-            <h2 class="text-2xl font-black text-gray-800 mb-6">System Settings</h2>
-            
-            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-gray-800">Receipt Counter</h3>
-                        <p class="text-xs text-gray-500">Reset the sequence back to 001</p>
-                    </div>
-                </div>
-                
-                <div class="p-4 bg-red-50 rounded-2xl border border-red-100">
-                    <p class="text-sm text-red-700 leading-relaxed">
-                        <b>Warning:</b> This will insert a marker in the database. The very next fee receipt generated will be numbered <b>001/${new Date().getFullYear()}</b>. Use this only at the start of a new term or if numbering correction is required.
-                    </p>
-                </div>
-
-                <button onclick="confirmResetCounter()" class="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-2xl font-bold shadow-lg shadow-red-200 transition-all transform active:scale-95">
-                    Reset Counter to 001
-                </button>
-            </div>
-
-            <div class="bg-blue-600 p-6 rounded-3xl text-white shadow-lg shadow-blue-200">
-                <h3 class="font-bold mb-1">Backup Recommendation</h3>
-                <p class="text-blue-100 text-xs leading-relaxed">
-                    It is recommended to download your current "Receipts" sheet as a PDF before resetting the counter for your annual audits.
-                </p>
-            </div>
-        </div>
-    `;
-}
 
 </script>
 </body>
