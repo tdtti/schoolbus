@@ -67,6 +67,15 @@
     .no-print { display: none !important; }
 }
 
+#receiptPreviewContainer {
+    height: 400px;
+    overflow-y: auto;
+    border: 1px solid #CBD5E1; /* Tailwind slate-300 */
+    border-radius: 0.5rem;
+    background: white;
+    padding: 10px;
+}
+
 
     </style>
 </head>
@@ -98,7 +107,7 @@
                 <h3 class="font-bold text-sm text-gray-600 mb-2">OFFICIAL LOGIN</h3>
                 <input type="text" id="offUser" placeholder="User ID" class="w-full p-2 border rounded mb-2 outline-none">
                 <input type="password" id="offPass" placeholder="Password" class="w-full p-2 border rounded mb-2 outline-none">
-                <label class="flex items-center gap-2 mb-2 text-sm"><input type="checkbox"> Keep me logged in</label>
+                <label class="flex items-center gap-2 mb-2 text-sm"><input type="checkbox" id="keepLogin"> Keep me logged in</label>
                 <button onclick="loginOfficial()" class="w-full bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-700">Login</button>
             </div>
         </div>
@@ -110,13 +119,13 @@
     </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwFlgdSjieGK_sTyKOTv3QPOeAoB3HCFVVEljbPHDIP83nNSSM54i7tpamXVxSYIPj17A/exec";
-    const users = {
-        "bus1": { pass: "buspass", role: "Bus", name: "Bus KL 32S 3091", filter: "KL 32S 3091", access: [2] },
-        "teacher1": { pass: "teachpass", role: "Teacher", name: "Teacher A", tClass: "STD5", tDiv: "A", access: [1,2,4] },
-        "school1": { pass: "schpass", role: "School", name: "TDEMNS Admin", tSchool: "TDEMNS", access: [1,3,4] },
-        "admin": { pass: "adminpass", role: "Admin", name: "Super Admin", access: [1,2,3,4,5] }
-    };
+    const API_URL = "https://script.google.com/macros/s/AKfycbwPRep1TLMLKXpteBmOJB3pjoqOV_ETyBYQI_JJYzCDru8ANEKNd-EZvgfSWAx_d7CFPA/exec";
+   const users = {
+  "4201": { id: "4201",pass: "buspass",role: "Bus",name: "KL32P4201SR",filter: "KL32P4201SR",access: [2] },
+  "teacher1": { id: "teacher1", pass: "teachpass",role: "Teacher",name: "Teacher A",tClass: "V",tDiv: "A",access: [1,2,4] },
+  "school1": { id: "school1", pass: "schpass",role: "School",name: "TDEMNS Admin", tSchool: "TDEMNS-td1", access: [1,3,4] },
+  "admin": { id: "admin", pass: "adminpass", role: "Admin", name: "Super Admin", access: [1,2,3,4,5] }
+};
     
     let curUser=null, loginDT=null, durInt=null, inactTimer=null;
     let db = []; // Holds all student data
@@ -129,9 +138,24 @@
     // --- Session & Core ---
     function resetTimer() {
         clearTimeout(inactTimer);
-        if(curUser) inactTimer = setTimeout(logout, 60000);
+        if(curUser) inactTimer = setTimeout(logout, 600000);
     }
-    window.onload = resetTimer; document.onmousemove = resetTimer; document.onkeypress = resetTimer;
+    
+    window.onload = () => {
+    resetTimer();
+    document.onmousemove = resetTimer; document.onkeypress = resetTimer;
+    const savedU = localStorage.getItem('keepUser'),
+          savedP = localStorage.getItem('keepPass');
+
+    if(savedU && savedP) {
+        document.getElementById('offUser').value = savedU;
+        document.getElementById('offPass').value = savedP;
+        document.getElementById('keepLogin').checked = true;
+        loginOfficial(); // auto-login
+      }
+    }
+
+
 
     async function fetchData() {
         showLoad();
@@ -152,33 +176,122 @@
     }
 
     function loginOfficial() {
-        const u = document.getElementById('offUser').value, p = document.getElementById('offPass').value;
-        if(users[u] && users[u].pass === p) { startSession(users[u]); } else msg("Error","Invalid Login","error");
+    const u = document.getElementById('offUser').value,
+          p = document.getElementById('offPass').value,
+          keep = document.getElementById('keepLogin').checked;
+
+    if(users[u] && users[u].pass === p) {
+        startSession(users[u]);
+        if(keep) {
+            localStorage.setItem('keepUser', u);
+            localStorage.setItem('keepPass', p);
+        } else {
+            localStorage.removeItem('keepUser');
+            localStorage.removeItem('keepPass');
+        }
+    } else {
+        msg("Error","Invalid Login","error");
     }
+}
+
 
     async function startSession(u) {
-        curUser = u; loginDT = new Date(); resetTimer();
-        document.getElementById('loginSection').classList.add('hidden');
-        document.getElementById('appHeader').classList.remove('hidden');
-        document.getElementById('mainApp').classList.remove('hidden');
-        document.getElementById('welcomeUser').innerText = `Hello, ${u.name}`;
-        durInt = setInterval(()=>{
-            const d = Math.floor((new Date()-loginDT)/1000);
-            document.getElementById('sessionTime').innerText = `Duration: ${Math.floor(d/60)}m ${d%60}s`;
-        }, 1000);
+    curUser = u; 
+    loginDT = new Date(); 
+    resetTimer();
+    document.getElementById('loginSection').classList.add('hidden');
+    document.getElementById('appHeader').classList.remove('hidden');
+    document.getElementById('mainApp').classList.remove('hidden');
+    document.getElementById('welcomeUser').innerText = `Hello, ${u.name}`;
+    durInt = setInterval(() => {
+        const d = Math.floor((new Date() - loginDT) / 1000);
+        document.getElementById('sessionTime').innerText = `Duration: ${Math.floor(d / 60)}m ${d % 60}s`;
+    }, 1000);
+
+    // Send full user info to log login time correctly
+    fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+            action: "log",
+            UserId: u.id || u.name,
+            Role: u.role,
+            Name: u.name,
+            LoginTime: loginDT.toISOString(),
+            type: "login"
+        })
+    });
+
+    if (u.role !== "Student") await fetchData();
+    renderTabs();
+}
+
+    
         
-        fetch(API_URL, {method:'POST', body:JSON.stringify({action:"log", user:u.name, type:"login"})});
-        if(u.role !== "Student") await fetchData();
-        renderTabs();
-    }
+
 
     function logout() {
-        curUser = null; clearInterval(durInt); clearTimeout(inactTimer);
-        document.getElementById('loginSection').classList.remove('hidden');
-        document.getElementById('appHeader').classList.add('hidden');
-        document.getElementById('mainApp').classList.add('hidden');
-        ['stuSearch','offUser','offPass'].forEach(id=>document.getElementById(id).value='');
+    curUser = null; clearInterval(durInt); clearTimeout(inactTimer);
+    logoutDT = new Date(); 
+    localStorage.removeItem('keepUser');
+    localStorage.removeItem('keepPass');
+    document.getElementById('loginSection').classList.remove('hidden');
+    document.getElementById('appHeader').classList.add('hidden');
+    document.getElementById('mainApp').classList.add('hidden');
+    ['stuSearch','offUser','offPass'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('keepLogin').checked = false;
+    
+}
+async function logout() {
+    if (!curUser || !loginDT) {
+        cleanupLogoutUI();
+        return;
     }
+
+    showLoad(); // Show spinner overlay
+
+    const logoutDT = new Date();
+    const durationSecs = Math.floor((logoutDT - loginDT) / 1000);
+
+    // Wait 2 seconds (simulate delay)
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    try {
+        await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: "log",
+                UserId: curUser.id || curUser.name,
+                Role: curUser.role,
+                Name: curUser.name,
+                LogoutTime: logoutDT.toISOString(),
+                Duration: durationSecs,
+                type: "logout"
+            })
+        });
+    } catch (e) {
+        console.error("Error logging logout:", e);
+    }
+
+    hideLoad();  // Hide spinner overlay
+    cleanupLogoutUI();
+}
+
+function cleanupLogoutUI() {
+    curUser = null;
+    loginDT = null;
+    clearInterval(durInt);
+    clearTimeout(inactTimer);
+    localStorage.removeItem('keepUser');
+    localStorage.removeItem('keepPass');
+    document.getElementById('loginSection').classList.remove('hidden');
+    document.getElementById('appHeader').classList.add('hidden');
+    document.getElementById('mainApp').classList.add('hidden');
+    ['stuSearch','offUser','offPass'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('keepLogin').checked = false;
+}
+
+
+
 
     // --- UI Routing ---
     function renderTabs() {
@@ -255,13 +368,15 @@
                     </button>
                 </div>
 
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 border-t pt-6">
-                    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Class</p><p class="font-bold">${d.Class}-${d.Div}</p></div>
-                    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Phone</p><p class="font-bold">${d.Phone}</p></div>
-                    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Paid</p><p class="font-bold text-green-600">₹${d.Total || 0}</p></div>
-                    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Balance</p><p class="font-bold text-red-600">₹${d.Balance || 0}</p></div>
-                </div>
-            </div>
+                <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mt-8 border-t pt-6">
+    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Class</p><p class="font-bold">${d.Class}-${d.Div}</p></div>
+    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Phone</p><p class="font-bold">${d.Phone}</p></div>
+    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Entry Stop</p><p class="font-bold">${d.Entry || '-'}</p></div>
+    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Exit Stop</p><p class="font-bold">${d.Exit || '-'}</p></div>
+    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Fee</p><p class="font-bold">₹${d.Fee || 0}</p></div>
+    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Balance</p><p class="font-bold text-red-600">₹${d.Balance || 0}</p></div>
+</div>
+
 
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <table class="w-full text-left border-collapse">
@@ -308,7 +423,7 @@ function downloadStudentPDF() {
                 </div>
                 <div style="text-align: right;">
                     <p><b>Bus ID:</b> ${d.BusId}</p>
-                    <p><b>Date:</b> ${new Date().toLocaleDateString()}</p>
+                    <p><b>Date:</b> ${new Date().toLocaleDateString('en-GB')}</p>
                 </div>
             </div>
 
@@ -351,15 +466,45 @@ function downloadStudentPDF() {
         c.innerHTML = `
             <h2 class="text-2xl font-bold mb-4">Manage Students</h2>
             <form id="sForm" onsubmit="saveS(event)" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 bg-gray-50 p-4 rounded border text-sm">
-                <select id="f1" required class="p-2 border rounded"><option value="">Bus</option><option>Kl 32S 3091</option><option>Kl 32P 2526</option><option>KL 32Q 2536</option><option>KL 32G 8699</option><option>KL 32K 5655</option></select>
-                <select id="f2" required class="p-2 border rounded"><option value="">School</option><option>TDEMNS</option><option>GTDLPS</option><option>TDTTI</option><option>TDHS</option></select>
-                <select id="f3" required class="p-2 border rounded"><option value="">Class</option><option>PRE</option><option>LKG</option><option>UKG</option><option>STD1</option><option>STD5</option><option>STD10</option></select>
-                <select id="f4" required class="p-2 border rounded"><option value="">Div</option><option>A</option><option>B</option><option>C</option></select>
+                <select id="f1" required class="p-2 border rounded"><option value="">Bus</option><option>KL32P4201SA</option><option>KL32M0528VM</option><option>KL32L2382K</option><option>KL07BU4184C</option><option>KL32L0827U</option>	</select>
+<select id="f2" required class="p-2 border rounded"><option value="">School</option><option>TDEMNS-td1</option><option>GTDLPS34318</option><option>TDTTI34347</option><option>TDHS34028</option></select>                
+<select id="f3" required class="p-2 border rounded"><option value="">Class</option><option>PREKG-td1</option><option>LKG-td1</option><option>UKG-td1</option><option>I-34318</option><option>II-34318</option><option>III-34318</option><option>IV-34318</option><option>V-34347</option><option>VI-34347</option><option>VII-34347</option><option>VIII-34028</option><option>IX-34028</option><option>X-34028</option></select> <select id="f4" required class="p-2 border rounded"><option value="">Div</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option></select>
                 <input id="f5" required placeholder="Student Name" class="p-2 border rounded md:col-span-2">
                 <input id="f6" required placeholder="Parent Name" class="p-2 border rounded">
                 <input id="f7" required placeholder="Phone" class="p-2 border rounded">
-                <input id="f8" required placeholder="Entry Stop" class="p-2 border rounded">
-                <input id="f9" required placeholder="Exit Stop" class="p-2 border rounded">
+                <input list="entryStops" id="f8" placeholder="Entry Stop" class="p-2 border rounded"><datalist id="entryStops"><option>ADUVA-KL07BU4184C</option><option>ALAYKKAPARAMBHU-KL32P4201SR</option><option>AMALGOM-KL32L2382K</option><option>AMBEDKAR JN-KL07BU4184C</option><option>AROOR-KL32P4201SR</option><option>AZHEEKAL-KL32M0528VM</option><option>BHOOTHANILYAM TEMPLE-KL07BU4184C</option><option>CHANDIROOR-KL32P4201SR</option><option>CHANGARAM SCHOOL-KL32P4201SR</option><option>CHAPPAKADAVU-KL32M0528VM</option><option>CHELAPPURAM-KL32M0528VM</option>
+<option>CHELLANAM-KL32M0528VM</option><option>CHENNAMANA-KL32P4201SR</option><option>CHERUNKAL-KL32L2382K</option><option>DAMODARA HOTEL-KL32P4201SR</option><option>ENVEES BAR-KL32P4201SR</option><option>ESWAREDATH BANK CHLNM-KL32M0528VM</option><option>EZHUPUNNA PANCHAYTH-KL32P4201SR</option><option>GAS GODOWN-KL07BU4184C</option><option>GREENLAND-KL32P4201SR</option><option>ILLIKAL-KL32M0528VM</option><option>JAPAN-KL32P4201SR</option><option>KAKKATHURUTH-KL32L2382K</option><option>KALABHAVAN MANI-KL32M0528VM</option><option>KALARANGAM-KL07BU4184C</option><option>KANAPARAMBU-KL32L0827U</option><option>KANNATTU JN-KL32P4201SR</option><option>KARALATHODU-KL32M0528VM</option>
+<option>KEERTHI BAR-KL32P4201SR</option><option>KELAMKULANGARA-KL32P4201SR</option><option>KHAYZ-KL32L2382K</option><option>KOCHUVELI KAVALA-KL32P4201SR</option><option>KODAMTHURUTHU-KL32P4201SR</option><option>KOLATHUSSERY-KL32L2382K</option><option>KONKERY PALAM-KL32P4201SR</option>
+<option>KSEB KUTHIYATHODE-KL32P4201SR</option><option>KUMBALANGI FERRY-KL32P4201SR</option><option>KURUKANCHANDA KIZHKU-KL07BU4184C</option>
+<option>KURUKANCHANDA-KL32P4201SR</option><option>MANAKODAM PALLI-KL32M0528VM</option><option>MANAVA SAHAYA SAMITHI-KL07BU4184C</option>
+<option>MANNATH TEMPLE-KL07BU4184C</option><option>MARIYAPURAM-KL32L0827U</option><option>MARIYAPURAM-KL32L2382K</option><option>MENASEERY-KL32M0528VM</option><option>MOHAM HOSPITAL-KL32P4201SR</option><option>MOOLEKALAM-KL32L0827U</option><option>MOORTHINKAL-KL32L0827U</option>
+<option>MUTHUPARAMBU-KL32L2382K</option><option>NALIKKAT-KL32L0827U</option><option>NALUKULANGARA SOCIETY-KL32L2382K</option><option>NALUKULANGARA-KL32L0827U</option><option>NAYILATH COLONY-KL32L2382K</option><option>NCC JN HP PUMP-KL32P4201SR</option>
+<option>NCC JN-KL32P4201SR</option><option>NEW BOYS-KL32M0528VM</option><option>OLATHALA-KL07BU4184C</option><option>PALLITHODE-KL32L0827U</option><option>PALLITHODE-KL32M0528VM</option><option>PARAYIL-KL32M0528VM</option><option>PATTAM PALLI-KL32M0528VM</option><option>PATTUKULANGARA-KL32P4201SR</option><option>PONNAMVELI PUMP-KL32P4201SR</option><option>PONNAMVELI-KL32P4201SR</option><option>PS KAVALA-KL32P4201SR</option>
+<option>PURANDESWARAM-KL07BU4184C</option><option>PUTHANCHANDA PUMP-KL32P4201SR</option><option>PUTHANCHANDA RLY-KL32M0528VM</option>
+<option>PUTHENKAVU-KL32M0528VM</option><option>RAILWAY STN-KL32L0827U</option><option>RELIANCE PUMP-KL32P4201SR</option>
+<option>SANIYA-KL32P4201SR</option><option>SANTHI JN-KL07BU4184C</option><option>SANTHI JN-KL32P4201SR</option><option>SRAMBHIKAL-KL07BU4184C</option><option>SREENARAYANAPURAM-KL32P4201SR</option><option>THAZHUPPU-KL32L2382K</option><option>THEVARVATTOM CHIRACKAL-KL07BU4184C</option>
+<option>THEVARVATTOM PALLI JN-KL07BU4184C</option><option>THURAVOOR TEMPLE-KL32P4201SR</option><option>THURAVOOR-KL32P4201SR</option>
+<option>THYCATTUSSERY BRIDGE-KL07BU4184C</option><option>UDEESH TAXIHOUSE-KL32M0528VM</option><option>VAKKAYIL PALAM-KL32L0827U</option>
+<option>VALAMANAGALAM CHURCH-KL07BU4184C</option><option>VALAMANAGALAM SOUTH-KL07BU4184C</option><option>VALAMANAGALAM WS-KL07BU4184C</option>
+<option>VALANTHARA ROAD-KL32M0528VM</option><option>VALLIYATHODU-KL32P4201SR</option><option>VATTAKAL MUKKU-KL32L2382K</option>
+<option>VATTAKAL MUKKU-KL32P4201SR</option><option>VEEYATHARA-KL32M0528VM</option><option>VISWAS PRINTERS-KL07BU4184C</option></datalist>
+               <input list="exitStops" id="f9" required placeholder="Exit Stop" class="p-2 border rounded" /><datalist id="exitStops">
+<option>ADUVA-KL07BU4184C</option><option>ALAYKKAPARAMBHU-KL32P4201SR</option><option>AMALGOM-KL32L2382K</option><option>AMBEDKAR JN-KL07BU4184C</option><option>AROOR-KL32P4201SR</option><option>AZHEEKAL-KL32M0528VM</option><option>BHOOTHANILYAM TEMPLE-KL07BU4184C</option><option>CHANDIROOR-KL32P4201SR</option><option>CHANGARAM SCHOOL-KL32P4201SR</option><option>CHAPPAKADAVU-KL32M0528VM</option><option>CHELAPPURAM-KL32M0528VM</option>
+<option>CHELLANAM-KL32M0528VM</option><option>CHENNAMANA-KL32P4201SR</option><option>CHERUNKAL-KL32L2382K</option><option>DAMODARA HOTEL-KL32P4201SR</option><option>ENVEES BAR-KL32P4201SR</option><option>ESWAREDATH BANK CHLNM-KL32M0528VM</option><option>EZHUPUNNA PANCHAYTH-KL32P4201SR</option><option>GAS GODOWN-KL07BU4184C</option><option>GREENLAND-KL32P4201SR</option><option>ILLIKAL-KL32M0528VM</option><option>JAPAN-KL32P4201SR</option><option>KAKKATHURUTH-KL32L2382K</option><option>KALABHAVAN MANI-KL32M0528VM</option><option>KALARANGAM-KL07BU4184C</option><option>KANAPARAMBU-KL32L0827U</option><option>KANNATTU JN-KL32P4201SR</option><option>KARALATHODU-KL32M0528VM</option>
+<option>KEERTHI BAR-KL32P4201SR</option><option>KELAMKULANGARA-KL32P4201SR</option><option>KHAYZ-KL32L2382K</option><option>KOCHUVELI KAVALA-KL32P4201SR</option><option>KODAMTHURUTHU-KL32P4201SR</option><option>KOLATHUSSERY-KL32L2382K</option><option>KONKERY PALAM-KL32P4201SR</option>
+<option>KSEB KUTHIYATHODE-KL32P4201SR</option><option>KUMBALANGI FERRY-KL32P4201SR</option><option>KURUKANCHANDA KIZHKU-KL07BU4184C</option>
+<option>KURUKANCHANDA-KL32P4201SR</option><option>MANAKODAM PALLI-KL32M0528VM</option><option>MANAVA SAHAYA SAMITHI-KL07BU4184C</option>
+<option>MANNATH TEMPLE-KL07BU4184C</option><option>MARIYAPURAM-KL32L0827U</option><option>MARIYAPURAM-KL32L2382K</option><option>MENASEERY-KL32M0528VM</option><option>MOHAM HOSPITAL-KL32P4201SR</option><option>MOOLEKALAM-KL32L0827U</option><option>MOORTHINKAL-KL32L0827U</option>
+<option>MUTHUPARAMBU-KL32L2382K</option><option>NALIKKAT-KL32L0827U</option><option>NALUKULANGARA SOCIETY-KL32L2382K</option><option>NALUKULANGARA-KL32L0827U</option><option>NAYILATH COLONY-KL32L2382K</option><option>NCC JN HP PUMP-KL32P4201SR</option>
+<option>NCC JN-KL32P4201SR</option><option>NEW BOYS-KL32M0528VM</option><option>OLATHALA-KL07BU4184C</option><option>PALLITHODE-KL32L0827U</option><option>PALLITHODE-KL32M0528VM</option><option>PARAYIL-KL32M0528VM</option><option>PATTAM PALLI-KL32M0528VM</option><option>PATTUKULANGARA-KL32P4201SR</option><option>PONNAMVELI PUMP-KL32P4201SR</option><option>PONNAMVELI-KL32P4201SR</option><option>PS KAVALA-KL32P4201SR</option>
+<option>PURANDESWARAM-KL07BU4184C</option><option>PUTHANCHANDA PUMP-KL32P4201SR</option><option>PUTHANCHANDA RLY-KL32M0528VM</option>
+<option>PUTHENKAVU-KL32M0528VM</option><option>RAILWAY STN-KL32L0827U</option><option>RELIANCE PUMP-KL32P4201SR</option>
+<option>SANIYA-KL32P4201SR</option><option>SANTHI JN-KL07BU4184C</option><option>SANTHI JN-KL32P4201SR</option><option>SRAMBHIKAL-KL07BU4184C</option><option>SREENARAYANAPURAM-KL32P4201SR</option><option>THAZHUPPU-KL32L2382K</option><option>THEVARVATTOM CHIRACKAL-KL07BU4184C</option>
+<option>THEVARVATTOM PALLI JN-KL07BU4184C</option><option>THURAVOOR TEMPLE-KL32P4201SR</option><option>THURAVOOR-KL32P4201SR</option>
+<option>THYCATTUSSERY BRIDGE-KL07BU4184C</option><option>UDEESH TAXIHOUSE-KL32M0528VM</option><option>VAKKAYIL PALAM-KL32L0827U</option>
+<option>VALAMANAGALAM CHURCH-KL07BU4184C</option><option>VALAMANAGALAM SOUTH-KL07BU4184C</option><option>VALAMANAGALAM WS-KL07BU4184C</option>
+<option>VALANTHARA ROAD-KL32M0528VM</option><option>VALLIYATHODU-KL32P4201SR</option><option>VATTAKAL MUKKU-KL32L2382K</option>
+<option>VATTAKAL MUKKU-KL32P4201SR</option><option>VEEYATHARA-KL32M0528VM</option><option>VISWAS PRINTERS-KL07BU4184C</option></select></datalist>
                 <select id="f10" required class="p-2 border rounded"><option>Both Time</option><option>Morning Only</option><option>Evening Only</option></select>
                 <input id="f11" required placeholder="Fee Amount" type="number" class="p-2 border rounded">
                 <div class="col-span-2 md:col-span-4 flex gap-2"><button type="submit" id="sBtn" class="bg-blue-600 text-white px-6 py-2 rounded font-bold">Save</button><button type="button" onclick="renderTab1(document.getElementById('tabContent'))" class="bg-gray-400 text-white px-4 py-2 rounded hidden" id="cBtn">Cancel</button></div>
@@ -374,7 +519,7 @@ function downloadStudentPDF() {
         `;
     }
 
-
+    
     async function saveS(e) {
         e.preventDefault();
         const d = { BusId:v('f1'), School:v('f2'), Class:v('f3'), Div:v('f4'), StudentName:v('f5'), ParentName:v('f6'), Phone:v('f7'), Entry:v('f8'), Exit:v('f9'), Status:v('f10'), Fee:v('f11') };
@@ -382,9 +527,34 @@ function downloadStudentPDF() {
         await fetch(API_URL, {method:'POST', body:JSON.stringify({action: editID?"updateStudent":"saveStudent", data:d, rowIndex:editID})});
         editID = null; await fetchData(); hideLoad(); renderTab1(document.getElementById('tabContent')); msg("Success","Record saved!","success");
     }
+    
+    function updateEntryExitStops(busId) {
+    const entrySelect = document.getElementById('f8');
+    const exitSelect = document.getElementById('f9');
+    
+    // Clear previous options
+    entrySelect.innerHTML = '<option value="">Entry Stop</option>';
+    exitSelect.innerHTML = '<option value="">Exit Stop</option>';
+    
+    const stops = busStops[busId] || [];
+    
+    stops.forEach(stop => {
+        const opt1 = document.createElement('option');
+        opt1.value = stop;
+        opt1.textContent = stop;
+        entrySelect.appendChild(opt1);
+        
+        const opt2 = document.createElement('option');
+        opt2.value = stop;
+        opt2.textContent = stop;
+        exitSelect.appendChild(opt2);
+    });
+}
+
+
     const v = (id) => document.getElementById(id).value;
     const setV = (id, val) => document.getElementById(id).value = val;
-
+    
     function editS(s) {
         editID = s._rowIndex; setV('f1',s.BusId); setV('f2',s.School); setV('f3',s.Class); setV('f4',s.Div); setV('f5',s.StudentName); setV('f6',s['Parent Name']||s.ParentName); setV('f7',s.Phone); setV('f8',s.Entry); setV('f9',s.Exit); setV('f10',s.Status); setV('f11',s.Fee);
         document.getElementById('sBtn').innerText = "Update"; document.getElementById('sBtn').className = "bg-amber-500 text-white px-6 py-2 rounded font-bold"; document.getElementById('cBtn').classList.remove('hidden');
@@ -404,36 +574,76 @@ function downloadStudentPDF() {
         c.innerHTML = `
             <h2 class="text-2xl font-bold mb-4">Mark Attendance</h2>
             <div class="flex gap-2 mb-4">
-                <select id="aBus" onchange="loadAttTbl()" class="p-2 border rounded w-1/3"><option value="">Select Bus</option><option>Kl 32S 3091</option><option>Kl 32P 2526</option></select>
+                <select id="aBus" onchange="loadAttTbl()" class="p-2 border rounded w-1/3"><option value="">Select Bus</option><option>KL32P4201SR</option><option>KL32M0528VM</option><option>KL32L2382K</option><option>KL07BU4184C</option><option>KL32L0827U</option>	</select>
                 <select id="aSec" class="p-2 border rounded"><option>FN</option><option>AN</option></select>
-                <button onclick="saveAtt()" class="bg-green-600 text-white px-4 rounded font-bold">Submit to Sheets</button>
-            </div>
-            <div class="flex gap-2 mb-4 bg-gray-50 p-2 rounded">
-                <select id="waNum" class="p-2 border rounded text-sm"><option value="">Select WhatsApp Contact</option><option>+919999999991</option><option>+919999999992</option></select>
-                <button onclick="shareWA()" class="bg-green-500 text-white px-4 rounded text-sm">Share Report</button>
+                <p class="italic text-sm text-gray-500">Select Present/Absent to save instantly.</p>
             </div>
             <div class="overflow-x-auto"><table class="w-full text-left text-sm border"><tr class="bg-gray-800 text-white"><th class="p-2">Name</th><th class="p-2">School</th><th class="p-2">Class</th><th class="p-2">Action</th></tr>
             <tbody id="attBody"><tr><td colspan="4" class="p-4 text-center">Select bus to load students</td></tr></tbody></table></div>
         `;
     }
     function loadAttTbl() {
-        const bus = document.getElementById('aBus').value;
-        const sList = db.filter(s => s.BusId === bus);
-        document.getElementById('attBody').innerHTML = sList.map((s,i) => `<tr><td class="p-2 border-b" id="anm${i}">${s.StudentName}</td><td class="p-2 border-b" id="asc${i}">${s.School}</td><td class="p-2 border-b" id="acl${i}">${s.Class}-${s.Div}</td><td class="p-2 border-b"><select id="ast${i}" class="border p-1 rounded"><option>Present</option><option>Absent</option></select></td></tr>`).join('');
-    }
-    async function saveAtt() {
-        const bus = document.getElementById('aBus').value, sec = document.getElementById('aSec').value;
-        if(!bus) return msg("Error","Select Bus","warning");
-        const r = Array.from(document.getElementById('attBody').rows).map((row,i) => ({ BusId:bus, Section:sec, Name:document.getElementById(`anm${i}`).innerText, School:document.getElementById(`asc${i}`).innerText, Class:document.getElementById(`acl${i}`).innerText, Div:"", Status:document.getElementById(`ast${i}`).value }));
-        showLoad(); await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"saveAttendance", data:r})}); hideLoad(); msg("Saved","Attendance logged!","success");
-    }
-    function shareWA() {
-        const n = document.getElementById('waNum').value; if(!n) return msg("Error","Select number","warning");
-        let txt = `Attendance Report - ${document.getElementById('aBus').value}\n`;
-        Array.from(document.getElementById('attBody').rows).forEach((r,i) => txt += `${document.getElementById(`anm${i}`).innerText}: ${document.getElementById(`ast${i}`).value}\n`);
-        window.open(`https://wa.me/${n}?text=${encodeURIComponent(txt)}`, '_blank');
+    const bus = document.getElementById('aBus').value;
+    if(!bus) {
+        document.getElementById('attBody').innerHTML = `<tr><td colspan="4" class="p-4 text-center">Select bus to load students</td></tr>`;
+        return;
     }
 
+    let sList = db.filter(s => s.BusId === bus);
+
+    // Sort alphabetically by StudentName (case-insensitive)
+    sList.sort((a, b) => a.StudentName.toLowerCase().localeCompare(b.StudentName.toLowerCase()));
+
+    const tbody = document.getElementById('attBody');
+    tbody.innerHTML = sList.map((s, i) => `
+        <tr id="attRow${i}">
+            <td class="p-2 border-b" id="anm${i}">${s.StudentName}</td>
+            <td class="p-2 border-b" id="asc${i}">${s.School}</td>
+            <td class="p-2 border-b" id="acl${i}">${s.Class}-${s.Div}</td>
+            <td class="p-2 border-b">
+                <select id="ast${i}" class="border p-1 rounded" onchange="saveOneAtt(${i})">
+                    <option value="">Select</option>
+                    <option>Present</option>
+                    <option>Absent</option>
+                </select>
+            </td>
+        </tr>
+    `).join('');
+}
+
+
+async function saveOneAtt(i) {
+    const bus = document.getElementById('aBus').value;
+    const sec = document.getElementById('aSec').value;
+    const sel = document.getElementById(`ast${i}`);
+    const status = sel.value;
+    if (!bus || !status) return;
+
+    const name = document.getElementById(`anm${i}`).innerText;
+    const school = document.getElementById(`asc${i}`).innerText;
+    const classDiv = document.getElementById(`acl${i}`).innerText.split('-');
+    const Class = classDiv[0] || "";
+    const Div = classDiv[1] || "";
+
+    const data = [{ BusId: bus, Section: sec, Name: name, School: school, Class, Div, Status: status }];
+
+    showLoad();
+    try {
+        await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "saveAttendance", data })
+        });
+        // Hide entire row after saving
+        const row = document.getElementById(`attRow${i}`);
+        if (row) row.style.display = 'none';
+        msg("Success", `Saved attendance for ${name}`, "success");
+    } catch (e) {
+        msg("Error", "Failed to save attendance.", "error");
+    }
+    hideLoad();
+}
+
+    
     // --- Tab 3: Data ---
     function renderTab3(c) {
         const fDB = getFilteredDB();
@@ -441,38 +651,118 @@ function downloadStudentPDF() {
             <h2 class="text-2xl font-bold mb-4">Master Data</h2>
             <div class="flex gap-2 mb-4"><input id="dSearch" onkeyup="searchT3()" placeholder="Search Name, Phone..." class="w-full p-2 border rounded"></div>
             <div class="overflow-x-auto"><table class="w-full text-left text-xs border whitespace-nowrap"><tr class="bg-gray-800 text-white"><th class="p-2">Name</th><th class="p-2">Class</th><th class="p-2">Phone</th><th class="p-2">Total</th><th class="p-2">Balance</th><th class="p-2">Action</th></tr>
-            <tbody id="t3Body">${fDB.map(s=>`<tr><td class="p-2 border-b font-bold">${s.StudentName}</td><td class="p-2 border-b">${s.Class}-${s.Div}</td><td class="p-2 border-b">${s.Phone}</td><td class="p-2 border-b">₹${s.Total||0}</td><td class="p-2 border-b font-bold text-red-500">₹${s.Balance||0}</td><td class="p-2 border-b"><button onclick="gotoReceipts('${s.Phone}')" class="bg-blue-600 text-white px-3 py-1 rounded text-[10px] font-bold">VIEW RECEIPTS</button></td></tr>`).join('')}</tbody></table></div>
+            <tbody id="t3Body">${fDB.map(s=>`<tr><td class="p-2 border-b font-bold">${s.StudentName}</td><td class="p-2 border-b">${s.Class}-${s.Div}</td><td class="p-2 border-b">${s.Phone}</td><td class="p-2 border-b">₹${s.Total||0}</td><td class="p-2 border-b font-bold text-red-500">₹${s.Balance||0}</td><td class="p-2 border-b"><button
+    onclick="sendReminderWA('${s.Phone}')"
+    class="flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-green-700 transition"
+    title="Send Fee Reminder"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M20.52 3.48A11.91 11.91 0 0012 0C5.37 0 0 5.37 0 12a11.7 11.7 0 001.95 6L0 24l6-1.95a11.86 11.86 0 005.94 1.7c6.63 0 12-5.37 12-12a11.89 11.89 0 00-3.42-8.27zM12 21a9.25 9.25 0 01-4.77-1.35l-.34-.22-3.57 1.16 1.11-3.48-.22-.36A9.25 9.25 0 012.75 12 9.25 9.25 0 0112 2.75 9.25 9.25 0 0121.25 12 9.25 9.25 0 0112 21zm5.37-6.31l-1.5-.43a.51.51 0 00-.47.14l-.98 1.07a7.38 7.38 0 01-3.46-3.44l1.07-.98a.53.53 0 00.15-.46l-.43-1.51a.54.54 0 00-.66-.37l-2.22.56a.51.51 0 00-.41.64A7 7 0 0014 16a7 7 0 002.37-1.17.5.5 0 00.13-.69z"/>
+    </svg>
+    Reminder
+  </button></tr>`).join('')}</tbody></table></div>
         `;
     }
+    
+    function sendReminderWA(phone) {
+  const s = db.find(x => String(x.Phone) === String(phone));
+  if (!s) return alert("Student data not found.");
 
-    function gotoReceipts(phone) {
-        loadTab(5);
-        const check = setInterval(() => {
-            const input = document.getElementById('rSearch');
-            if(input) { clearInterval(check); input.value = phone; findReceiptStu(); }
-        }, 100);
-    }
+  const months = ["Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
+  let paidMonths = months.filter(m => s[m] && parseFloat(s[m]) > 0).join(", ");
+
+  // Build reminder message with the requested notice plus fee data
+  const message = `
+Dear Parent/Guardian,
+
+Kindly note that the school bus fee for your ward, *${s.StudentName}* (${s.Class}-${s.Div}), is currently pending.
+
+We request you to clear the outstanding amount of ₹${s.Balance || 0} at the earliest and update the payment up to date.
+
+Your prompt attention to this matter will help ensure the smooth continuation of the transportation service.
+
+Thank you for your cooperation.
+
+----------------------------
+
+*Student Details:*  
+School: ${s.School}  
+Class: ${s.Class}-${s.Div}  
+Entry Stop: ${s.Entry || '-'}  
+Exit Stop: ${s.Exit || '-'}
+
+*Fee Details:*  
+Monthly Fee: ₹${s.Fee}  
+Total Paid: ₹${s.Total || 0}  
+Pending Balance: ₹${s.Balance || 0}  
+Paid Months: ${paidMonths || 'None'}
+
+_This is a system generated message._
+
+Contact: G Mahesh Kumar - 9497731772
+`.trim();
+
+  const phoneRaw = phone.toString().replace(/[^0-9]/g, '');
+  const phoneWithCC = phoneRaw.startsWith('91') ? phoneRaw : '91' + phoneRaw;
+  const waUrl = `https://wa.me/${phoneWithCC}?text=${encodeURIComponent(message)}`;
+
+  window.open(waUrl, '_blank');
+}
+
+
+    
 
     function searchT3() { const q=document.getElementById('dSearch').value.toLowerCase(); Array.from(document.getElementById('t3Body').rows).forEach(r=> r.style.display = r.innerText.toLowerCase().includes(q)?'':'none'); }
 
     // --- Tab 4: Fee ---
-    function renderTab4(c) {
-        c.innerHTML = `
+    // In renderTab4 add a wrapper div with id "feeMgmtHeader", initially visible
+function renderTab4(c) {
+    c.innerHTML = `
+        <div id="feeMgmtHeader">
             <h2 class="text-2xl font-bold mb-4">Fee Management</h2>
-            <div class="flex gap-2 mb-6"><input type="text" id="fSearch" placeholder="Phone or Name" class="p-2 border rounded w-1/2"><button onclick="findFeeStu()" class="bg-blue-600 text-white px-4 rounded font-bold">Find</button></div>
-            <div id="feeArea" class="hidden">
-                <div class="bg-blue-50 p-4 rounded mb-4 shadow-sm border border-blue-100" id="feeDetails"></div>
-                <div class="flex gap-2 mb-4 bg-gray-50 p-4 rounded border">
-                    <select id="feeMon" class="p-2 border rounded"><option>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option><option>Oct</option><option>Nov</option><option>Dec</option><option>Jan</option><option>Feb</option><option>Mar</option></select>
-                    <input type="number" id="feeAmt" placeholder="Amount" class="p-2 border rounded">
-                    <button onclick="payFee()" class="bg-green-600 text-white px-6 rounded font-bold hover:bg-green-700">ADD</button>
-                    <button onclick="shareReport()" class="bg-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 no-print">
-    Share</button>
-                </div>
-                <div class="overflow-x-auto"><table class="w-full text-left text-sm border bg-white"><tr class="bg-gray-800 text-white"><th class="p-2">Month</th><th class="p-2">Amount Paid</th><th class="p-2">Receipt</th><th class="p-2">Date/Time</th></tr><tbody id="feeTable"></tbody></table></div>
+            <div class="flex gap-2 mb-6">
+                <input type="text" id="fSearch" placeholder="Phone or Name" class="p-2 border rounded w-1/2">
+                <button onclick="findFeeStu()" class="bg-blue-600 text-white px-4 rounded font-bold">Find</button>
             </div>
-        `;
-    }
+        </div>
+        <div id="feeArea" class="hidden">
+            <div class="bg-blue-50 p-4 rounded mb-4 shadow-sm border border-blue-100" id="feeDetails"></div>
+            
+            <div id="feeAddSection" class="flex gap-2 mb-4 bg-gray-50 p-4 rounded border">
+                <select id="feeMon" class="p-2 border rounded">
+                    <option>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option><option>Oct</option><option>Nov</option><option>Dec</option><option>Jan</option><option>Feb</option><option>Mar</option>
+                </select>
+                <input type="number" id="feeAmt" placeholder="Amount" class="p-2 border rounded">
+                <button onclick="payFee()" class="bg-green-600 text-white px-6 rounded font-bold hover:bg-green-700">ADD</button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm border bg-white">
+                    <tr class="bg-gray-800 text-white">
+                        <th class="p-2">Month</th><th class="p-2">Amount Paid</th><th class="p-2">Receipt</th><th class="p-2">Date/Time</th>
+                    </tr>
+                    <tbody id="feeTable"></tbody>
+                </table>
+            </div>
+            <br>
+
+            <div class="flex gap-2">
+                <button onclick="shareReport()" class="bg-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 no-print">
+                    Share
+                </button>
+                <button onclick="shareFeeWA()" title="Share via WhatsApp" class="bg-green-600 text-white px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-green-700 transition shadow-lg shadow-green-100 no-print">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M20.52 3.48A11.91 11.91 0 0012 0C5.37 0 0 5.37 0 12a11.7 11.7 0 001.95 6L0 24l6-1.95a11.86 11.86 0 005.94 1.7c6.63 0 12-5.37 12-12a11.89 11.89 0 00-3.42-8.27zM12 21a9.25 9.25 0 01-4.77-1.35l-.34-.22-3.57 1.16 1.11-3.48-.22-.36A9.25 9.25 0 012.75 12 9.25 9.25 0 0112 2.75 9.25 9.25 0 0121.25 12 9.25 9.25 0 0112 21zm5.37-6.31l-1.5-.43a.51.51 0 00-.47.14l-.98 1.07a7.38 7.38 0 01-3.46-3.44l1.07-.98a.53.53 0 00.15-.46l-.43-1.51a.54.54 0 00-.66-.37l-2.22.56a.51.51 0 00-.41.64A7 7 0 0014 16a7 7 0 002.37-1.17.5.5 0 00.13-.69z"/>
+                    </svg>
+                    WhatsApp
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+
+
     
     let curFeeS = null;
     function findFeeStu() {
@@ -480,7 +770,17 @@ function downloadStudentPDF() {
         curFeeS = getFilteredDB().find(x => String(x.Phone).includes(q) || String(x.StudentName).toLowerCase().includes(q));
         if(!curFeeS) return msg("Not Found","Student not found in your access scope.","warning");
         document.getElementById('feeArea').classList.remove('hidden');
-        document.getElementById('feeDetails').innerHTML = `<h3 class="text-lg font-bold">${curFeeS.StudentName}</h3><p class="text-sm">${curFeeS.School} | ${curFeeS.Class}-${curFeeS.Div} | Bus: ${curFeeS.BusId}</p><p class="mt-2 text-blue-700 font-bold">Monthly Fee Base: ₹${curFeeS.Fee}</p><div class="flex justify-between mt-2 pt-2 border-t border-blue-200"><span class="font-bold text-green-700">Total Paid: ₹${curFeeS.Total||0}</span><span class="font-bold text-red-600">Balance: ₹${curFeeS.Balance||0}</span></div>`;
+        document.getElementById('feeDetails').innerHTML = `
+    <h3 class="text-lg font-bold">${curFeeS.StudentName}</h3>
+    <p class="text-sm">${curFeeS.School} | ${curFeeS.Class}-${curFeeS.Div} | Bus: ${curFeeS.BusId}</p>
+    <p><b>Entry Stop:</b> ${curFeeS.Entry || '-'} | <b>Exit Stop:</b> ${curFeeS.Exit || '-'}</p>
+    <p class="mt-2 text-blue-700 font-bold">Monthly Fee Base: ₹${curFeeS.Fee}</p>
+    <div class="flex justify-between mt-2 pt-2 border-t border-blue-200">
+        <span class="font-bold text-green-700">Total Paid: ₹${curFeeS.Total||0}</span>
+        <span class="font-bold text-red-600">Balance: ₹${curFeeS.Balance||0}</span>
+    </div>
+`;
+
         const m = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
         document.getElementById('feeTable').innerHTML = m.map(x => `<tr class="border-b"><td class="p-2">${x}</td><td class="p-2 font-bold text-green-600">₹${curFeeS[x]||0}</td><td class="p-2 text-xs">${curFeeS[x+'Receipt']||'-'}</td><td class="p-2 text-xs">${formatMyDate(curFeeS[x+'DateTime'])||'-'}</td>
 </tr>`).join('');
@@ -492,31 +792,49 @@ function downloadStudentPDF() {
         await fetchData(); hideLoad(); findFeeStu(); msg("Success","Fee updated instantly!","success");
     }
     
-    function shareReport() {
-    const d = curUser.data;
+    function createPrintHeader() {
+    const userName = curUser ? curUser.name : "Unknown User";
+    const now = new Date();
+    const datetimeStr = now.toLocaleString('en-GB', { hour12: false });
+    return `
+        <div style="text-align:center; margin-bottom:20px;">
+            <h1 style="font-size:24px; font-weight:bold;">TD SCHOOLS THURAVOOR</h1>
+            <h2 style="font-size:18px; font-weight:600; margin-bottom:10px;">SCHOOL BUS MANAGEMENT 2026</h2>
+            <p>Generated By: <b>${userName}</b></p>
+            <p>On: <b>${datetimeStr}</b></p>
+            <hr style="margin-top:10px;"/>
+        </div>
+    `;
+}
+
     
-    // 1. Trigger the A4 PDF Print (Cleaned via CSS)
+    function shareReport() {
+    const feeMgmtHeader = document.getElementById('feeMgmtHeader');
+    const feeArea = document.getElementById('feeArea');
+    const feeAddSection = document.getElementById('feeAddSection');
+
+    if (feeMgmtHeader) feeMgmtHeader.style.display = 'none'; // hide heading & search
+    if (feeAddSection) feeAddSection.style.display = 'none';   // hide fee add controls
+    if (feeArea) feeArea.style.borderTop = 'none'; // optional styling
+
+    const feeDetails = document.getElementById('feeDetails');
+    if (feeDetails) {
+        feeDetails.innerHTML = createPrintHeader() + feeDetails.innerHTML;
+    }
+
     window.print();
 
-    // 2. Prepare the WhatsApp Summary
-    const contactNo = d.Phone; 
-    const message = `*TRANSPORTATION REPORT - TDTTI THURAVOOR*%0A` +
-                    `-----------------------------------%0A` +
-                    `*Student:* ${d.StudentName}%0A` +
-                    `*Class:* ${d.Class}-${d.Div}%0A` +
-                    `*Total Paid:* ₹${d.Total || 0}%0A` +
-                    `*Balance:* ₹${d.Balance || 0}%0A` +
-                    `*Status:* ${d.Status || 'Active'}%0A` +
-                    `-----------------------------------%0A` +
-                    `_Please keep the downloaded PDF for your records._`;
-
-    // 3. Open WhatsApp after a small delay to allow print dialog to initialize
     setTimeout(() => {
-        const waUrl = `https://wa.me/${contactNo}?text=${message}`;
-        window.open(waUrl, '_blank');
+        if (feeMgmtHeader) feeMgmtHeader.style.display = '';
+        if (feeAddSection) feeAddSection.style.display = '';     // restore fee add controls
+        if (feeDetails) {
+            feeDetails.innerHTML = feeDetails.innerHTML.replace(/^.*<hr style="margin-top:10px;\/>"/s, '');
+            findFeeStu();
+        }
     }, 500);
 }
-    
+
+
     
 
 function preparePDFView(s) {
@@ -532,6 +850,54 @@ function preparePDFView(s) {
     }, 500);
 }
 
+function shareFeeWA() {
+    if (!curFeeS) {
+        alert("No student selected to share fee details.");
+        return;
+    }
+    if (!curFeeS.Phone) {
+        alert("Student phone number missing.");
+        return;
+    }
+
+    const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+    let feeLines = months.map(m => {
+        const amt = curFeeS[m] || 0;
+        if(amt > 0) return `${m}: ₹${amt}`;
+        return null;
+    }).filter(Boolean).join("\n");
+
+    const message = `
+*TD SCHOOLS THURAVOOR*  
+SCHOOL BUS MANAGEMENT 2026
+
+*Student:* ${curFeeS.StudentName}  
+*Class:* ${curFeeS.Class}-${curFeeS.Div}  
+*Phone:* ${curFeeS.Phone}  
+*Bus ID:* ${curFeeS.BusId || '-'}  
+*Entry Stop:* ${curFeeS.Entry || '-'}  
+*Exit Stop:* ${curFeeS.Exit || '-'}
+
+*Fee Payment Details:*  
+${feeLines || 'No payments recorded.'}
+
+*Total Paid:* ₹${curFeeS.Total || 0}  
+*Balance:* ₹${curFeeS.Balance || 0}
+
+_Electronically generated fee statement._  
+For queries contact: G Mahesh Kumar - 9497731772
+`.trim();
+
+    // Normalize phone without spaces or symbols and add country code '91' if missing
+    const phoneRaw = curFeeS.Phone.toString().replace(/[^0-9]/g, '');
+    const phoneWithCC = phoneRaw.startsWith('91') ? phoneRaw : '91' + phoneRaw;
+
+    const waUrl = `https://wa.me/${phoneWithCC}?text=${encodeURIComponent(message)}`;
+
+    window.open(waUrl, '_blank');
+}
+
+
     
     function renderTab5(c) {
         c.innerHTML = `
@@ -546,7 +912,10 @@ function preparePDFView(s) {
                 <h3 class="font-bold text-sm mb-2 text-gray-500 uppercase">Generated History</h3>
                 <div id="historyArea" class="space-y-2"></div>
             </div>
-            <div id="receiptPrintArea" class="hidden"></div>
+            <div id="receiptPreviewContainer" style="height: 400px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px; background: white; padding: 10px;">
+    <div id="receiptPrintArea" class=""></div>
+</div>
+
         `;
     }
 function shareFeeStatus(phone) {
@@ -561,6 +930,8 @@ function shareFeeStatus(phone) {
     const text = `*FEE STATUS REPORT - ${s.School}*\n\n` +
                  `*Student:* ${s.StudentName}\n` +
                  `*Class:* ${s.Class}-${s.Div}\n` +
+                 `*Entry Stop:* ${s.Entry || '-'}\n` +
+                 `*Exit Stop:* ${s.Exit || '-'}\n` +
                  `--------------------------\n` +
                  `*Monthly Fee:* ₹${s.Fee}\n` +
                  `*Total Paid:* ₹${s.Total || 0}\n` +
@@ -577,57 +948,86 @@ function shareFeeStatus(phone) {
 }
 
     async function findReceiptStu() {
-        const q = document.getElementById('rSearch').value;
-        curRStu = db.find(x => String(x.Phone) === q || String(x.StudentName).toLowerCase().includes(q.toLowerCase()));
-        if(!curRStu) return msg("Not Found","Student not found.","warning");
-        
-        document.getElementById('receiptResult').classList.remove('hidden');
-        document.getElementById('rStuInfo').innerHTML = `<div><b>${curRStu.StudentName}</b><br>${curRStu.School}<br>${curRStu.Class}-${curRStu.Div}</div><div class="text-right">Fee: ₹${curRStu.Fee}<br>Paid: ₹${curRStu.Total||0}<br><span class="text-red-600">Bal: ₹${curRStu.Balance||0}</span></div>`;
-        
-        const m = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
-        document.getElementById('rPaymentTbl').innerHTML = m.filter(x => curRStu[x]).map(x => `<tr><td class="p-2 border">${x}</td><td class="p-2 border">₹${curRStu[x]}</td><td class="p-2 border">${curRStu[x+'Receipt']}</td><td class="p-2 border text-center"><button onclick="generateReceiptUI('${x}')" class="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold">GENERATE</button></td></tr>`).join('');
-        
-        // Load History
-        showLoad();
-        const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getReceipts", phone:curRStu.Phone})}).then(r=>r.json());
-        hideLoad();
-        document.getElementById('historyArea').innerHTML = res.data.map(r => `<div class="p-2 border bg-white rounded flex justify-between text-xs"><span><b>${r[0]}</b> - ${r[7]} (${new Date(r[1]).toLocaleDateString()})</span><button onclick="reprint('${r[0]}')" class="text-blue-600 font-bold">REPRINT</button></div>`).join('');
-    }
+    const q = document.getElementById('rSearch').value;
+    curRStu = db.find(x => String(x.Phone) === q || String(x.StudentName).toLowerCase().includes(q.toLowerCase()));
+    if(!curRStu) return msg("Not Found","Student not found.","warning");
 
-    async function generateReceiptUI(mon) {
+    document.getElementById('receiptResult').classList.remove('hidden');
+    document.getElementById('rStuInfo').innerHTML = `
+    <div>
+      <b>${curRStu.StudentName}</b><br>
+      ${curRStu.School}<br>
+      ${curRStu.Class}-${curRStu.Div}<br>
+      <b>Entry Stop:</b> ${curRStu.Entry || '-'}<br>
+      <b>Exit Stop:</b> ${curRStu.Exit || '-'}
+    </div>
+    <div class="text-right">
+      Fee: ₹${curRStu.Fee}<br>
+      Paid: ₹${curRStu.Total || 0}<br>
+      <span class="text-red-600">Bal: ₹${curRStu.Balance || 0}</span>
+    </div>
+`;
+
+    const m = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+
+    // Fetch generated receipts for this student (to disable generate buttons)
     showLoad();
-    try {
-        // Send to Apps Script to save and get the sequential ID
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-                action: "saveFee",
-                rIdx: curRStu.rowIdx, // Ensure your student object has its row index
-                data: { month: mon, amount: curRStu.Fee }
-            })
-        }).then(res => res.json());
-
-        if (response.success) {
-            const rData = {
-                ReceiptNo: response.receiptNo, // This will be 001/2026
-                Date: new Date().toLocaleString(),
-                Name: curRStu.StudentName,
-                Phone: curRStu.Phone,
-                School: curRStu.School,
-                Class: curRStu.Class + "-" + curRStu.Div,
-                Months: mon,
-                Amount: curRStu.Fee,
-                Total: response.totalPaid || curRStu.Fee
-            };
-            
-            printReceipt(rData);
-            findReceiptStu(); // Refresh the list to show the new history
-        }
-    } catch (e) {
-        msg("Error", "Failed to generate sequence.", "error");
-    }
+    const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getReceipts", phone:curRStu.Phone})}).then(r=>r.json());
     hideLoad();
+
+    // Set of receipt numbers already generated
+    const generatedReceipts = new Set(res.data.map(r => r[0]));
+
+    // Render payment rows with GENERATE buttons disabled if receipt exists for that month
+    document.getElementById('rPaymentTbl').innerHTML = m.filter(x => curRStu[x]).map(x => {
+        const receiptNo = curRStu[x+'Receipt'] || null;
+        const receiptExists = receiptNo && generatedReceipts.has(receiptNo);
+        return `<tr>
+            <td class="p-2 border">${x}</td>
+            <td class="p-2 border">₹${curRStu[x]}</td>
+            <td class="p-2 border">${receiptNo || '-'}</td>
+            <td class="p-2 border text-center">
+                <button ${receiptExists ? 'disabled class="opacity-50 cursor-not-allowed"' : ''}
+                    onclick="generateReceiptUI('${x}')"
+                    class="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold">
+                    GENERATE
+                </button>
+            </td>
+        </tr>`;
+    }).join('');
+
+    // Render generated receipts history with REPRINT buttons active (always enabled)
+    if(res.success && res.data.length > 0){
+        // Skip header if any
+        const history = res.data.filter(r => r[0] !== "ReceiptNo");
+        document.getElementById('historyArea').innerHTML = history.map(r => `
+  <div class="flex justify-between items-center p-3 bg-white border rounded shadow-sm hover:border-blue-300 transition">
+    <div>
+      <p class="font-bold text-gray-700">${r[0]} <span class="text-xs font-normal text-gray-400">(${r[7]})</span></p>
+      <p class="text-[10px] text-gray-500">${new Date(r[1]).toLocaleString()}</p>
+    </div>
+    <div class="flex gap-2 items-center">
+      <button onclick="reprint('${r[0]}', '${r[7]}')" class="text-blue-600 text-xs font-bold border border-blue-600 px-2 py-1 rounded">REPRINT</button>
+      <button 
+        title="Share via WhatsApp"
+        onclick="shareReceiptWA('${r[7]}', '${curRStu[r[7]] || 0}')" 
+        class="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M20.52 3.48A11.91 11.91 0 0012 0C5.37 0 0 5.37 0 12a11.7 11.7 0 001.95 6L0 24l6-1.95a11.86 11.86 0 005.94 1.7c6.63 0 12-5.37 12-12a11.89 11.89 0 00-3.42-8.27zM12 21a9.25 9.25 0 01-4.77-1.35l-.34-.22-3.57 1.16 1.11-3.48-.22-.36A9.25 9.25 0 012.75 12 9.25 9.25 0 0112 2.75 9.25 9.25 0 0121.25 12 9.25 9.25 0 0112 21zm5.37-6.31l-1.5-.43a.51.51 0 00-.47.14l-.98 1.07a7.38 7.38 0 01-3.46-3.44l1.07-.98a.53.53 0 00.15-.46l-.43-1.51a.54.54 0 00-.66-.37l-2.22.56a.51.51 0 00-.41.64A7 7 0 0014 16a7 7 0 002.37-1.17.5.5 0 00.13-.69z"/>
+        </svg>
+        WA
+      </button>
+    </div>
+  </div>
+`).join('');
+
+    } else {
+        document.getElementById('historyArea').innerHTML = '<p class="text-gray-400 text-sm italic">No generated receipt history found.</p>';
+    }
 }
+
+
 
     function printReceipt(r) {
         const html = `
@@ -663,11 +1063,7 @@ function shareFeeStatus(phone) {
         });
     }
 
-    function shareWA(m, a) {
-        const txt = `*Fee Receipt - ${curRStu.School}*\nStudent: ${curRStu.StudentName}\nMonth: ${m}\nAmount: ₹${a}\nStatus: PAID`;
-        window.open(`https://wa.me/${curRStu.Phone}?text=${encodeURIComponent(txt)}`, '_blank');
-    }
-
+    
 
 
 async function generateReceiptUI(month) {
@@ -701,56 +1097,116 @@ async function generateReceiptUI(month) {
 }
 
 function renderReceiptTemplate(r) {
+    const s = curRStu; // current student for full details
+    const userName = curUser ? curUser.name : "Unknown User";
+    const now = new Date();
+    const dateTimeStr = now.toLocaleString('en-GB', { hour12: false });
+
     const html = `
-        <div class="receipt-card">
-            <div class="text-center border-b pb-2 mb-2">
-                <div class="flex justify-center items-center gap-2">
-                     <div class="w-8 h-8 bg-blue-700 text-white font-bold rounded flex items-center justify-center text-xs">LOGO</div>
-                     <h2 class="font-bold text-lg">${r.School}</h2>
-                </div>
-                <p class="text-[10px] uppercase tracking-widest">School Bus Transportation Receipt</p>
-            </div>
-            <div class="flex justify-between text-[11px] mb-2">
-                <span><b>No:</b> ${r.ReceiptNo}</span>
-                <span><b>Date:</b> ${new Date().toLocaleDateString()}</span>
-            </div>
-            <div class="text-[12px] space-y-1 mb-4">
-                <p><b>Student:</b> ${r.Name}</p>
-                <p><b>Class:</b> ${r.Class} | <b>Phone:</b> ${r.Phone}</p>
-            </div>
-            <table class="w-full text-[12px] border-collapse mb-4">
-                <thead class="bg-gray-100">
-                    <tr><th class="border p-1 text-left">Particulars</th><th class="border p-1 text-right">Amount</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td class="border p-1">Bus Fee for ${r.Months}</td><td class="border p-1 text-right">₹${r.Amount}</td></tr>
-                    <tr class="font-bold"><td class="border p-1 text-right">Total</td><td class="border p-1 text-right">₹${r.Total}</td></tr>
-                </tbody>
-            </table>
-            <div class="text-[10px] text-center mt-10">
-                <p>Authorized Signature</p>
-                <div class="border-t border-black w-24 mx-auto mt-4"></div>
-            </div>
-            <div class="mt-4 flex gap-2 no-print justify-center">
-                <button onclick="window.print()" class="bg-gray-800 text-white px-4 py-1 rounded text-xs">Print</button>
-                <button onclick="shareReceiptWA('${r.Months}', '${r.Total}')" class="bg-green-600 text-white px-4 py-1 rounded text-xs">WhatsApp</button>
-            </div>
+    <div style="width:210mm; min-height:297mm; padding:30mm 20mm 20mm 20mm; font-family: Arial, sans-serif; background: white; box-sizing: border-box; color:#333;">
+        <div style="text-align:center; margin-bottom:25px;">
+            <h1 style="margin:0; font-weight: 900; font-size: 28px; color:#1e40af;">TD SCHOOLS THURAVOOR</h1>
+            <h2 style="margin:4px 0; font-weight: 700; font-size: 20px; color:#2563eb;">SCHOOL BUS MANAGEMENT 2026</h2>
+            <h3 style="margin:2px 0 20px; font-weight: 600; font-size: 16px; color:#3b82f6;">${s.School || ''}</h3>
+            <h4 style="margin:2px 0 10px; font-weight: 700; font-size: 14px; border-bottom: 2px solid #2563eb; padding-bottom: 4px; color:#2563eb;">SCHOOL BUS TRANSPORTATION RECEIPT</h4>
         </div>
+        <div style="font-size: 14px; line-height: 1.5; margin-bottom: 30px;">
+            <p><b>Name:</b> ${r.Name}</p>
+            <p><b>Class:</b> ${r.Class}</p>
+            <p><b>Phone:</b> ${s.Phone || '-'}</p>
+            <p><b>Bus ID:</b> ${s.BusId || '-'}</p>
+            <p><b>Entry Stop:</b> ${s.Entry || '-'}</p>
+            <p><b>Exit Stop:</b> ${s.Exit || '-'}</p>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 40px;">
+    <thead>
+        <tr style="background-color: #e0e7ff;">
+            <th style="border: 1px solid #c7d2fe; padding: 12px 15px; text-align: left;">Particulars</th>
+            <th style="border: 1px solid #c7d2fe; padding: 12px 15px; text-align: center;">Receipt No</th>
+            <th style="border: 1px solid #c7d2fe; padding: 12px 15px; text-align: right;">Amount (₹)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td style="border: 1px solid #c7d2fe; padding: 12px 15px;">Bus Fee for ${r.Months}</td>
+            <td style="border: 1px solid #c7d2fe; padding: 12px 15px; text-align: center;">${r.ReceiptNo}</td>
+            <td style="border: 1px solid #c7d2fe; padding: 12px 15px; text-align: right;">${r.Amount}</td>
+        </tr>
+        <tr style="font-weight: 700; background-color: #e0e7ff;">
+            <td style="border: 1px solid #c7d2fe; padding: 12px 15px; text-align: right;">TOTAL</td>
+            <td style="border: 1px solid #c7d2fe; padding: 12px 15px;"></td>
+            <td style="border: 1px solid #c7d2fe; padding: 12px 15px; text-align: right;">${r.Total}</td>
+        </tr>
+    </tbody>
+</table>
+
+
+        <div style="font-size: 12px; color: #555;">
+            <p><b>Electronically Generated Receipt</b> - No signature required</p>
+            <p>Generated By: <b>${userName}</b></p>
+            <p>Date & Time: <b>${dateTimeStr}</b></p>
+        </div>
+    </div>
     `;
+
     document.getElementById('receiptPrintArea').innerHTML = html;
     document.getElementById('receiptPrintArea').classList.remove('hidden');
-    Swal.fire({
-        title: 'Receipt Generated',
-        html: html,
-        showConfirmButton: false,
-        width: 'auto'
-    });
+
+    // Directly open print without Swal alert
+    setTimeout(() => window.print(), 300);
 }
 
-function shareReceiptWA(mon, amt) {
-    const txt = `*Receipt from ${curRStu.School}*\nStudent: ${curRStu.StudentName}\nMonth: ${mon}\nAmount Paid: ₹${amt}\nStatus: Completed`;
-    window.open(`https://wa.me/${curRStu.Phone}?text=${encodeURIComponent(txt)}`, '_blank');
+
+function shareReceiptWA(month, amt) {
+    if (!curRStu || !curRStu.Phone) {
+        alert('Phone number not found for this student.');
+        return;
+    }
+
+    if (!amt || isNaN(amt) || Number(amt) <= 0) {
+        alert('Invalid amount to share');
+        return;
+    }
+
+    const receiptNo = curRStu[month + 'Receipt'] || 'N/A';
+    const receiptDate = formatMyDate(curRStu[month + 'DateTime'] || '');
+
+    const message = `
+*TD SCHOOLS THURAVOOR*  
+SCHOOL BUS MANAGEMENT 2026
+
+*Receipt No:* ${receiptNo}  
+*Date:* ${receiptDate}
+
+*Student:* ${curRStu.StudentName}  
+*Class:* ${curRStu.Class}-${curRStu.Div}  
+*Phone:* ${curRStu.Phone}  
+*Bus ID:* ${curRStu.BusId || '-'}  
+*Entry Stop:* ${curRStu.Entry || '-'}  
+*Exit Stop:* ${curRStu.Exit || '-'}
+
+Bus Fee for *${month}*  
+Amount Paid: ₹${amt}  
+
+*TOTAL:* ₹${amt}  
+
+_Electronically Generated Receipt - No signature required_  
+Generated By: ${curUser ? curUser.name : 'System'}
+`.trim();
+
+    // Normalize phone: remove spaces, dashes, brackets etc
+    let phoneRaw = curRStu.Phone.toString().replace(/[^0-9]/g, '');
+    const phoneWithCC = phoneRaw.startsWith('91') ? phoneRaw : '91' + phoneRaw;
+
+    const waUrl = `https://wa.me/${phoneWithCC}?text=${encodeURIComponent(message)}`;
+
+    window.open(waUrl, '_blank');
 }
+
+
+
+
 
 async function fetchHistory(phone) {
     const historyDiv = document.getElementById('historyArea');
@@ -785,6 +1241,35 @@ async function fetchHistory(phone) {
     }
 }
 
+async function reprint(receiptNo, month = 'N/A') {
+    if (!curRStu) return;
+
+    showLoad();
+    try {
+        // Use month to get amount and receipt from curRStu
+        const amount = curRStu[month] || 0;
+        const receiptNum = curRStu[month + 'Receipt'] || receiptNo;
+
+        const rData = {
+            ReceiptNo: receiptNum,
+            Date: new Date().toLocaleString(),
+            Name: curRStu.StudentName,
+            Phone: curRStu.Phone,
+            School: curRStu.School,
+            Class: curRStu.Class + "-" + curRStu.Div,
+            Months: month,
+            Amount: amount,
+            Total: amount
+        };
+
+        renderReceiptTemplate(rData);
+    } catch (e) {
+        msg("Error", "Failed to fetch receipt for reprint.", "error");
+    }
+    hideLoad();
+}
+
+
 
 function formatMyDate(dateStr) {
     if (!dateStr || dateStr === '-') return '-';
@@ -802,3 +1287,4 @@ function formatMyDate(dateStr) {
 </script>
 </body>
 </html>
+
