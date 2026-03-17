@@ -14,7 +14,7 @@
     body * { visibility: hidden; }
     #receiptPrintArea, #receiptPrintArea * { visibility: visible; }
     #receiptPrintArea { 
-        position: absolute; left: 0; top: 0; width: 105mm; height: 148mm; /* A6 size (1/4 A4) */
+        position: absolute; left: 0; top: 0; width: 210mm; height: 297mm; /* A6 size (1/4 A4) */
         border: 1px solid #000; padding: 10px;
     }
 }
@@ -84,7 +84,10 @@
 
     <header id="appHeader" class="hidden bg-blue-700 text-white p-4 shadow flex justify-between items-center">
         <div class="flex items-center gap-2">
-            <div class="w-10 h-10 bg-white text-blue-700 font-bold rounded-full flex items-center justify-center">Logo</div>
+            <!-- REPLACED TEXT "LOGO" WITH ACTUAL IMAGE -->
+            <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden">
+                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLs9jyTEZv_qb7Sl-eWiCONiB_n-Jjv4icm2S3lPnmoqXnCQedYEs_cA3dwEleMx_hl9ByCEFyLE2nH6wyatT_dKjQNScu5jwkMJngSC3q9RNdZmUaa12r1jmURQM8VnhQKugi1wCklnSYOWiG7uP2E1gNmCA29pXFrrMvw0yMoAhWhZA/s1600/Logo2.png" alt="School Logo" class="w-full h-full object-contain p-1">
+            </div>
             <h1 class="text-xl font-bold">Bus Portal</h1>
         </div>
         <div class="text-right">
@@ -119,18 +122,23 @@
     </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwPRep1TLMLKXpteBmOJB3pjoqOV_ETyBYQI_JJYzCDru8ANEKNd-EZvgfSWAx_d7CFPA/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbzkLmtBhmQcmKWV0TgeWLqQsjCMso9NG02g9tzlsMbBslOZyxz16o7UpfDx-nxGx8FlRg/exec";
    const users = {
   "4201": { id: "4201",pass: "buspass",role: "Bus",name: "KL32P4201SR",filter: "KL32P4201SR",access: [2] },
   "teacher1": { id: "teacher1", pass: "teachpass",role: "Teacher",name: "Teacher A",tClass: "V",tDiv: "A",access: [1,2,4] },
   "school1": { id: "school1", pass: "schpass",role: "School",name: "TDEMNS Admin", tSchool: "TDEMNS-td1", access: [1,3,4] },
-  "admin": { id: "admin", pass: "adminpass", role: "Admin", name: "Super Admin", access: [1,2,3,4,5] }
+  "admin": { id: "admin", pass: "adminpass", role: "Admin", name: "Super Admin", access:[1,2,3,4,5,6] }
 };
     
     let curUser=null, loginDT=null, durInt=null, inactTimer=null;
     let db = []; // Holds all student data
     let editID = null;
-
+    let todayAtt =[];
+    
+    let currentFeeDB =[];
+    let feeSortCol = 'StudentName';
+    let feeSortAsc = true;
+    
     const showLoad = () => document.getElementById('loaderOverlay').style.display='flex';
     const hideLoad = () => document.getElementById('loaderOverlay').style.display='none';
     const msg = (t, txt, i="info") => Swal.fire({title:t, text:txt, icon:i, confirmButtonColor:'#3b82f6'});
@@ -138,8 +146,24 @@
     // --- Session & Core ---
     function resetTimer() {
         clearTimeout(inactTimer);
-        if(curUser) inactTimer = setTimeout(logout, 600000);
+        if(curUser) inactTimer = setTimeout(logout, 60000);
     }
+    
+    // This triggers immediately when the user closes the browser tab or navigates away
+    window.addEventListener('beforeunload', function() {
+        if (curUser && loginDT) {
+            const payload = JSON.stringify({
+                action: "log",
+                UserId: curUser.id || curUser.name,
+                Role: curUser.role,
+                Name: curUser.name,
+                type: "logout"
+            });
+            // sendBeacon forces an instant background request even while the tab is closing
+            navigator.sendBeacon(API_URL, payload);
+        }
+    });
+    
     
     window.onload = () => {
     resetTimer();
@@ -250,10 +274,10 @@ async function logout() {
     showLoad(); // Show spinner overlay
 
     const logoutDT = new Date();
-    const durationSecs = Math.floor((logoutDT - loginDT) / 1000);
+    const durationSecs = Math.floor((logoutDT - loginDT) / 0);
 
     // Wait 2 seconds (simulate delay)
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 1));
 
     try {
         await fetch(API_URL, {
@@ -297,7 +321,7 @@ function cleanupLogoutUI() {
     function renderTabs() {
         const t = document.getElementById('tabs'); t.innerHTML = '';
         if(curUser.role === "Student") { loadTab(0); return; }
-        const n = {1:"Students Record", 2:"Attendance", 3:"Data", 4:"Fee", 5:"Receipt Management"};
+        const n = {1:"Students Record", 2:"Attendance", 3:"Data", 4:"Fee", 5:"Receipt Management", 6:"Logs"};
         curUser.access.forEach(id => {
             const b = document.createElement('button');
             b.className = "px-4 py-2 bg-gray-200 hover:bg-blue-200 font-bold rounded text-sm";
@@ -314,6 +338,7 @@ function cleanupLogoutUI() {
         if(id === 3) renderTab3(c);
         if(id === 4) renderTab4(c);
         if(id === 5) renderTab5(c);
+        if(id === 6) renderTab6(c);
         
     }
 
@@ -466,59 +491,109 @@ function downloadStudentPDF() {
         c.innerHTML = `
             <h2 class="text-2xl font-bold mb-4">Manage Students</h2>
             <form id="sForm" onsubmit="saveS(event)" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 bg-gray-50 p-4 rounded border text-sm">
-                <select id="f1" required class="p-2 border rounded"><option value="">Bus</option><option>KL32P4201SA</option><option>KL32M0528VM</option><option>KL32L2382K</option><option>KL07BU4184C</option><option>KL32L0827U</option>	</select>
-<select id="f2" required class="p-2 border rounded"><option value="">School</option><option>TDEMNS-td1</option><option>GTDLPS34318</option><option>TDTTI34347</option><option>TDHS34028</option></select>                
-<select id="f3" required class="p-2 border rounded"><option value="">Class</option><option>PREKG-td1</option><option>LKG-td1</option><option>UKG-td1</option><option>I-34318</option><option>II-34318</option><option>III-34318</option><option>IV-34318</option><option>V-34347</option><option>VI-34347</option><option>VII-34347</option><option>VIII-34028</option><option>IX-34028</option><option>X-34028</option></select> <select id="f4" required class="p-2 border rounded"><option value="">Div</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option></select>
+                <select id="f1" onchange="filterStops(this.value)" required class="p-2 border rounded">
+                    <option value="">Bus</option>
+                    <option>KL32P4201SR</option>
+                    <option>KL32M0528VM</option>
+                    <option>KL32L2382K</option>
+                    <option>KL07BU4184C</option>
+                    <option>KL32L0827U</option>
+                </select>
+                
+                <select id="f2" onchange="filterClasses(this.value)" required class="p-2 border rounded">
+                    <option value="">School</option>
+                    <option>TDEMNS-td1</option>
+                    <option>GTDLPS-34318</option>
+                    <option>TDTTI-34347</option>
+                    <option>TDHS-34028</option>
+                </select>                
+                
+                <select id="f3" required class="p-2 border rounded">
+                    <option value="">Class</option>
+                </select> 
+                
+                <select id="f4" required class="p-2 border rounded"><option value="">Div</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option></select>
                 <input id="f5" required placeholder="Student Name" class="p-2 border rounded md:col-span-2">
                 <input id="f6" required placeholder="Parent Name" class="p-2 border rounded">
                 <input id="f7" required placeholder="Phone" class="p-2 border rounded">
-                <input list="entryStops" id="f8" placeholder="Entry Stop" class="p-2 border rounded"><datalist id="entryStops"><option>ADUVA-KL07BU4184C</option><option>ALAYKKAPARAMBHU-KL32P4201SR</option><option>AMALGOM-KL32L2382K</option><option>AMBEDKAR JN-KL07BU4184C</option><option>AROOR-KL32P4201SR</option><option>AZHEEKAL-KL32M0528VM</option><option>BHOOTHANILYAM TEMPLE-KL07BU4184C</option><option>CHANDIROOR-KL32P4201SR</option><option>CHANGARAM SCHOOL-KL32P4201SR</option><option>CHAPPAKADAVU-KL32M0528VM</option><option>CHELAPPURAM-KL32M0528VM</option>
-<option>CHELLANAM-KL32M0528VM</option><option>CHENNAMANA-KL32P4201SR</option><option>CHERUNKAL-KL32L2382K</option><option>DAMODARA HOTEL-KL32P4201SR</option><option>ENVEES BAR-KL32P4201SR</option><option>ESWAREDATH BANK CHLNM-KL32M0528VM</option><option>EZHUPUNNA PANCHAYTH-KL32P4201SR</option><option>GAS GODOWN-KL07BU4184C</option><option>GREENLAND-KL32P4201SR</option><option>ILLIKAL-KL32M0528VM</option><option>JAPAN-KL32P4201SR</option><option>KAKKATHURUTH-KL32L2382K</option><option>KALABHAVAN MANI-KL32M0528VM</option><option>KALARANGAM-KL07BU4184C</option><option>KANAPARAMBU-KL32L0827U</option><option>KANNATTU JN-KL32P4201SR</option><option>KARALATHODU-KL32M0528VM</option>
-<option>KEERTHI BAR-KL32P4201SR</option><option>KELAMKULANGARA-KL32P4201SR</option><option>KHAYZ-KL32L2382K</option><option>KOCHUVELI KAVALA-KL32P4201SR</option><option>KODAMTHURUTHU-KL32P4201SR</option><option>KOLATHUSSERY-KL32L2382K</option><option>KONKERY PALAM-KL32P4201SR</option>
-<option>KSEB KUTHIYATHODE-KL32P4201SR</option><option>KUMBALANGI FERRY-KL32P4201SR</option><option>KURUKANCHANDA KIZHKU-KL07BU4184C</option>
-<option>KURUKANCHANDA-KL32P4201SR</option><option>MANAKODAM PALLI-KL32M0528VM</option><option>MANAVA SAHAYA SAMITHI-KL07BU4184C</option>
-<option>MANNATH TEMPLE-KL07BU4184C</option><option>MARIYAPURAM-KL32L0827U</option><option>MARIYAPURAM-KL32L2382K</option><option>MENASEERY-KL32M0528VM</option><option>MOHAM HOSPITAL-KL32P4201SR</option><option>MOOLEKALAM-KL32L0827U</option><option>MOORTHINKAL-KL32L0827U</option>
-<option>MUTHUPARAMBU-KL32L2382K</option><option>NALIKKAT-KL32L0827U</option><option>NALUKULANGARA SOCIETY-KL32L2382K</option><option>NALUKULANGARA-KL32L0827U</option><option>NAYILATH COLONY-KL32L2382K</option><option>NCC JN HP PUMP-KL32P4201SR</option>
-<option>NCC JN-KL32P4201SR</option><option>NEW BOYS-KL32M0528VM</option><option>OLATHALA-KL07BU4184C</option><option>PALLITHODE-KL32L0827U</option><option>PALLITHODE-KL32M0528VM</option><option>PARAYIL-KL32M0528VM</option><option>PATTAM PALLI-KL32M0528VM</option><option>PATTUKULANGARA-KL32P4201SR</option><option>PONNAMVELI PUMP-KL32P4201SR</option><option>PONNAMVELI-KL32P4201SR</option><option>PS KAVALA-KL32P4201SR</option>
-<option>PURANDESWARAM-KL07BU4184C</option><option>PUTHANCHANDA PUMP-KL32P4201SR</option><option>PUTHANCHANDA RLY-KL32M0528VM</option>
-<option>PUTHENKAVU-KL32M0528VM</option><option>RAILWAY STN-KL32L0827U</option><option>RELIANCE PUMP-KL32P4201SR</option>
-<option>SANIYA-KL32P4201SR</option><option>SANTHI JN-KL07BU4184C</option><option>SANTHI JN-KL32P4201SR</option><option>SRAMBHIKAL-KL07BU4184C</option><option>SREENARAYANAPURAM-KL32P4201SR</option><option>THAZHUPPU-KL32L2382K</option><option>THEVARVATTOM CHIRACKAL-KL07BU4184C</option>
-<option>THEVARVATTOM PALLI JN-KL07BU4184C</option><option>THURAVOOR TEMPLE-KL32P4201SR</option><option>THURAVOOR-KL32P4201SR</option>
-<option>THYCATTUSSERY BRIDGE-KL07BU4184C</option><option>UDEESH TAXIHOUSE-KL32M0528VM</option><option>VAKKAYIL PALAM-KL32L0827U</option>
-<option>VALAMANAGALAM CHURCH-KL07BU4184C</option><option>VALAMANAGALAM SOUTH-KL07BU4184C</option><option>VALAMANAGALAM WS-KL07BU4184C</option>
-<option>VALANTHARA ROAD-KL32M0528VM</option><option>VALLIYATHODU-KL32P4201SR</option><option>VATTAKAL MUKKU-KL32L2382K</option>
-<option>VATTAKAL MUKKU-KL32P4201SR</option><option>VEEYATHARA-KL32M0528VM</option><option>VISWAS PRINTERS-KL07BU4184C</option></datalist>
-               <input list="exitStops" id="f9" required placeholder="Exit Stop" class="p-2 border rounded" /><datalist id="exitStops">
-<option>ADUVA-KL07BU4184C</option><option>ALAYKKAPARAMBHU-KL32P4201SR</option><option>AMALGOM-KL32L2382K</option><option>AMBEDKAR JN-KL07BU4184C</option><option>AROOR-KL32P4201SR</option><option>AZHEEKAL-KL32M0528VM</option><option>BHOOTHANILYAM TEMPLE-KL07BU4184C</option><option>CHANDIROOR-KL32P4201SR</option><option>CHANGARAM SCHOOL-KL32P4201SR</option><option>CHAPPAKADAVU-KL32M0528VM</option><option>CHELAPPURAM-KL32M0528VM</option>
-<option>CHELLANAM-KL32M0528VM</option><option>CHENNAMANA-KL32P4201SR</option><option>CHERUNKAL-KL32L2382K</option><option>DAMODARA HOTEL-KL32P4201SR</option><option>ENVEES BAR-KL32P4201SR</option><option>ESWAREDATH BANK CHLNM-KL32M0528VM</option><option>EZHUPUNNA PANCHAYTH-KL32P4201SR</option><option>GAS GODOWN-KL07BU4184C</option><option>GREENLAND-KL32P4201SR</option><option>ILLIKAL-KL32M0528VM</option><option>JAPAN-KL32P4201SR</option><option>KAKKATHURUTH-KL32L2382K</option><option>KALABHAVAN MANI-KL32M0528VM</option><option>KALARANGAM-KL07BU4184C</option><option>KANAPARAMBU-KL32L0827U</option><option>KANNATTU JN-KL32P4201SR</option><option>KARALATHODU-KL32M0528VM</option>
-<option>KEERTHI BAR-KL32P4201SR</option><option>KELAMKULANGARA-KL32P4201SR</option><option>KHAYZ-KL32L2382K</option><option>KOCHUVELI KAVALA-KL32P4201SR</option><option>KODAMTHURUTHU-KL32P4201SR</option><option>KOLATHUSSERY-KL32L2382K</option><option>KONKERY PALAM-KL32P4201SR</option>
-<option>KSEB KUTHIYATHODE-KL32P4201SR</option><option>KUMBALANGI FERRY-KL32P4201SR</option><option>KURUKANCHANDA KIZHKU-KL07BU4184C</option>
-<option>KURUKANCHANDA-KL32P4201SR</option><option>MANAKODAM PALLI-KL32M0528VM</option><option>MANAVA SAHAYA SAMITHI-KL07BU4184C</option>
-<option>MANNATH TEMPLE-KL07BU4184C</option><option>MARIYAPURAM-KL32L0827U</option><option>MARIYAPURAM-KL32L2382K</option><option>MENASEERY-KL32M0528VM</option><option>MOHAM HOSPITAL-KL32P4201SR</option><option>MOOLEKALAM-KL32L0827U</option><option>MOORTHINKAL-KL32L0827U</option>
-<option>MUTHUPARAMBU-KL32L2382K</option><option>NALIKKAT-KL32L0827U</option><option>NALUKULANGARA SOCIETY-KL32L2382K</option><option>NALUKULANGARA-KL32L0827U</option><option>NAYILATH COLONY-KL32L2382K</option><option>NCC JN HP PUMP-KL32P4201SR</option>
-<option>NCC JN-KL32P4201SR</option><option>NEW BOYS-KL32M0528VM</option><option>OLATHALA-KL07BU4184C</option><option>PALLITHODE-KL32L0827U</option><option>PALLITHODE-KL32M0528VM</option><option>PARAYIL-KL32M0528VM</option><option>PATTAM PALLI-KL32M0528VM</option><option>PATTUKULANGARA-KL32P4201SR</option><option>PONNAMVELI PUMP-KL32P4201SR</option><option>PONNAMVELI-KL32P4201SR</option><option>PS KAVALA-KL32P4201SR</option>
-<option>PURANDESWARAM-KL07BU4184C</option><option>PUTHANCHANDA PUMP-KL32P4201SR</option><option>PUTHANCHANDA RLY-KL32M0528VM</option>
-<option>PUTHENKAVU-KL32M0528VM</option><option>RAILWAY STN-KL32L0827U</option><option>RELIANCE PUMP-KL32P4201SR</option>
-<option>SANIYA-KL32P4201SR</option><option>SANTHI JN-KL07BU4184C</option><option>SANTHI JN-KL32P4201SR</option><option>SRAMBHIKAL-KL07BU4184C</option><option>SREENARAYANAPURAM-KL32P4201SR</option><option>THAZHUPPU-KL32L2382K</option><option>THEVARVATTOM CHIRACKAL-KL07BU4184C</option>
-<option>THEVARVATTOM PALLI JN-KL07BU4184C</option><option>THURAVOOR TEMPLE-KL32P4201SR</option><option>THURAVOOR-KL32P4201SR</option>
-<option>THYCATTUSSERY BRIDGE-KL07BU4184C</option><option>UDEESH TAXIHOUSE-KL32M0528VM</option><option>VAKKAYIL PALAM-KL32L0827U</option>
-<option>VALAMANAGALAM CHURCH-KL07BU4184C</option><option>VALAMANAGALAM SOUTH-KL07BU4184C</option><option>VALAMANAGALAM WS-KL07BU4184C</option>
-<option>VALANTHARA ROAD-KL32M0528VM</option><option>VALLIYATHODU-KL32P4201SR</option><option>VATTAKAL MUKKU-KL32L2382K</option>
-<option>VATTAKAL MUKKU-KL32P4201SR</option><option>VEEYATHARA-KL32M0528VM</option><option>VISWAS PRINTERS-KL07BU4184C</option></select></datalist>
+                
+                <input list="entryStops" id="f8" placeholder="Entry Stop" class="p-2 border rounded">
+                <datalist id="entryStops"></datalist>
+                
+                <input list="exitStops" id="f9" required placeholder="Exit Stop" class="p-2 border rounded">
+                <datalist id="exitStops"></datalist>
+                
                 <select id="f10" required class="p-2 border rounded"><option>Both Time</option><option>Morning Only</option><option>Evening Only</option></select>
                 <input id="f11" required placeholder="Fee Amount" type="number" class="p-2 border rounded">
-                <div class="col-span-2 md:col-span-4 flex gap-2"><button type="submit" id="sBtn" class="bg-blue-600 text-white px-6 py-2 rounded font-bold">Save</button><button type="button" onclick="renderTab1(document.getElementById('tabContent'))" class="bg-gray-400 text-white px-4 py-2 rounded hidden" id="cBtn">Cancel</button></div>
+                <div class="col-span-2 md:col-span-4 flex gap-2">
+                    <button type="submit" id="sBtn" class="bg-blue-600 text-white px-6 py-2 rounded font-bold">Save</button>
+                    <button type="button" onclick="renderTab1(document.getElementById('tabContent'))" class="bg-gray-400 text-white px-4 py-2 rounded hidden" id="cBtn">Cancel</button>
+                </div>
             </form>
             <input type="text" onkeyup="searchT1(this.value)" placeholder="Search Name or Phone..." class="w-full p-2 border-2 rounded mb-2">
-            <div class="overflow-x-auto"><table class="w-full text-left text-sm border"><tr class="bg-gray-800 text-white"><th class="p-2">Bus</th><th class="p-2">Name</th><th class="p-2">Class</th><th class="p-2">Phone</th><th class="p-2">Fee</th><th class="p-2">Action</th></tr>
-            <tbody id="t1Body">
-                ${fDB.map(s=>`<tr><td class="p-2 border-b">${s.BusId}</td><td class="p-2 border-b font-bold">${s.StudentName}</td><td class="p-2 border-b">${s.Class}-${s.Div}</td><td class="p-2 border-b">${s.Phone}</td><td class="p-2 border-b">₹${s.Fee}</td>
-                <td class="p-2 border-b"><button onclick='editS(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="bg-amber-500 text-white px-2 py-1 rounded text-xs">Edit</button>
-                <button onclick="delS(${s._rowIndex})" class="bg-red-500 text-white px-2 py-1 rounded text-xs ml-1">Del</button></td></tr>`).join('')}
-            </tbody></table></div>
-        `;
-    }
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm border">
+                    <tr class="bg-gray-800 text-white"><th class="p-2">Bus</th><th class="p-2">Name</th><th class="p-2">Class</th><th class="p-2">Phone</th><th class="p-2">Fee</th><th class="p-2">Action</th></tr>
+                    <tbody id="t1Body">
+                        ${fDB.map(s=>`<tr><td class="p-2 border-b">${s.BusId}</td><td class="p-2 border-b font-bold">${s.StudentName}</td><td class="p-2 border-b">${s.Class}-${s.Div}</td><td class="p-2 border-b">${s.Phone}</td><td class="p-2 border-b">₹${s.Fee}</td>
+                        <td class="p-2 border-b flex flex-wrap gap-1">
+                            <button type="button" onclick='viewStudentCard(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold shadow-sm">View</button>
+                            <button type="button" onclick='editS(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="bg-amber-500 text-white px-2 py-1 rounded text-xs">Edit</button>
+                            <button type="button" onclick="delS(${s._rowIndex})" class="bg-red-500 text-white px-2 py-1 rounded text-xs">Del</button>
+                        </td></tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
 
+            <!-- THE NEW UI CARD CONTAINER WILL APPEAR HERE -->
+            <div id="studentProfileCard" class="hidden mt-8"></div>
+        `;
+        
+        filterStops('');
+        filterClasses('');
+    }
+    
+    const classMapping = {
+        "TDEMNS-td1":["PREKG-td1", "LKG-td1", "UKG-td1"],
+        "GTDLPS-34318":["I-34318", "II-34318", "III-34318", "IV-34318"],
+        "TDTTI-34347":["V-34347", "VI-34347", "VII-34347"],
+        "TDHS-34028":["VIII-34028", "IX-34028", "X-34028"],
+        
+        
+    };
+
+    function filterClasses(schoolId) {
+        const classSelect = document.getElementById('f3');
+        if (!classSelect) return;
+        
+        // 1. Clear current options
+        classSelect.innerHTML = '<option value="">Class</option>';
+        
+        // 2. If no school is selected, load everything
+        if (!schoolId || schoolId === "") {
+            const allClasses =[
+                "PREKG-td1", "LKG-td1", "UKG-td1", 
+                "I-34318", "II-34318", "III-34318", "IV-34318",
+                "V-34347", "VI-34347", "VII-34347", 
+                "VIII-34028", "IX-34028", "X-34028"
+            ];
+            allClasses.forEach(function(c) {
+                classSelect.innerHTML += '<option value="' + c + '">' + c + '</option>';
+            });
+            return;
+        }
+        
+        // 3. If a school is selected, load only its classes
+        const allowedClasses = classMapping[schoolId];
+        
+        if (allowedClasses) {
+            allowedClasses.forEach(function(c) {
+                classSelect.innerHTML += '<option value="' + c + '">' + c + '</option>';
+            });
+        }
+    }
+    
     
     async function saveS(e) {
         e.preventDefault();
@@ -528,36 +603,77 @@ function downloadStudentPDF() {
         editID = null; await fetchData(); hideLoad(); renderTab1(document.getElementById('tabContent')); msg("Success","Record saved!","success");
     }
     
-    function updateEntryExitStops(busId) {
-    const entrySelect = document.getElementById('f8');
-    const exitSelect = document.getElementById('f9');
-    
-    // Clear previous options
-    entrySelect.innerHTML = '<option value="">Entry Stop</option>';
-    exitSelect.innerHTML = '<option value="">Exit Stop</option>';
-    
-    const stops = busStops[busId] || [];
-    
-    stops.forEach(stop => {
-        const opt1 = document.createElement('option');
-        opt1.value = stop;
-        opt1.textContent = stop;
-        entrySelect.appendChild(opt1);
+    // Global Master List of all stops
+    const allStops =[
+        "ADUVA-KL07BU4184C","ALAYKKAPARAMBHU-KL32P4201SR","AMALGOM-KL32L2382K","AMBEDKAR JN-KL07BU4184C",
+        "AROOR-KL32P4201SR","AZHEEKAL-KL32M0528VM","BHOOTHANILYAM TEMPLE-KL07BU4184C","CHANDIROOR-KL32P4201SR",
+        "CHANGARAM SCHOOL-KL32P4201SR","CHAPPAKADAVU-KL32M0528VM","CHELAPPURAM-KL32M0528VM","CHELLANAM-KL32M0528VM",
+        "CHENNAMANA-KL32P4201SR","CHERUNKAL-KL32L2382K","DAMODARA HOTEL-KL32P4201SR","ENVEES BAR-KL32P4201SR",
+        "ESWAREDATH BANK CHLNM-KL32M0528VM","EZHUPUNNA PANCHAYTH-KL32P4201SR","GAS GODOWN-KL07BU4184C","GREENLAND-KL32P4201SR",
+        "ILLIKAL-KL32M0528VM","JAPAN-KL32P4201SR","KAKKATHURUTH-KL32L2382K","KALABHAVAN MANI-KL32M0528VM",
+        "KALARANGAM-KL07BU4184C","KANAPARAMBU-KL32L0827U","KANNATTU JN-KL32P4201SR","KARALATHODU-KL32M0528VM",
+        "KEERTHI BAR-KL32P4201SR","KELAMKULANGARA-KL32P4201SR","KHAYZ-KL32L2382K","KOCHUVELI KAVALA-KL32P4201SR",
+        "KODAMTHURUTHU-KL32P4201SR","KOLATHUSSERY-KL32L2382K","KONKERY PALAM-KL32P4201SR","KSEB KUTHIYATHODE-KL32P4201SR",
+        "KUMBALANGI FERRY-KL32P4201SR","KURUKANCHANDA KIZHKU-KL07BU4184C","KURUKANCHANDA-KL32P4201SR","MANAKODAM PALLI-KL32M0528VM",
+        "MANAVA SAHAYA SAMITHI-KL07BU4184C","MANNATH TEMPLE-KL07BU4184C","MARIYAPURAM-KL32L0827U","MARIYAPURAM-KL32L2382K",
+        "MENASEERY-KL32M0528VM","MOHAM HOSPITAL-KL32P4201SR","MOOLEKALAM-KL32L0827U","MOORTHINKAL-KL32L0827U",
+        "MUTHUPARAMBU-KL32L2382K","NALIKKAT-KL32L0827U","NALUKULANGARA SOCIETY-KL32L2382K","NALUKULANGARA-KL32L0827U",
+        "NAYILATH COLONY-KL32L2382K","NCC JN HP PUMP-KL32P4201SR","NCC JN-KL32P4201SR","NEW BOYS-KL32M0528VM",
+        "OLATHALA-KL07BU4184C","PALLITHODE-KL32L0827U","PALLITHODE-KL32M0528VM","PARAYIL-KL32M0528VM",
+        "PATTAM PALLI-KL32M0528VM","PATTUKULANGARA-KL32P4201SR","PONNAMVELI PUMP-KL32P4201SR","PONNAMVELI-KL32P4201SR",
+        "PS KAVALA-KL32P4201SR","PURANDESWARAM-KL07BU4184C","PUTHANCHANDA PUMP-KL32P4201SR","PUTHANCHANDA RLY-KL32M0528VM",
+        "PUTHENKAVU-KL32M0528VM","RAILWAY STN-KL32L0827U","RELIANCE PUMP-KL32P4201SR","SANIYA-KL32P4201SR",
+        "SANTHI JN-KL07BU4184C","SANTHI JN-KL32P4201SR","SRAMBHIKAL-KL07BU4184C","SREENARAYANAPURAM-KL32P4201SR",
+        "THAZHUPPU-KL32L2382K","THEVARVATTOM CHIRACKAL-KL07BU4184C","THEVARVATTOM PALLI JN-KL07BU4184C","THURAVOOR TEMPLE-KL32P4201SR",
+        "THURAVOOR-KL32P4201SR","THYCATTUSSERY BRIDGE-KL07BU4184C","UDEESH TAXIHOUSE-KL32M0528VM","VAKKAYIL PALAM-KL32L0827U",
+        "VALAMANAGALAM CHURCH-KL07BU4184C","VALAMANAGALAM SOUTH-KL07BU4184C","VALAMANAGALAM WS-KL07BU4184C","VALANTHARA ROAD-KL32M0528VM",
+        "VALLIYATHODU-KL32P4201SR","VATTAKAL MUKKU-KL32L2382K","VATTAKAL MUKKU-KL32P4201SR","VEEYATHARA-KL32M0528VM",
+        "VISWAS PRINTERS-KL07BU4184C"
+    ];
+
+    function filterStops(busId) {
+        const entryDatalist = document.getElementById('entryStops');
+        const exitDatalist = document.getElementById('exitStops');
+        if (!entryDatalist || !exitDatalist) return;
         
-        const opt2 = document.createElement('option');
-        opt2.value = stop;
-        opt2.textContent = stop;
-        exitSelect.appendChild(opt2);
-    });
-}
+        // Filter the array based on the selected bus ID
+        const filtered = busId ? allStops.filter(s => s.includes(busId)) : allStops;
+        
+        // Generate options HTML dynamically
+        const optionsHtml = filtered.map(s => `<option value="${s}"></option>`).join('');
+        entryDatalist.innerHTML = optionsHtml;
+        exitDatalist.innerHTML = optionsHtml;
+        
+        // Clear inputs if their current value doesn't match the newly selected bus
+        const f8 = document.getElementById('f8');
+        const f9 = document.getElementById('f9');
+        if (busId) {
+            if (f8 && f8.value && !f8.value.includes(busId)) f8.value = '';
+            if (f9 && f9.value && !f9.value.includes(busId)) f9.value = '';
+        }
+    }
 
 
     const v = (id) => document.getElementById(id).value;
     const setV = (id, val) => document.getElementById(id).value = val;
     
     function editS(s) {
-        editID = s._rowIndex; setV('f1',s.BusId); setV('f2',s.School); setV('f3',s.Class); setV('f4',s.Div); setV('f5',s.StudentName); setV('f6',s['Parent Name']||s.ParentName); setV('f7',s.Phone); setV('f8',s.Entry); setV('f9',s.Exit); setV('f10',s.Status); setV('f11',s.Fee);
-        document.getElementById('sBtn').innerText = "Update"; document.getElementById('sBtn').className = "bg-amber-500 text-white px-6 py-2 rounded font-bold"; document.getElementById('cBtn').classList.remove('hidden');
+        editID = s._rowIndex; 
+        setV('f1',s.BusId); 
+        filterStops(s.BusId); // Dynamically load stops for this bus
+        setV('f2',s.School); 
+        setV('f3',s.Class); 
+        setV('f4',s.Div); 
+        setV('f5',s.StudentName); 
+        setV('f6',s['Parent Name']||s.ParentName); 
+        setV('f7',s.Phone); 
+        setV('f8',s.Entry); 
+        setV('f9',s.Exit); 
+        setV('f10',s.Status); 
+        setV('f11',s.Fee);
+        document.getElementById('sBtn').innerText = "Update"; 
+        document.getElementById('sBtn').className = "bg-amber-500 text-white px-6 py-2 rounded font-bold"; 
+        document.getElementById('cBtn').classList.remove('hidden');
     }
 
     async function delS(r) {
@@ -568,48 +684,355 @@ function downloadStudentPDF() {
     function searchT1(q) { Array.from(document.getElementById('t1Body').rows).forEach(r=> r.style.display = r.innerText.toLowerCase().includes(q.toLowerCase())?'':'none'); }
 
 
+let curViewStudent = null; // Stores the currently viewed student for printing/sharing
 
+    function viewStudentCard(s) {
+        curViewStudent = s;
+        const cardContainer = document.getElementById('studentProfileCard');
+        cardContainer.classList.remove('hidden');
+
+        const months =["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+        let paidHtml = '';
+        let pendingHtml = '';
+
+        // Calculate Paid vs Pending
+        months.forEach(m => {
+            const amt = parseFloat(s[m]);
+            if (amt > 0) {
+                paidHtml += `<tr class="border-b"><td class="p-2">${m}</td><td class="p-2 font-bold text-green-600">₹${s[m]}</td><td class="p-2 text-xs">${s[m+'Receipt']||'-'}</td><td class="p-2 text-xs">${formatMyDate(s[m+'DateTime'])||'-'}</td></tr>`;
+            } else {
+                pendingHtml += `<span class="bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-md inline-block m-1 shadow-sm border border-red-200">${m}</span>`;
+            }
+        });
+
+        if (!paidHtml) paidHtml = '<tr><td colspan="4" class="p-4 text-center text-gray-500 text-xs italic">No fees paid yet.</td></tr>';
+        if (!pendingHtml) pendingHtml = '<div class="w-full text-center p-3"><span class="text-green-600 font-bold text-sm bg-green-50 px-4 py-2 rounded-lg border border-green-200">🎉 All fees cleared!</span></div>';
+
+        // Check Role: Only Admin and Teacher get the PDF/WhatsApp buttons
+        let actionBtns = '';
+        if (curUser && (curUser.role === "Admin" || curUser.role === "Teacher")) {
+            actionBtns = `
+                <div class="flex gap-3 mt-8 no-print border-t border-gray-100 pt-6">
+                    <button onclick="printAdminStudentCard()" class="bg-gray-800 hover:bg-black text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition shadow-lg">
+                        <span>📥</span> Download PDF
+                    </button>
+                    <button onclick="shareAdminStudentWA()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition shadow-lg shadow-green-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.52 3.48A11.91 11.91 0 0012 0C5.37 0 0 5.37 0 12a11.7 11.7 0 001.95 6L0 24l6-1.95a11.86 11.86 0 005.94 1.7c6.63 0 12-5.37 12-12a11.89 11.89 0 00-3.42-8.27zM12 21a9.25 9.25 0 01-4.77-1.35l-.34-.22-3.57 1.16 1.11-3.48-.22-.36A9.25 9.25 0 012.75 12 9.25 9.25 0 0112 2.75 9.25 9.25 0 0121.25 12 9.25 9.25 0 0112 21zm5.37-6.31l-1.5-.43a.51.51 0 00-.47.14l-.98 1.07a7.38 7.38 0 01-3.46-3.44l1.07-.98a.53.53 0 00.15-.46l-.43-1.51a.54.54 0 00-.66-.37l-2.22.56a.51.51 0 00-.41.64A7 7 0 0014 16a7 7 0 002.37-1.17.5.5 0 00.13-.69z"/></svg>
+                        WhatsApp
+                    </button>
+                </div>
+            `;
+        } else {
+            // Placeholder text if School or Bus role views it
+            actionBtns = `<div class="mt-6 border-t pt-4 text-xs text-gray-400 italic">Advanced sharing options are only available to Class Teachers and Administrators.</div>`;
+        }
+
+        // Build the actual UI Card
+        cardContainer.innerHTML = `
+            <div class="bg-white p-6 md:p-8 rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-gray-100 relative animate-fade-in">
+                <button onclick="document.getElementById('studentProfileCard').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition text-2xl font-bold p-2 h-10 w-10 flex items-center justify-center rounded-full hover:bg-red-50">&times;</button>
+                
+                <div class="flex items-center gap-5 mb-8 border-b border-gray-100 pb-6">
+                    <div class="h-16 w-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center text-3xl font-black shadow-lg shadow-blue-200">
+                        ${s.StudentName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-black text-gray-800">${s.StudentName}</h3>
+                        <p class="text-blue-600 text-sm font-bold uppercase tracking-wide mt-1">${s.School} • Class ${s.Class}-${s.Div} • Bus ${s.BusId}</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-y-5 gap-x-6 mb-8 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                    <div><p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Parent Name</p><p class="font-bold text-gray-800">${s['Parent Name']||s.ParentName||'-'}</p></div>
+                    <div><p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Phone</p><p class="font-bold text-gray-800">${s.Phone||'-'}</p></div>
+                    <div><p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Entry Stop</p><p class="font-bold text-gray-800 truncate" title="${s.Entry||'-'}">${s.Entry||'-'}</p></div>
+                    <div><p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Exit Stop</p><p class="font-bold text-gray-800 truncate" title="${s.Exit||'-'}">${s.Exit||'-'}</p></div>
+                    <div><p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Travel Status</p><p class="font-bold text-gray-800">${s.Status||'-'}</p></div>
+                    <div><p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Monthly Fee</p><p class="font-black text-gray-800">₹${s.Fee||0}</p></div>
+                    <div><p class="text-[10px] text-green-600 font-bold uppercase tracking-wider mb-1">Total Paid</p><p class="font-black text-green-600 text-lg">₹${s.Total||0}</p></div>
+                    <div><p class="text-[10px] text-red-500 font-bold uppercase tracking-wider mb-1">Balance</p><p class="font-black text-red-600 text-lg">₹${s.Balance||0}</p></div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h4 class="font-bold text-gray-800 mb-3 flex items-center gap-2 tracking-wide"><span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>Paid Fees</h4>
+                        <div class="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
+                            <table class="w-full text-left text-sm bg-white">
+                                <thead class="bg-gray-50 text-[10px] uppercase text-gray-500 font-bold">
+                                    <tr><th class="p-3">Month</th><th class="p-3">Amount</th><th class="p-3">Receipt</th><th class="p-3">Date</th></tr>
+                                </thead>
+                                <tbody>${paidHtml}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-800 mb-3 flex items-center gap-2 tracking-wide"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>Pending Fees</h4>
+                        <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 min-h-[100px] flex flex-wrap content-start shadow-inner">
+                            ${pendingHtml}
+                        </div>
+                    </div>
+                </div>
+
+                ${actionBtns}
+            </div>
+        `;
+        
+        // Auto-scroll the page down smoothly so the user sees the card
+        cardContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function printAdminStudentCard() {
+        if(!curViewStudent) return;
+        const d = curViewStudent;
+        const months =["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+        
+        // 1. Build the exact PDF Layout
+        let html = `
+            <div style="padding: 20px; font-family: sans-serif; color: #333; background: white;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px;">
+                    <div style="width: 80px;"></div>
+                    <div style="text-align: center; flex-grow: 1;">
+                        <h1 style="margin: 0; font-size: 24px;">${d.School}</h1>
+                        <p style="margin: 5px 0; font-weight: bold;">FEE STATEMENT / STUDENT PROFILE</p>
+                    </div>
+                    <div style="width: 80px; text-align: right;">
+                        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLs9jyTEZv_qb7Sl-eWiCONiB_n-Jjv4icm2S3lPnmoqXnCQedYEs_cA3dwEleMx_hl9ByCEFyLE2nH6wyatT_dKjQNScu5jwkMJngSC3q9RNdZmUaa12r1jmURQM8VnhQKugi1wCklnSYOWiG7uP2E1gNmCA29pXFrrMvw0yMoAhWhZA/s1600/Logo2.png" alt="School Logo" style="height: 70px; object-fit: contain;">
+                    </div>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; margin-bottom: 30px; font-size: 14px;">
+                    <div>
+                        <p><b>Student:</b> ${d.StudentName}</p>
+                        <p><b>Class:</b> ${d.Class}-${d.Div}</p>
+                        <p><b>Parent:</b> ${d['Parent Name']||d.ParentName||'-'} | <b>Phone:</b> ${d.Phone}</p>
+                        <p><b>Entry:</b> ${d.Entry||'-'} | <b>Exit:</b> ${d.Exit||'-'}</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p><b>Bus ID:</b> ${d.BusId}</p>
+                        <p><b>Travel Time:</b> ${d.Status||'-'}</p>
+                        <p><b>Monthly Fee:</b> ₹${d.Fee}</p>
+                        <p><b>Date:</b> ${new Date().toLocaleDateString('en-GB')}</p>
+                    </div>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
+                    <thead>
+                        <tr style="background: #f0f0f0;">
+                            <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Month</th>
+                            <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Amount</th>
+                            <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Receipt No</th>
+                            <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${months.map(m => {
+                            const amt = parseFloat(d[m]);
+                            if (amt > 0) {
+                                return `
+                                <tr>
+                                    <td style="border: 1px solid #ccc; padding: 8px;">${m}</td>
+                                    <td style="border: 1px solid #ccc; padding: 8px; color: green; font-weight: bold;">₹${d[m]}</td>
+                                    <td style="border: 1px solid #ccc; padding: 8px;">${d[m+'Receipt'] || '---'}</td>
+                                    <td style="border: 1px solid #ccc; padding: 8px;">${(d[m+'DateTime'] || '').split(',')[0]}</td>
+                                </tr>`;
+                            } else {
+                                return `
+                                <tr>
+                                    <td style="border: 1px solid #ccc; padding: 8px;">${m}</td>
+                                    <td style="border: 1px solid #ccc; padding: 8px; color: red;">Pending</td>
+                                    <td style="border: 1px solid #ccc; padding: 8px;">-</td>
+                                    <td style="border: 1px solid #ccc; padding: 8px;">-</td>
+                                </tr>`;
+                            }
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                <div style="display: flex; justify-content: flex-end; gap: 20px; font-size: 16px;">
+                    <p><b>Total Paid:</b> <span style="color: green;">₹${d.Total || 0}</span></p>
+                    <p><b>Balance:</b> <span style="color: red; font-weight: bold;">₹${d.Balance || 0}</span></p>
+                </div>
+            </div>
+        `;
+
+        // 2. Locate the main visible tab content
+        const tabContent = document.getElementById('tabContent');
+        
+        // 3. Create a safe, dedicated print zone if it doesn't already exist
+        let printArea = document.getElementById('adminPrintArea');
+        if (!printArea) {
+            printArea = document.createElement('div');
+            printArea.id = 'adminPrintArea';
+            tabContent.appendChild(printArea);
+        }
+        
+        // Load the PDF layout into the print zone
+        printArea.innerHTML = html;
+
+        // 4. Temporarily hide everything else on the screen
+        const children = tabContent.children;
+        const hiddenElements =[];
+        for (let i = 0; i < children.length; i++) {
+            if (children[i].id !== 'adminPrintArea' && children[i].style.display !== 'none') {
+                hiddenElements.push(children[i]);
+                children[i].style.display = 'none';
+            }
+        }
+
+        // 5. Trigger the browser's PDF Print Window
+        window.print();
+
+        // 6. After 500ms, restore the screen back to exactly how it was
+        setTimeout(() => {
+            hiddenElements.forEach(el => el.style.display = '');
+            printArea.innerHTML = '';
+        }, 500);
+    }
+
+    function shareAdminStudentWA() {
+        if(!curViewStudent) return;
+        const s = curViewStudent;
+        
+        const months =["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+        let paidMonths = months.filter(m => s[m] && parseFloat(s[m]) > 0).join(", ");
+        let pendingMonths = months.filter(m => !s[m] || parseFloat(s[m]) === 0).join(", ");
+
+        const message = `
+*STUDENT PROFILE & FEE STATEMENT*
+----------------------------
+*School:* ${s.School}
+*Student:* ${s.StudentName}
+*Class:* ${s.Class}-${s.Div}
+*Bus ID:* ${s.BusId}
+*Entry Stop:* ${s.Entry || '-'}
+*Exit Stop:* ${s.Exit || '-'}
+
+*Fee Summary:*
+Monthly Fee: ₹${s.Fee || 0}
+*Total Paid:* ₹${s.Total || 0}
+*Pending Balance:* ₹${s.Balance || 0}
+
+*Paid Months:* ${paidMonths || 'None'}
+*Pending Months:* ${pendingMonths || 'None'}
+
+_This is a system generated statement._
+`.trim();
+
+        const phoneRaw = s.Phone.toString().replace(/[^0-9]/g, '');
+        const phoneWithCC = phoneRaw.startsWith('91') ? phoneRaw : '91' + phoneRaw;
+        const waUrl = `https://wa.me/${phoneWithCC}?text=${encodeURIComponent(message)}`;
+
+        window.open(waUrl, '_blank');
+    }
+    
+    
     // --- Tab 2: Attendance ---
-    function renderTab2(c) {
+    
+    async function renderTab2(c) {
+        // Show loading text while checking Google Sheets for today's marked students
+        c.innerHTML = `<h2 class="text-2xl font-bold mb-4">Mark Attendance</h2><p class="text-blue-500 animate-pulse">Loading today's records...</p>`;
+        
+        try {
+            const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getTodayAttendance"})}).then(r=>r.json());
+            if(res.success) todayAtt = res.data;
+        } catch(e) {}
+
         c.innerHTML = `
             <h2 class="text-2xl font-bold mb-4">Mark Attendance</h2>
             <div class="flex gap-2 mb-4">
-                <select id="aBus" onchange="loadAttTbl()" class="p-2 border rounded w-1/3"><option value="">Select Bus</option><option>KL32P4201SR</option><option>KL32M0528VM</option><option>KL32L2382K</option><option>KL07BU4184C</option><option>KL32L0827U</option>	</select>
-                <select id="aSec" class="p-2 border rounded"><option>FN</option><option>AN</option></select>
+                <select id="aBus" onchange="loadAttTbl()" class="p-2 border rounded w-1/3">
+                    <option value="">Select Bus</option>
+                    <option>KL32P4201SR</option>
+                    <option>KL32M0528VM</option>
+                    <option>KL32L2382K</option>
+                    <option>KL07BU4184C</option>
+                    <option>KL32L0827U</option>
+                </select>
+                <!-- Added onchange here to switch lists automatically when changing FN/AN -->
+                <select id="aSec" onchange="loadAttTbl()" class="p-2 border rounded">
+                    <option>FN</option>
+                    <option>AN</option>
+                </select>
                 <p class="italic text-sm text-gray-500">Select Present/Absent to save instantly.</p>
             </div>
             <div class="overflow-x-auto"><table class="w-full text-left text-sm border"><tr class="bg-gray-800 text-white"><th class="p-2">Name</th><th class="p-2">School</th><th class="p-2">Class</th><th class="p-2">Action</th></tr>
             <tbody id="attBody"><tr><td colspan="4" class="p-4 text-center">Select bus to load students</td></tr></tbody></table></div>
         `;
     }
-    function loadAttTbl() {
-    const bus = document.getElementById('aBus').value;
-    if(!bus) {
-        document.getElementById('attBody').innerHTML = `<tr><td colspan="4" class="p-4 text-center">Select bus to load students</td></tr>`;
-        return;
+    
+    async function renderTab2(c) {
+        // Show loading text while checking Google Sheets for today's marked students
+        c.innerHTML = `<h2 class="text-2xl font-bold mb-4">Mark Attendance</h2><p class="text-blue-500 animate-pulse">Loading today's records...</p>`;
+        
+        try {
+            const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getTodayAttendance"})}).then(r=>r.json());
+            if(res.success) todayAtt = res.data;
+        } catch(e) {}
+
+        c.innerHTML = `
+            <h2 class="text-2xl font-bold mb-4">Mark Attendance</h2>
+            <div class="flex gap-2 mb-4">
+                <select id="aBus" onchange="loadAttTbl()" class="p-2 border rounded w-1/3">
+                    <option value="">Select Bus</option>
+                    <option>KL32P4201SR</option>
+                    <option>KL32M0528VM</option>
+                    <option>KL32L2382K</option>
+                    <option>KL07BU4184C</option>
+                    <option>KL32L0827U</option>
+                </select>
+                <!-- Added onchange here to switch lists automatically when changing FN/AN -->
+                <select id="aSec" onchange="loadAttTbl()" class="p-2 border rounded">
+                    <option>FN</option>
+                    <option>AN</option>
+                </select>
+                <p class="italic text-sm text-gray-500">Select Present/Absent to save instantly.</p>
+            </div>
+            <div class="overflow-x-auto"><table class="w-full text-left text-sm border"><tr class="bg-gray-800 text-white"><th class="p-2">Name</th><th class="p-2">School</th><th class="p-2">Class</th><th class="p-2">Action</th></tr>
+            <tbody id="attBody"><tr><td colspan="4" class="p-4 text-center">Select bus to load students</td></tr></tbody></table></div>
+        `;
     }
 
-    let sList = db.filter(s => s.BusId === bus);
+    function loadAttTbl() {
+        const bus = document.getElementById('aBus').value;
+        const sec = document.getElementById('aSec').value;
+        const tbody = document.getElementById('attBody');
+        
+        if(!bus) {
+            tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center">Select bus to load students</td></tr>`;
+            return;
+        }
 
-    // Sort alphabetically by StudentName (case-insensitive)
-    sList.sort((a, b) => a.StudentName.toLowerCase().localeCompare(b.StudentName.toLowerCase()));
+        let sList = db.filter(s => s.BusId === bus);
 
-    const tbody = document.getElementById('attBody');
-    tbody.innerHTML = sList.map((s, i) => `
-        <tr id="attRow${i}">
-            <td class="p-2 border-b" id="anm${i}">${s.StudentName}</td>
-            <td class="p-2 border-b" id="asc${i}">${s.School}</td>
-            <td class="p-2 border-b" id="acl${i}">${s.Class}-${s.Div}</td>
-            <td class="p-2 border-b">
-                <select id="ast${i}" class="border p-1 rounded" onchange="saveOneAtt(${i})">
-                    <option value="">Select</option>
-                    <option>Present</option>
-                    <option>Absent</option>
-                </select>
-            </td>
-        </tr>
-    `).join('');
-}
+        // FILTER LOGIC: Remove students who are already marked for today in this specific Section (FN/AN)
+        sList = sList.filter(s => {
+            const isMarked = todayAtt.some(a => a.BusId === bus && a.Name === s.StudentName && a.Section === sec);
+            return !isMarked; // Keep them ONLY if they are NOT marked
+        });
+
+        // If everyone is already marked
+        if (sList.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-green-600 font-bold">All students are already marked for ${sec} today!</td></tr>`;
+            return;
+        }
+
+        sList.sort((a, b) => a.StudentName.toLowerCase().localeCompare(b.StudentName.toLowerCase()));
+
+        tbody.innerHTML = sList.map((s, i) => `
+            <tr id="attRow${i}">
+                <td class="p-2 border-b" id="anm${i}">${s.StudentName}</td>
+                <td class="p-2 border-b" id="asc${i}">${s.School}</td>
+                <td class="p-2 border-b" id="acl${i}">${s.Class}-${s.Div}</td>
+                <td class="p-2 border-b">
+                    <select id="ast${i}" class="border p-1 rounded" onchange="saveOneAtt(${i})">
+                        <option value="">Select</option>
+                        <option>Present</option>
+                        <option>Absent</option>
+                    </select>
+                </td>
+            </tr>
+        `).join('');
+    }
 
 
 async function saveOneAtt(i) {
@@ -625,7 +1048,7 @@ async function saveOneAtt(i) {
     const Class = classDiv[0] || "";
     const Div = classDiv[1] || "";
 
-    const data = [{ BusId: bus, Section: sec, Name: name, School: school, Class, Div, Status: status }];
+    const data =[{ BusId: bus, Section: sec, Name: name, School: school, Class, Div, Status: status }];
 
     showLoad();
     try {
@@ -633,10 +1056,18 @@ async function saveOneAtt(i) {
             method: 'POST',
             body: JSON.stringify({ action: "saveAttendance", data })
         });
+        
+        // Push to local tracking so they stay hidden
+        todayAtt.push({ BusId: bus, Name: name, Section: sec });
+
         // Hide entire row after saving
         const row = document.getElementById(`attRow${i}`);
         if (row) row.style.display = 'none';
         msg("Success", `Saved attendance for ${name}`, "success");
+        
+        // Check if table is empty now and show success message
+        loadAttTbl(); // Refresh table to check if everyone is marked
+        
     } catch (e) {
         msg("Error", "Failed to save attendance.", "error");
     }
@@ -717,48 +1148,166 @@ Contact: G Mahesh Kumar - 9497731772
     // --- Tab 4: Fee ---
     // In renderTab4 add a wrapper div with id "feeMgmtHeader", initially visible
 function renderTab4(c) {
+    // 1. Get filtered data and apply initial Alphabetical Sorting
+    currentFeeDB = getFilteredDB();
+    currentFeeDB.sort((a, b) => String(a.StudentName).toLowerCase().localeCompare(String(b.StudentName).toLowerCase()));
+    
+    // Reset sort state trackers
+    feeSortCol = 'StudentName';
+    feeSortAsc = true;
+
+    const months =["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+
     c.innerHTML = `
+        <!-- Top Search Header -->
         <div id="feeMgmtHeader">
             <h2 class="text-2xl font-bold mb-4">Fee Management</h2>
             <div class="flex gap-2 mb-6">
-                <input type="text" id="fSearch" placeholder="Phone or Name" class="p-2 border rounded w-1/2">
-                <button onclick="findFeeStu()" class="bg-blue-600 text-white px-4 rounded font-bold">Find</button>
+                <input type="text" id="fSearch" placeholder="Phone or Name (To Pay Fee)" class="p-2 border-2 border-gray-300 rounded w-1/2 focus:outline-none focus:border-blue-500">
+                <button onclick="findFeeStu()" class="bg-blue-600 text-white px-5 rounded font-bold shadow hover:bg-blue-700 transition">Find & Pay</button>
             </div>
         </div>
-        <div id="feeArea" class="hidden">
-            <div class="bg-blue-50 p-4 rounded mb-4 shadow-sm border border-blue-100" id="feeDetails"></div>
+        
+        <!-- Individual Payment Area (Hidden by Default) -->
+        <div id="feeArea" class="hidden mb-10 pb-8 border-b-2 border-gray-200">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="font-bold text-lg text-gray-800">Processing Payment</h3>
+                <button onclick="document.getElementById('feeArea').classList.add('hidden')" class="text-sm font-bold text-red-500 hover:bg-red-50 px-3 py-1 rounded">Close</button>
+            </div>
             
-            <div id="feeAddSection" class="flex gap-2 mb-4 bg-gray-50 p-4 rounded border">
-                <select id="feeMon" class="p-2 border rounded">
+            <div class="bg-blue-50 p-4 rounded mb-4 shadow-sm border border-blue-200" id="feeDetails"></div>
+            
+            <div id="feeAddSection" class="flex gap-2 mb-4 bg-white p-4 rounded border shadow-sm items-center">
+                <select id="feeMon" class="p-2.5 border rounded outline-none focus:border-blue-500 font-bold text-sm">
                     <option>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option><option>Oct</option><option>Nov</option><option>Dec</option><option>Jan</option><option>Feb</option><option>Mar</option>
                 </select>
-                <input type="number" id="feeAmt" placeholder="Amount" class="p-2 border rounded">
-                <button onclick="payFee()" class="bg-green-600 text-white px-6 rounded font-bold hover:bg-green-700">ADD</button>
+                <input type="number" id="feeAmt" placeholder="Amount (₹)" class="p-2.5 border rounded outline-none focus:border-blue-500 font-bold text-sm flex-grow">
+                <button onclick="payFee()" class="bg-green-600 text-white px-8 py-2.5 rounded font-black hover:bg-green-700 shadow-md">ADD PAYMENT</button>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm border bg-white">
+            <div class="overflow-x-auto mb-6">
+                <table class="w-full text-left text-sm border bg-white shadow-sm rounded-lg overflow-hidden">
                     <tr class="bg-gray-800 text-white">
-                        <th class="p-2">Month</th><th class="p-2">Amount Paid</th><th class="p-2">Receipt</th><th class="p-2">Date/Time</th>
+                        <th class="p-3">Month</th><th class="p-3">Amount Paid</th><th class="p-3">Receipt</th><th class="p-3">Date/Time</th>
                     </tr>
                     <tbody id="feeTable"></tbody>
                 </table>
             </div>
-            <br>
 
-            <div class="flex gap-2">
-                <button onclick="shareReport()" class="bg-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 no-print">
-                    Share
+            <div class="flex gap-3">
+                <button onclick="shareReport()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 no-print">
+                    Share / Print Profile
                 </button>
-                <button onclick="shareFeeWA()" title="Share via WhatsApp" class="bg-green-600 text-white px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-green-700 transition shadow-lg shadow-green-100 no-print">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M20.52 3.48A11.91 11.91 0 0012 0C5.37 0 0 5.37 0 12a11.7 11.7 0 001.95 6L0 24l6-1.95a11.86 11.86 0 005.94 1.7c6.63 0 12-5.37 12-12a11.89 11.89 0 00-3.42-8.27zM12 21a9.25 9.25 0 01-4.77-1.35l-.34-.22-3.57 1.16 1.11-3.48-.22-.36A9.25 9.25 0 012.75 12 9.25 9.25 0 0112 2.75 9.25 9.25 0 0121.25 12 9.25 9.25 0 0112 21zm5.37-6.31l-1.5-.43a.51.51 0 00-.47.14l-.98 1.07a7.38 7.38 0 01-3.46-3.44l1.07-.98a.53.53 0 00.15-.46l-.43-1.51a.54.54 0 00-.66-.37l-2.22.56a.51.51 0 00-.41.64A7 7 0 0014 16a7 7 0 002.37-1.17.5.5 0 00.13-.69z"/>
-                    </svg>
-                    WhatsApp
+                <button onclick="shareFeeWA()" title="Share via WhatsApp" class="bg-green-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-green-700 transition shadow-lg shadow-green-100 no-print">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.52 3.48A11.91 11.91 0 0012 0C5.37 0 0 5.37 0 12a11.7 11.7 0 001.95 6L0 24l6-1.95a11.86 11.86 0 005.94 1.7c6.63 0 12-5.37 12-12a11.89 11.89 0 00-3.42-8.27zM12 21a9.25 9.25 0 01-4.77-1.35l-.34-.22-3.57 1.16 1.11-3.48-.22-.36A9.25 9.25 0 012.75 12 9.25 9.25 0 0112 2.75 9.25 9.25 0 0121.25 12 9.25 9.25 0 0112 21zm5.37-6.31l-1.5-.43a.51.51 0 00-.47.14l-.98 1.07a7.38 7.38 0 01-3.46-3.44l1.07-.98a.53.53 0 00.15-.46l-.43-1.51a.54.54 0 00-.66-.37l-2.22.56a.51.51 0 00-.41.64A7 7 0 0014 16a7 7 0 002.37-1.17.5.5 0 00.13-.69z"/></svg>
+                    WhatsApp Report
                 </button>
             </div>
         </div>
+        
+        <!-- Massive Default Overview Table (Visible by Default) -->
+        <div id="defaultFeeTableSection">
+            <h3 class="text-xl font-black mb-4 text-gray-800 flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-blue-500"></span> 
+                All Students Fee Overview 
+                <span class="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-md font-bold">${currentFeeDB.length} Students</span>
+            </h3>
+            
+            <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
+                <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
+                    <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
+                        <tr>
+                            <!-- Added cursor-pointer, hover effects, and sorting calls to ALL headers -->
+                            <th onclick="sortFeeTable('StudentName')" class="cursor-pointer hover:bg-gray-700 p-4 border sticky left-0 z-10 bg-gray-900 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Name & Details ↕</th>
+                            <th onclick="sortFeeTable('Fee')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center text-[10px] text-gray-300">Fee Base ↕</th>
+                            ${months.map(m => `<th onclick="sortFeeTable('${m}')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center text-[11px] min-w-[100px]">${m} ↕</th>`).join('')}
+                            <th onclick="sortFeeTable('Total')" class="cursor-pointer hover:bg-green-800 p-3 border text-center bg-green-900 min-w-[100px]">Total Paid ↕</th>
+                            <th onclick="sortFeeTable('Balance')" class="cursor-pointer hover:bg-red-800 p-3 border text-center bg-red-900 min-w-[100px]">Balance ↕</th>
+                            <th class="p-3 border text-center cursor-default">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="defaultFeeTableBody">
+                        ${generateFeeTableRows(currentFeeDB)}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     `;
+}
+
+// Generates the table HTML dynamically so we can re-render it instantly when sorted
+function generateFeeTableRows(dbData) {
+    const months =["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+    if (!dbData || dbData.length === 0) {
+        return '<tr><td colspan="15" class="p-6 text-center text-gray-400 italic">No students found.</td></tr>';
+    }
+
+    return dbData.map(s => {
+        let monthCells = months.map(m => {
+            const amt = parseFloat(s[m]);
+            if (amt > 0) {
+                return `<td class="p-2 border text-[10px] text-center align-top min-w-[100px]">
+                            <div class="font-bold text-green-600 text-xs mb-1">₹${s[m]}</div>
+                            <div class="text-gray-500 whitespace-nowrap bg-gray-50 rounded px-1 mb-0.5" title="Receipt No">${s[m+'Receipt']||'-'}</div>
+                            <div class="text-gray-400 whitespace-nowrap" title="Date Paid">${formatMyDate(s[m+'DateTime'])||'-'}</div>
+                        </td>`;
+            } else {
+                return `<td class="p-2 border text-[10px] text-center align-middle min-w-[100px]">
+                            <span class="bg-red-50 text-red-600 font-bold px-2 py-1.5 rounded border border-red-100">Pending</span>
+                        </td>`;
+            }
+        }).join('');
+
+        const reminderBtn = `<button onclick="sendReminderWA('${s.Phone}')" class="flex items-center gap-1 bg-green-600 text-white px-3 py-1.5 rounded text-[10px] font-bold hover:bg-green-700 transition mx-auto shadow-sm" title="Send Fee Reminder">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.52 3.48A11.91 11.91 0 0012 0C5.37 0 0 5.37 0 12a11.7 11.7 0 001.95 6L0 24l6-1.95a11.86 11.86 0 005.94 1.7c6.63 0 12-5.37 12-12a11.89 11.89 0 00-3.42-8.27zM12 21a9.25 9.25 0 01-4.77-1.35l-.34-.22-3.57 1.16 1.11-3.48-.22-.36A9.25 9.25 0 012.75 12 9.25 9.25 0 0112 2.75 9.25 9.25 0 0121.25 12 9.25 9.25 0 0112 21zm5.37-6.31l-1.5-.43a.51.51 0 00-.47.14l-.98 1.07a7.38 7.38 0 01-3.46-3.44l1.07-.98a.53.53 0 00.15-.46l-.43-1.51a.54.54 0 00-.66-.37l-2.22.56a.51.51 0 00-.41.64A7 7 0 0014 16a7 7 0 002.37-1.17.5.5 0 00.13-.69z"/></svg>WA
+        </button>`;
+
+        return `
+        <tr class="hover:bg-blue-50 bg-white group transition">
+            <td class="p-3 border font-bold text-xs sticky left-0 z-10 bg-white group-hover:bg-blue-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                <div class="whitespace-nowrap text-gray-800 text-sm">${s.StudentName}</div>
+                <div class="text-[10px] font-bold text-blue-600 mt-1 uppercase">${s.Class}-${s.Div}</div>
+                <div class="text-[10px] font-medium text-gray-500">${s.Phone}</div>
+            </td>
+            <td class="p-2 border font-bold text-xs text-center align-middle text-gray-600 bg-gray-50">₹${s.Fee || 0}</td>
+            ${monthCells}
+            <td class="p-2 border font-black text-green-700 text-sm text-center align-middle bg-green-50">₹${s.Total || 0}</td>
+            <td class="p-2 border font-black text-red-600 text-sm text-center align-middle bg-red-50">₹${s.Balance || 0}</td>
+            <td class="p-2 border text-center align-middle">${reminderBtn}</td>
+        </tr>`;
+    }).join('');
+}
+
+// Sorting logic handles text (Name) and numbers (Amounts/Balances) automatically
+function sortFeeTable(col) {
+    if (feeSortCol === col) {
+        feeSortAsc = !feeSortAsc; // Toggle direction if same column clicked
+    } else {
+        feeSortCol = col;
+        feeSortAsc = true;
+    }
+
+    currentFeeDB.sort((a, b) => {
+        let valA = a[col] || '';
+        let valB = b[col] || '';
+
+        // Handle string vs number sorting
+        if (col === 'StudentName') {
+            valA = String(valA).toLowerCase();
+            valB = String(valB).toLowerCase();
+        } else {
+            // Treat missing/pending fee values as 0 for sorting
+            valA = parseFloat(valA) || 0;
+            valB = parseFloat(valB) || 0;
+        }
+
+        if (valA < valB) return feeSortAsc ? -1 : 1;
+        if (valA > valB) return feeSortAsc ? 1 : -1;
+        return 0;
+    });
+
+    // Re-render only the table body
+    document.getElementById('defaultFeeTableBody').innerHTML = generateFeeTableRows(currentFeeDB);
 }
 
 
@@ -1269,7 +1818,79 @@ async function reprint(receiptNo, month = 'N/A') {
     hideLoad();
 }
 
+// --- Tab 6: Logs (Admin Only) ---
+    function renderTab6(c) {
+        c.innerHTML = `
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">System Logs</h2>
+                <button onclick="loadTab(6)" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-bold shadow">
+                    Refresh Logs
+                </button>
+            </div>
+            <input type="text" id="logSearch" onkeyup="searchLogs(this.value)" placeholder="Search User ID, Name, or Role..." class="w-full p-2 border-2 rounded mb-4">
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm border whitespace-nowrap">
+                    <tr class="bg-gray-800 text-white">
+                        <th class="p-2 border">Login Time</th>
+                        <th class="p-2 border">User ID</th>
+                        <th class="p-2 border">Role</th>
+                        <th class="p-2 border">Name</th>
+                        <th class="p-2 border">Logout Time</th>
+                        <th class="p-2 border">Duration</th>
+                    </tr>
+                    <tbody id="logBody">
+                        <tr><td colspan="6" class="p-4 text-center animate-pulse font-bold text-gray-500">Loading logs from server...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+        fetchLogs();
+    }
 
+    async function fetchLogs() {
+        try {
+            const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getLogs"})}).then(r=>r.json());
+            const tbody = document.getElementById('logBody');
+            if(res.success && res.data.length > 0) {
+                window.allLogs = res.data; // Save locally for instant searching
+                renderLogTable(res.data);
+            } else {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">No logs found.</td></tr>';
+            }
+        } catch(e) {
+            document.getElementById('logBody').innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500">Failed to load logs.</td></tr>';
+        }
+    }
+
+    function renderLogTable(data) {
+        const tbody = document.getElementById('logBody');
+        tbody.innerHTML = data.map(L => {
+            const loginStr = L.LoginTime ? new Date(L.LoginTime).toLocaleString('en-GB') : '-';
+            const logoutStr = L.LogoutTime ? new Date(L.LogoutTime).toLocaleString('en-GB') : '<span class="text-green-600 font-bold">Active/Pending</span>';
+            return `
+            <tr class="border-b hover:bg-gray-50">
+                <td class="p-2 border-r">${loginStr}</td>
+                <td class="p-2 border-r font-bold">${L.UserId}</td>
+                <td class="p-2 border-r text-blue-700 font-semibold">${L.Role}</td>
+                <td class="p-2 border-r">${L.Name}</td>
+                <td class="p-2 border-r">${logoutStr}</td>
+                <td class="p-2 font-mono text-gray-600 bg-gray-50">${L.Duration || '-'}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    function searchLogs(q) {
+        q = q.toLowerCase();
+        if(!window.allLogs) return;
+        const filtered = window.allLogs.filter(L => 
+            String(L.UserId).toLowerCase().includes(q) || 
+            String(L.Name).toLowerCase().includes(q) ||
+            String(L.Role).toLowerCase().includes(q)
+        );
+        renderLogTable(filtered);
+    }
+    
 
 function formatMyDate(dateStr) {
     if (!dateStr || dateStr === '-') return '-';
@@ -1282,6 +1903,8 @@ function formatMyDate(dateStr) {
         return dateStr.split(',')[0];
     }
 }
+
+
 
 
 </script>
