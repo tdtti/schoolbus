@@ -1367,7 +1367,7 @@ function stopLocationTracking() {
 
         c.innerHTML = `
             <h2 class="text-2xl font-bold mb-4">Mark Attendance</h2>
-            ${liveShareUI}
+            
             <div class="flex gap-2 mb-4">
                 <select id="aBus" onchange="loadAttTbl()" class="p-2 border rounded-xl w-1/3 shadow-sm ${curUser.role === 'Bus' ? 'bg-gray-200 cursor-not-allowed text-gray-700 font-bold' : ''}" ${curUser.role === 'Bus' ? 'disabled' : ''}>
                     ${busOptions}
@@ -1376,6 +1376,7 @@ function stopLocationTracking() {
                     <option>FN</option><option>AN</option>
                 </select>
             </div>
+            ${liveShareUI}
             <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200">
                 <table class="w-full text-left text-sm border-collapse bg-white">
                     <tr class="bg-gray-800 text-white"><th class="p-3">Name</th><th class="p-3">School</th><th class="p-3">Class</th><th class="p-3 text-center">Action</th></tr>
