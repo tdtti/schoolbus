@@ -76,6 +76,21 @@
     padding: 10px;
 }
 
+/* Modern Background & Transitions */
+        @keyframes blob {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob { animation: blob 7s infinite; }
+        .animation-delay-2000 { animation-delay: 2s; }
+        .animation-delay-4000 { animation-delay: 4s; }
+        
+        /* Smooth tab fade in */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .tab-content { animation: fadeIn 0.4s ease-out forwards; }
+        
 
     </style>
 </head>
@@ -97,22 +112,122 @@
         <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded text-sm font-bold shadow">Logout</button>
     </header>
 
-    <div id="loginSection" class="min-h-screen flex items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
-            <h2 class="text-2xl font-bold text-center mb-6">Combined Login</h2>
-            <div class="bg-gray-50 p-4 rounded border mb-4">
-                <h3 class="font-bold text-sm text-gray-600 mb-2">STUDENT LOGIN</h3>
-                <input type="text" id="stuSearch" placeholder="Phone or Name" class="w-full p-2 border rounded mb-2 outline-none focus:ring-2 focus:ring-blue-500">
-                <button onclick="loginStudent()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700">Search</button>
+    <!-- MODERN SWAPPABLE LOGIN SECTION -->
+    <div id="loginSection" class="min-h-screen flex items-center justify-center p-4 lg:p-8 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
+        
+        <!-- Animated Ambient Background Blobs -->
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+            <div class="absolute -top-24 -left-24 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+            <div class="absolute top-1/4 -right-24 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+            <div class="absolute -bottom-24 left-1/3 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+        </div>
+
+        <!-- Main Glassmorphism Split Card -->
+        <div class="bg-white/95 backdrop-blur-2xl rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] w-full max-w-5xl z-10 relative border border-white/20 flex flex-col md:flex-row overflow-hidden">
+            
+            <!-- LEFT COLUMN: Swappable Login Form -->
+            <div class="w-full md:w-1/2 p-8 md:p-12 lg:p-16 relative">
+                
+                <!-- Header & Logo -->
+                <div class="text-center mb-10">
+                    <div class="inline-flex justify-center items-center bg-white p-3 rounded-2xl shadow-xl shadow-blue-500/10 mb-4 border border-gray-100 transform transition hover:scale-105">
+                        <!-- REPLACE WITH YOUR ACTUAL LOGO URL -->
+                        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLs9jyTEZv_qb7Sl-eWiCONiB_n-Jjv4icm2S3lPnmoqXnCQedYEs_cA3dwEleMx_hl9ByCEFyLE2nH6wyatT_dKjQNScu5jwkMJngSC3q9RNdZmUaa12r1jmURQM8VnhQKugi1wCklnSYOWiG7uP2E1gNmCA29pXFrrMvw0yMoAhWhZA/s1600/Logo2.png" alt="School Logo" class="h-14 w-14 object-contain">
+                    </div>
+                    <h1 class="text-3xl font-black text-gray-800 tracking-tight">TD SCHOOLS</h1>
+                    <p class="text-xs font-bold text-blue-600 uppercase tracking-widest mt-1">Bus Management Portal</p>
+                </div>
+
+                <!-- Modern Tab Switcher -->
+                <div class="flex bg-gray-100/80 p-1.5 rounded-xl mb-8 relative">
+                    <button id="btnTabStu" onclick="switchLoginTab('student')" class="flex-1 py-3 rounded-lg text-sm font-bold shadow-sm bg-white text-blue-600 transition-all duration-300">
+                        Student Access
+                    </button>
+                    <button id="btnTabOff" onclick="switchLoginTab('official')" class="flex-1 py-3 rounded-lg text-sm font-bold text-gray-500 hover:text-gray-700 transition-all duration-300">
+                        Official Access
+                    </button>
+                </div>
+
+                <!-- Student Login Form (Active by default) -->
+                <div id="formStu" class="block tab-content">
+                    <div class="mb-2 relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        </div>
+                        <input type="text" id="stuSearch" placeholder="Enter Phone No or Student Name" class="w-full pl-11 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium text-gray-700 placeholder-gray-400">
+                    </div>
+                    <button onclick="loginStudent()" class="w-full mt-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-2xl font-bold text-sm tracking-wide shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-0.5 transition-all">
+                        Search My Profile
+                    </button>
+                </div>
+                
+
+                <!-- Official Login Form (Hidden by default) -->
+                <div id="formOff" class="hidden tab-content">
+                    <div class="space-y-4">
+                        <div>
+                            <input type="text" id="offUser" placeholder="Official User ID" class="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all font-medium text-gray-700 placeholder-gray-400">
+                        </div>
+                        <div>
+                            <input type="password" id="offPass" placeholder="Password" class="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all font-medium text-gray-700 placeholder-gray-400">
+                        </div>
+                        <div class="flex items-center justify-between ml-1 pt-1">
+                            <label class="flex items-center gap-2 cursor-pointer group">
+                                <input type="checkbox" id="keepLogin" class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 transition-colors cursor-pointer">
+                                <span class="text-sm font-semibold text-gray-500 group-hover:text-gray-800 transition-colors">Keep me logged in</span>
+                            </label>
+                        </div>
+                        <button onclick="loginOfficial()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-2xl font-bold text-sm tracking-wide shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 transition-all mt-2">
+                            Secure Login
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div class="text-center font-bold text-gray-400 mb-4">OR</div>
-            <div class="bg-gray-50 p-4 rounded border">
-                <h3 class="font-bold text-sm text-gray-600 mb-2">OFFICIAL LOGIN</h3>
-                <input type="text" id="offUser" placeholder="User ID" class="w-full p-2 border rounded mb-2 outline-none">
-                <input type="password" id="offPass" placeholder="Password" class="w-full p-2 border rounded mb-2 outline-none">
-                <label class="flex items-center gap-2 mb-2 text-sm"><input type="checkbox" id="keepLogin"> Keep me logged in</label>
-                <button onclick="loginOfficial()" class="w-full bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-700">Login</button>
+
+            <!-- RIGHT COLUMN: Elegant Instructions Panel -->
+            <div class="w-full md:w-1/2 bg-gradient-to-br from-blue-600 via-indigo-700 to-indigo-800 p-8 md:p-12 lg:p-16 text-white flex flex-col justify-center relative overflow-hidden">
+                <!-- Decorative Circles inside the right panel -->
+                <div class="absolute -top-24 -right-24 w-64 h-64 bg-white opacity-5 rounded-full blur-2xl"></div>
+                <div class="absolute -bottom-24 -left-10 w-48 h-48 bg-white opacity-10 rounded-full blur-2xl"></div>
+
+                <div class="relative z-10">
+                    <h2 class="text-3xl font-black mb-8 leading-tight">Welcome to the <br><span class="text-blue-200">Transport Portal</span></h2>
+                    
+                    <div class="space-y-8">
+                        <!-- Student Info -->
+                        <div class="bg-white/10 p-5 rounded-2xl border border-white/10 backdrop-blur-sm hover:bg-white/20 transition-all">
+                            <h3 class="font-bold text-white uppercase text-xs tracking-widest mb-3 flex items-center gap-2">
+                                <span class="bg-blue-500 text-white w-6 h-6 flex items-center justify-center rounded-full text-[10px]">🎓</span> 
+                                For Students & Parents
+                            </h3>
+                            <ul class="text-sm space-y-2 text-blue-100 font-medium">
+                                <li class="flex items-start gap-2"><span class="text-blue-300 mt-0.5">•</span> Search using your registered Phone Number or Name.</li>
+                                <li class="flex items-start gap-2"><span class="text-blue-300 mt-0.5">•</span> View fee payment history and pending balances.</li>
+                                <li class="flex items-start gap-2"><span class="text-blue-300 mt-0.5">•</span> Download A4 profile statements electronically.</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Official Info -->
+                        <div class="bg-white/10 p-5 rounded-2xl border border-white/10 backdrop-blur-sm hover:bg-white/20 transition-all">
+                            <h3 class="font-bold text-white uppercase text-xs tracking-widest mb-3 flex items-center gap-2">
+                                <span class="bg-indigo-500 text-white w-6 h-6 flex items-center justify-center rounded-full text-[10px]">🛡️</span> 
+                                For Officials & Staff
+                            </h3>
+                            <ul class="text-sm space-y-2 text-blue-100 font-medium">
+                                <li class="flex items-start gap-2"><span class="text-indigo-300 mt-0.5">•</span> <b>Teachers:</b> Monitor class attendance and share fee reminders securely.</li>
+                                <li class="flex items-start gap-2"><span class="text-indigo-300 mt-0.5">•</span> <b>Bus Staff:</b> Select your route and mark daily FN/AN attendance.</li>
+                                <li class="flex items-start gap-2"><span class="text-indigo-300 mt-0.5">•</span> <b>Admins:</b> Full access to master data, receipt generation, and logs.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="mt-10 pt-6 border-t border-white/20 flex items-center justify-between">
+                        <p class="text-xs text-blue-200 font-medium">Support:</p>
+                        <p class="text-sm font-black text-white bg-white/20 px-3 py-1 rounded-lg">📞 9497731772</p>
+                    </div>
+                </div>
             </div>
+
         </div>
     </div>
 
@@ -122,15 +237,31 @@
     </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzkLmtBhmQcmKWV0TgeWLqQsjCMso9NG02g9tzlsMbBslOZyxz16o7UpfDx-nxGx8FlRg/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbwI-ujokMGdLNm8WR9VbrXomZLv6Mg887rjK_d1mSETe5JRRWalnZ4GaBtQJLebvJclqw/exec";
    const users = {
   "4201": { id: "4201",pass: "buspass",role: "Bus",name: "KL32P4201SR",filter: "KL32P4201SR",access: [2] },
-  "teacher1": { id: "teacher1", pass: "teachpass",role: "Teacher",name: "Teacher A",tClass: "V",tDiv: "A",access: [1,2,4] },
-  "school1": { id: "school1", pass: "schpass",role: "School",name: "TDEMNS Admin", tSchool: "TDEMNS-td1", access: [1,3,4] },
-  "admin": { id: "admin", pass: "adminpass", role: "Admin", name: "Super Admin", access:[1,2,3,4,5,6] }
+  "teacher1": { id: "teacher1", pass: "teachpass",role: "Teacher",name: "S ABHILASHA (VA)",tClass: "V-34347",tDiv: "A",access: [1,2,4,5] },
+  "td1": { id: "td1", pass: "schpass",role: "School",name: "TDEMNS Admin", tSchool: "TDEMNS-td1", access: [1,2,3,4,5,7] },
+  "4201": { id: "4201", pass: "buspass", role: "Bus", name: "KL32P4201SR", filter: "KL32P4201SR", access: [2] },
+  "teacher1": { id: "teacher1", pass: "teachpass", role: "Teacher", name: "S ABHILASHA (VA)", tClass: "V-34347", tDiv: "A", access: [1, 2, 4, 5] },
+  "td1": { id: "td1", pass: "schpass", role: "School", name: "TDEMNS Admin", tSchool: "TDEMNS-td1", access: [1, 2, 3, 4, 5, 7] },
+  "principal": { id: "principal", pass: "prin2026", role: "Principal", name: "School Principal", access: [1, 2, 3, 4, 5, 6, 7, 8] },
+  "busman": { id: "busman", pass: "busman2026", role: "Bus Manager", name: "Bus Operations Manager", access: [1, 2, 3, 4, 5, 7, 8] },
+  "manager": { id: "manager", pass: "man2026", role: "Manager", name: "General Manager", access: [1, 3, 4, 5, 6, 7, 8] },
+  "admin": { id: "admin", pass: "adminpass", role: "Admin", name: "AJITH V", access:[1,2,3,4,5,6,7,8,9] }
 };
     
+    let locWatchId = null; 
+    let locDurationInterval = null;
+    let locStartTime = null;
+    let stuLocInterval = null;
+    let currentSharingBusId = null;
+    
     let curUser=null, loginDT=null, durInt=null, inactTimer=null;
+    let currentTab7DB =[];
+    let tab7SortCol = 'StudentName';
+    let tab7SortAsc = true;
+    
     let db = []; // Holds all student data
     let editID = null;
     let todayAtt =[];
@@ -139,6 +270,17 @@
     let feeSortCol = 'StudentName';
     let feeSortAsc = true;
     
+    let allReceiptsDB =[];
+    let receiptSortCol = 'ReceiptNo';
+    let receiptSortAsc = true;
+    
+    let currentDataDB =[];
+    let dataSortCol = 'StudentName';
+    let dataSortAsc = true;
+    
+    
+    
+    
     const showLoad = () => document.getElementById('loaderOverlay').style.display='flex';
     const hideLoad = () => document.getElementById('loaderOverlay').style.display='none';
     const msg = (t, txt, i="info") => Swal.fire({title:t, text:txt, icon:i, confirmButtonColor:'#3b82f6'});
@@ -146,7 +288,7 @@
     // --- Session & Core ---
     function resetTimer() {
         clearTimeout(inactTimer);
-        if(curUser) inactTimer = setTimeout(logout, 60000);
+        if(curUser) inactTimer = setTimeout(logout, 600000);
     }
     
     // This triggers immediately when the user closes the browser tab or navigates away
@@ -217,7 +359,28 @@
         msg("Error","Invalid Login","error");
     }
 }
+    
+    // --- Login Tab Switcher Logic ---
+    function switchLoginTab(tab) {
+        const btnStu = document.getElementById('btnTabStu');
+        const btnOff = document.getElementById('btnTabOff');
+        const formStu = document.getElementById('formStu');
+        const formOff = document.getElementById('formOff');
 
+        if (tab === 'student') {
+            formStu.classList.remove('hidden');
+            formOff.classList.add('hidden');
+            
+            btnStu.className = "flex-1 py-3 rounded-lg text-sm font-bold shadow-sm bg-white text-blue-600 transition-all duration-300";
+            btnOff.className = "flex-1 py-3 rounded-lg text-sm font-bold text-gray-500 hover:text-gray-700 transition-all duration-300";
+        } else {
+            formOff.classList.remove('hidden');
+            formStu.classList.add('hidden');
+            
+            btnOff.className = "flex-1 py-3 rounded-lg text-sm font-bold shadow-sm bg-white text-indigo-600 transition-all duration-300";
+            btnStu.className = "flex-1 py-3 rounded-lg text-sm font-bold text-gray-500 hover:text-gray-700 transition-all duration-300";
+        }
+    }
 
     async function startSession(u) {
     curUser = u; 
@@ -301,6 +464,13 @@ async function logout() {
 }
 
 function cleanupLogoutUI() {
+    // NEW: Stop all location tracking immediately
+    stopLocationTracking();
+    if (stuLocInterval) {
+        clearInterval(stuLocInterval);
+        stuLocInterval = null;
+    }
+
     curUser = null;
     loginDT = null;
     clearInterval(durInt);
@@ -321,7 +491,7 @@ function cleanupLogoutUI() {
     function renderTabs() {
         const t = document.getElementById('tabs'); t.innerHTML = '';
         if(curUser.role === "Student") { loadTab(0); return; }
-        const n = {1:"Students Record", 2:"Attendance", 3:"Data", 4:"Fee", 5:"Receipt Management", 6:"Logs"};
+        const n = {1:"Students Record", 2:"Attendance", 3:"Data", 4:"Fee", 5:"Receipt Management", 6:"Logs", 7:"Staff Records", 8:"Expenses", 9:"Balance Sheet 2026-27"};
         curUser.access.forEach(id => {
             const b = document.createElement('button');
             b.className = "px-4 py-2 bg-gray-200 hover:bg-blue-200 font-bold rounded text-sm";
@@ -339,6 +509,9 @@ function cleanupLogoutUI() {
         if(id === 4) renderTab4(c);
         if(id === 5) renderTab5(c);
         if(id === 6) renderTab6(c);
+        if(id === 7) renderTab7(c);
+        if(id === 8) renderTab8(c);
+        if(id === 9) renderTab9(c);
         
     }
 
@@ -402,6 +575,9 @@ function cleanupLogoutUI() {
     <div><p class="text-[10px] text-gray-400 font-bold uppercase">Balance</p><p class="font-bold text-red-600">₹${d.Balance || 0}</p></div>
 </div>
 
+<!-- DYNAMIC LIVE TRACKING MAP -->
+    <div id="studentLiveTrackContainer" class="mt-8 mb-8"></div>
+    
 
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <table class="w-full text-left border-collapse">
@@ -426,7 +602,60 @@ function cleanupLogoutUI() {
             </div>
         </div>
     `;
+    
+    startStudentMapRefresh(d.BusId);
+    
 }
+
+
+function startStudentMapRefresh(busId) {
+    const container = document.getElementById('studentLiveTrackContainer');
+    if(!container) return;
+    
+    const fetchLoc = async () => {
+        try {
+            const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getBusLocation", busId: busId})}).then(r=>r.json());
+            if(res.success && res.data) {
+                const {lat, lng} = res.data;
+                const mapUrl = `https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
+                
+                let iframe = document.getElementById('liveMapFrame');
+                if(!iframe) {
+                    container.innerHTML = `
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                            <div class="bg-green-50 p-4 border-b border-green-100 flex justify-between items-center">
+                                <h3 class="font-black text-green-800 flex items-center gap-2 text-sm uppercase tracking-wide">
+                                    <span class="relative flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span>
+                                    Live Bus Location
+                                </h3>
+                                <span class="text-[10px] font-bold text-green-600 bg-green-200 px-2 py-1 rounded-full uppercase">Updating Live</span>
+                            </div>
+                            <div class="h-64 md:h-96 w-full relative bg-gray-100">
+                                <iframe id="liveMapFrame" src="${mapUrl}" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Update iframe if coordinates changed significantly
+                    if(iframe.src !== mapUrl) iframe.src = mapUrl;
+                }
+            } else {
+                container.innerHTML = `
+                    <div class="bg-gray-50 border-2 border-gray-200 border-dashed rounded-2xl p-6 text-center shadow-sm">
+                        <span class="text-4xl mb-3 block opacity-50">📴</span>
+                        <p class="text-sm text-gray-500 font-bold tracking-wide">Bus location is currently offline</p>
+                        <p class="text-[10px] text-gray-400 uppercase mt-1">Driver will activate tracking when the trip starts</p>
+                    </div>
+                `;
+            }
+        } catch(e) {}
+    };
+    
+    fetchLoc(); // Fetch immediately
+    if(stuLocInterval) clearInterval(stuLocInterval);
+    stuLocInterval = setInterval(fetchLoc, 15000); // Check for new movement every 15 seconds
+}
+
 
 function downloadStudentPDF() {
     // 1. Prepare the Print Area with a "Statement" layout
@@ -485,9 +714,17 @@ function downloadStudentPDF() {
 }
 
 
+  
     // --- Tab 1: Students Record ---
     function renderTab1(c) {
-        const fDB = getFilteredDB();
+        // 1. Get filtered data and apply initial Alphabetical Sorting by StudentName
+        currentTab1DB = getFilteredDB();
+        currentTab1DB.sort((a, b) => String(a.StudentName).toLowerCase().localeCompare(String(b.StudentName).toLowerCase()));
+        
+        // Reset sort trackers
+        tab1SortCol = 'StudentName';
+        tab1SortAsc = true;
+
         c.innerHTML = `
             <h2 class="text-2xl font-bold mb-4">Manage Students</h2>
             <form id="sForm" onsubmit="saveS(event)" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 bg-gray-50 p-4 rounded border text-sm">
@@ -498,6 +735,7 @@ function downloadStudentPDF() {
                     <option>KL32L2382K</option>
                     <option>KL07BU4184C</option>
                     <option>KL32L0827U</option>
+                    <option>STAFF</option>
                 </select>
                 
                 <select id="f2" onchange="filterClasses(this.value)" required class="p-2 border rounded">
@@ -512,9 +750,9 @@ function downloadStudentPDF() {
                     <option value="">Class</option>
                 </select> 
                 
-                <select id="f4" required class="p-2 border rounded"><option value="">Div</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option></select>
+                <select id="f4" required class="p-2 border rounded"><option value="">Div</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>STAFF</option></select>
                 <input id="f5" required placeholder="Student Name" class="p-2 border rounded md:col-span-2">
-                <input id="f6" required placeholder="Parent Name" class="p-2 border rounded">
+                <input id="f6" required placeholder="Parent Name/PEN" class="p-2 border rounded">
                 <input id="f7" required placeholder="Phone" class="p-2 border rounded">
                 
                 <input list="entryStops" id="f8" placeholder="Entry Stop" class="p-2 border rounded">
@@ -523,42 +761,120 @@ function downloadStudentPDF() {
                 <input list="exitStops" id="f9" required placeholder="Exit Stop" class="p-2 border rounded">
                 <datalist id="exitStops"></datalist>
                 
-                <select id="f10" required class="p-2 border rounded"><option>Both Time</option><option>Morning Only</option><option>Evening Only</option></select>
+                <select id="f10" required class="p-2 border rounded"><option>Both Time</option><option>Morning Only</option><option>Evening Only</option><option>SPONSER</option></select>
                 <input id="f11" required placeholder="Fee Amount" type="number" class="p-2 border rounded">
                 <div class="col-span-2 md:col-span-4 flex gap-2">
                     <button type="submit" id="sBtn" class="bg-blue-600 text-white px-6 py-2 rounded font-bold">Save</button>
                     <button type="button" onclick="renderTab1(document.getElementById('tabContent'))" class="bg-gray-400 text-white px-4 py-2 rounded hidden" id="cBtn">Cancel</button>
                 </div>
             </form>
-            <input type="text" onkeyup="searchT1(this.value)" placeholder="Search Name or Phone..." class="w-full p-2 border-2 rounded mb-2">
             
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm border">
-                    <tr class="bg-gray-800 text-white"><th class="p-2">Bus</th><th class="p-2">Name</th><th class="p-2">Class</th><th class="p-2">Phone</th><th class="p-2">Fee</th><th class="p-2">Action</th></tr>
+            <input type="text" id="sSearchT1" onkeyup="searchT1()" placeholder="Search Name, Phone, Bus..." class="w-full p-2 border-2 border-gray-300 rounded mb-4 focus:outline-none focus:border-blue-500">
+            
+            <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
+                <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
+                    <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
+                        <tr>
+                            <!-- Rearranged and made Sortable -->
+                            <th onclick="sortTab1Table('StudentName')" class="p-3 border cursor-pointer hover:bg-gray-700">Name ↕</th>
+                            <th onclick="sortTab1Table('BusId')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Bus ↕</th>
+                            <th onclick="sortTab1Table('Class')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Class ↕</th>
+                            <th onclick="sortTab1Table('Phone')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Phone ↕</th>
+                            <th onclick="sortTab1Table('Fee')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Fee ↕</th>
+                            <th class="p-3 border text-center cursor-default">Action</th>
+                        </tr>
+                    </thead>
                     <tbody id="t1Body">
-                        ${fDB.map(s=>`<tr><td class="p-2 border-b">${s.BusId}</td><td class="p-2 border-b font-bold">${s.StudentName}</td><td class="p-2 border-b">${s.Class}-${s.Div}</td><td class="p-2 border-b">${s.Phone}</td><td class="p-2 border-b">₹${s.Fee}</td>
-                        <td class="p-2 border-b flex flex-wrap gap-1">
-                            <button type="button" onclick='viewStudentCard(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold shadow-sm">View</button>
-                            <button type="button" onclick='editS(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="bg-amber-500 text-white px-2 py-1 rounded text-xs">Edit</button>
-                            <button type="button" onclick="delS(${s._rowIndex})" class="bg-red-500 text-white px-2 py-1 rounded text-xs">Del</button>
-                        </td></tr>`).join('')}
+                        ${generateTab1Rows(currentTab1DB)}
                     </tbody>
                 </table>
             </div>
 
-            <!-- THE NEW UI CARD CONTAINER WILL APPEAR HERE -->
+            <!-- THE UI CARD CONTAINER -->
             <div id="studentProfileCard" class="hidden mt-8"></div>
         `;
         
         filterStops('');
         filterClasses('');
     }
+
+    // Generates the table HTML dynamically
+    function generateTab1Rows(data) {
+        if (!data || data.length === 0) return '<tr><td colspan="6" class="p-6 text-center text-gray-400 italic">No records found.</td></tr>';
+        
+        return data.map(s => `
+            <tr class="hover:bg-blue-50 bg-white border-b transition">
+                <td class="p-3 border-r font-bold text-gray-800">${s.StudentName}</td>
+                <td class="p-3 border-r text-gray-600 font-medium text-center">${s.BusId}</td>
+                <td class="p-3 border-r text-gray-600 font-medium text-center">${s.Class}-${s.Div}</td>
+                <td class="p-3 border-r text-gray-600 text-center">${s.Phone}</td>
+                <td class="p-3 border-r font-bold text-gray-700 text-center">₹${s.Fee}</td>
+                <td class="p-2 border-r flex flex-wrap justify-center gap-1">
+                    <button type="button" onclick='viewStudentCard(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold shadow-sm">View</button>
+                    <button type="button" onclick='editS(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded text-xs shadow-sm">Edit</button>
+                    <button type="button" onclick="delS(${s._rowIndex})" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs shadow-sm">Del</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Core sorting logic for Tab 1
+    function sortTab1Table(col) {
+        if (tab1SortCol === col) {
+            tab1SortAsc = !tab1SortAsc; // Toggle Asc/Desc
+        } else {
+            tab1SortCol = col;
+            tab1SortAsc = true;
+        }
+
+        currentTab1DB.sort((a, b) => {
+            let valA = a[col] || '';
+            let valB = b[col] || '';
+
+            // Handle Number columns
+            if (col === 'Fee' || col === 'Phone') {
+                valA = parseFloat(valA) || 0;
+                valB = parseFloat(valB) || 0;
+            } 
+            // Handle Class column (so it sorts Class and Division together)
+            else if (col === 'Class') {
+                valA = String(a.Class + '-' + a.Div).toLowerCase();
+                valB = String(b.Class + '-' + b.Div).toLowerCase();
+            } 
+            // Standard text (Name, Bus, etc.)
+            else {
+                valA = String(valA).toLowerCase();
+                valB = String(valB).toLowerCase();
+            }
+
+            if (valA < valB) return tab1SortAsc ? -1 : 1;
+            if (valA > valB) return tab1SortAsc ? 1 : -1;
+            return 0;
+        });
+
+        // Re-render table body
+        document.getElementById('t1Body').innerHTML = generateTab1Rows(currentTab1DB);
+        
+        // Ensure search filter is maintained if user sorts while searching
+        searchT1();
+    }
+
+    // Update Search Function to work with new DOM structure seamlessly
+    function searchT1() { 
+        const searchInput = document.getElementById('sSearchT1');
+        if (!searchInput) return;
+        
+        const q = searchInput.value.toLowerCase(); 
+        Array.from(document.getElementById('t1Body').rows).forEach(r => {
+            r.style.display = r.innerText.toLowerCase().includes(q) ? '' : 'none';
+        }); 
+    }
     
     const classMapping = {
-        "TDEMNS-td1":["PREKG-td1", "LKG-td1", "UKG-td1"],
-        "GTDLPS-34318":["I-34318", "II-34318", "III-34318", "IV-34318"],
-        "TDTTI-34347":["V-34347", "VI-34347", "VII-34347"],
-        "TDHS-34028":["VIII-34028", "IX-34028", "X-34028"],
+        "TDEMNS-td1":["PREKG-td1", "LKG-td1", "UKG-td1","TEACHER-PPTTC-td1"],
+        "GTDLPS-34318":["I-34318", "II-34318", "III-34318", "IV-34318","TEACHER-LPST-34318"],
+        "TDTTI-34347":["V-34347", "VI-34347", "VII-34347","TEACHER-UPST-34347"],
+        "TDHS-34028":["VIII-34028", "IX-34028", "X-34028","TEACHER-HST-34028"],
         
         
     };
@@ -573,10 +889,10 @@ function downloadStudentPDF() {
         // 2. If no school is selected, load everything
         if (!schoolId || schoolId === "") {
             const allClasses =[
-                "PREKG-td1", "LKG-td1", "UKG-td1", 
-                "I-34318", "II-34318", "III-34318", "IV-34318",
-                "V-34347", "VI-34347", "VII-34347", 
-                "VIII-34028", "IX-34028", "X-34028"
+                "PREKG-td1", "LKG-td1", "UKG-td1","TEACHER-td1",
+                "I-34318", "II-34318", "III-34318", "IV-34318","TEACHER-34318",
+                "V-34347", "VI-34347", "VII-34347","TEACHER-34347",
+                "VIII-34028", "IX-34028", "X-34028","TEACHER-34028"
             ];
             allClasses.forEach(function(c) {
                 classSelect.innerHTML += '<option value="' + c + '">' + c + '</option>';
@@ -676,11 +992,18 @@ function downloadStudentPDF() {
         document.getElementById('cBtn').classList.remove('hidden');
     }
 
-    async function delS(r) {
+    async function delS(r, tabId = 1) {
         if(!confirm("Delete forever?")) return;
-        showLoad(); await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"deleteStudent", rowIndex:r})});
-        await fetchData(); hideLoad(); renderTab1(document.getElementById('tabContent'));
+        showLoad(); 
+        await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"deleteStudent", rowIndex:r})});
+        await fetchData(); 
+        hideLoad(); 
+        
+        // Return to the correct tab after deleting
+        if (tabId === 7) renderTab7(document.getElementById('tabContent'));
+        else renderTab1(document.getElementById('tabContent'));
     }
+    
     function searchT1(q) { Array.from(document.getElementById('t1Body').rows).forEach(r=> r.style.display = r.innerText.toLowerCase().includes(q.toLowerCase())?'':'none'); }
 
 
@@ -786,6 +1109,11 @@ let curViewStudent = null; // Stores the currently viewed student for printing/s
         const d = curViewStudent;
         const months =["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
         
+        // Fetch current user details
+        const userName = curUser ? curUser.name : "Unknown User";
+        const generationDate = new Date().toLocaleDateString('en-GB'); // dd/mm/yyyy format
+        const generationTime = new Date().toLocaleTimeString('en-GB'); 
+        
         // 1. Build the exact PDF Layout
         let html = `
             <div style="padding: 20px; font-family: sans-serif; color: #333; background: white;">
@@ -811,7 +1139,7 @@ let curViewStudent = null; // Stores the currently viewed student for printing/s
                         <p><b>Bus ID:</b> ${d.BusId}</p>
                         <p><b>Travel Time:</b> ${d.Status||'-'}</p>
                         <p><b>Monthly Fee:</b> ₹${d.Fee}</p>
-                        <p><b>Date:</b> ${new Date().toLocaleDateString('en-GB')}</p>
+                        <p><b>Date:</b> ${generationDate}</p>
                     </div>
                 </div>
 
@@ -828,12 +1156,14 @@ let curViewStudent = null; // Stores the currently viewed student for printing/s
                         ${months.map(m => {
                             const amt = parseFloat(d[m]);
                             if (amt > 0) {
+                                // FIXED: Use formatMyDate to enforce dd/mm/yyyy format
+                                const paidDate = formatMyDate(d[m+'DateTime']);
                                 return `
                                 <tr>
                                     <td style="border: 1px solid #ccc; padding: 8px;">${m}</td>
                                     <td style="border: 1px solid #ccc; padding: 8px; color: green; font-weight: bold;">₹${d[m]}</td>
                                     <td style="border: 1px solid #ccc; padding: 8px;">${d[m+'Receipt'] || '---'}</td>
-                                    <td style="border: 1px solid #ccc; padding: 8px;">${(d[m+'DateTime'] || '').split(',')[0]}</td>
+                                    <td style="border: 1px solid #ccc; padding: 8px;">${paidDate}</td>
                                 </tr>`;
                             } else {
                                 return `
@@ -848,9 +1178,16 @@ let curViewStudent = null; // Stores the currently viewed student for printing/s
                     </tbody>
                 </table>
 
-                <div style="display: flex; justify-content: flex-end; gap: 20px; font-size: 16px;">
-                    <p><b>Total Paid:</b> <span style="color: green;">₹${d.Total || 0}</span></p>
-                    <p><b>Balance:</b> <span style="color: red; font-weight: bold;">₹${d.Balance || 0}</span></p>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 30px;">
+                    <div style="font-size: 12px; color: #555;">
+                        <p style="margin: 2px 0;"><b>Generated By:</b> ${userName}</p>
+                        <p style="margin: 2px 0;"><b>Generated On:</b> ${generationDate} at ${generationTime}</p>
+                        <p style="margin: 2px 0;"><i>Electronically Generated Document</i></p>
+                    </div>
+                    <div style="font-size: 16px; text-align: right;">
+                        <p style="margin: 5px 0;"><b>Total Paid:</b> <span style="color: green;">₹${d.Total || 0}</span></p>
+                        <p style="margin: 5px 0;"><b>Balance:</b> <span style="color: red; font-weight: bold;">₹${d.Balance || 0}</span></p>
+                    </div>
                 </div>
             </div>
         `;
@@ -888,7 +1225,6 @@ let curViewStudent = null; // Stores the currently viewed student for printing/s
             printArea.innerHTML = '';
         }, 500);
     }
-
     function shareAdminStudentWA() {
         if(!curViewStudent) return;
         const s = curViewStudent;
@@ -925,11 +1261,75 @@ _This is a system generated statement._
         window.open(waUrl, '_blank');
     }
     
+    function startLocationTracking() {
+    const busId = document.getElementById('aBus').value;
+    if(!busId) return msg("Error", "Select a bus first", "warning");
+    if (!navigator.geolocation) return msg("Error", "GPS not supported by your browser", "error");
+
+    document.getElementById('btnStartTrack').classList.add('hidden');
+    document.getElementById('btnStopTrack').classList.remove('hidden');
+    document.getElementById('locStatusDot').className = "w-3 h-3 rounded-full bg-green-500 animate-ping absolute";
+    document.getElementById('locStatusText').innerText = "Broadcasting Live Location...";
+    
+    locStartTime = Date.now();
+    currentSharingBusId = busId;
+
+    locDurationInterval = setInterval(() => {
+        const diff = Math.floor((Date.now() - locStartTime) / 1000);
+        const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+        const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+        const s = String(diff % 60).padStart(2, '0');
+        const el = document.getElementById('locDurationText');
+        if (el) el.innerText = `Duration: ${h}:${m}:${s}`;
+    }, 1000);
+
+    locWatchId = navigator.geolocation.watchPosition(
+        async (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            try {
+                // Silently push updates to backend
+                await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"updateBusLocation", busId: busId, lat: lat, lng: lng, startTime: locStartTime})});
+            } catch(e) {}
+        },
+        (err) => {
+            msg("GPS Error", "Please allow location permissions in your browser settings.", "error");
+            stopLocationTracking();
+        },
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 5000 }
+    );
+}
+
+function stopLocationTracking() {
+    if (locWatchId) navigator.geolocation.clearWatch(locWatchId);
+    if (locDurationInterval) clearInterval(locDurationInterval);
+    
+    locWatchId = null;
+    locDurationInterval = null;
+    locStartTime = null;
+
+    const btnStart = document.getElementById('btnStartTrack');
+    const btnStop = document.getElementById('btnStopTrack');
+    const dot = document.getElementById('locStatusDot');
+    const statusText = document.getElementById('locStatusText');
+    const durationText = document.getElementById('locDurationText');
+    
+    if (btnStart) btnStart.classList.remove('hidden');
+    if (btnStop) btnStop.classList.add('hidden');
+    if (dot) dot.className = "w-3 h-3 rounded-full bg-gray-400";
+    if (statusText) statusText.innerText = "Live GPS Tracking (Offline)";
+    if (durationText) durationText.innerText = "Duration: 00:00:00";
+
+    // Inform backend to delete location data
+    if (currentSharingBusId) {
+        fetch(API_URL, {method:'POST', body:JSON.stringify({action:"updateBusLocation", busId: currentSharingBusId, lat: null, lng: null})});
+        currentSharingBusId = null;
+    }
+}
     
     // --- Tab 2: Attendance ---
     
     async function renderTab2(c) {
-        // Show loading text while checking Google Sheets for today's marked students
         c.innerHTML = `<h2 class="text-2xl font-bold mb-4">Mark Attendance</h2><p class="text-blue-500 animate-pulse">Loading today's records...</p>`;
         
         try {
@@ -937,59 +1337,54 @@ _This is a system generated statement._
             if(res.success) todayAtt = res.data;
         } catch(e) {}
 
-        c.innerHTML = `
-            <h2 class="text-2xl font-bold mb-4">Mark Attendance</h2>
-            <div class="flex gap-2 mb-4">
-                <select id="aBus" onchange="loadAttTbl()" class="p-2 border rounded w-1/3">
-                    <option value="">Select Bus</option>
-                    <option>KL32P4201SR</option>
-                    <option>KL32M0528VM</option>
-                    <option>KL32L2382K</option>
-                    <option>KL07BU4184C</option>
-                    <option>KL32L0827U</option>
-                </select>
-                <!-- Added onchange here to switch lists automatically when changing FN/AN -->
-                <select id="aSec" onchange="loadAttTbl()" class="p-2 border rounded">
-                    <option>FN</option>
-                    <option>AN</option>
-                </select>
-                <p class="italic text-sm text-gray-500">Select Present/Absent to save instantly.</p>
-            </div>
-            <div class="overflow-x-auto"><table class="w-full text-left text-sm border"><tr class="bg-gray-800 text-white"><th class="p-2">Name</th><th class="p-2">School</th><th class="p-2">Class</th><th class="p-2">Action</th></tr>
-            <tbody id="attBody"><tr><td colspan="4" class="p-4 text-center">Select bus to load students</td></tr></tbody></table></div>
-        `;
-    }
-    
-    async function renderTab2(c) {
-        // Show loading text while checking Google Sheets for today's marked students
-        c.innerHTML = `<h2 class="text-2xl font-bold mb-4">Mark Attendance</h2><p class="text-blue-500 animate-pulse">Loading today's records...</p>`;
-        
-        try {
-            const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getTodayAttendance"})}).then(r=>r.json());
-            if(res.success) todayAtt = res.data;
-        } catch(e) {}
+        let busOptions = '';
+        if (curUser.role === "Bus") {
+            busOptions = `<option value="${curUser.filter}">${curUser.filter}</option>`;
+        } else {
+            busOptions = `<option value="">Select Bus</option>
+                <option>KL32P4201SR</option><option>KL32M0528VM</option>
+                <option>KL32L2382K</option><option>KL07BU4184C</option><option>KL32L0827U</option>`;
+        }
+
+        // Live Tracking Control Panel
+        let liveShareUI = '';
+        if (curUser.role === "Bus" || curUser.role === "Admin" || curUser.role === "Manager") {
+            liveShareUI = `
+            <div class="bg-indigo-50 border border-indigo-200 p-4 rounded-2xl mb-6 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div>
+                    <h3 class="font-black text-indigo-900 flex items-center gap-2">
+                        <span id="locStatusDot" class="w-3 h-3 rounded-full bg-gray-400"></span>
+                        <span id="locStatusText">Live GPS Tracking (Offline)</span>
+                    </h3>
+                    <p id="locDurationText" class="text-xs text-indigo-700 font-medium font-mono mt-1">Duration: 00:00:00</p>
+                </div>
+                <div class="flex gap-2 w-full md:w-auto">
+                    <button id="btnStartTrack" onclick="startLocationTracking()" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-black shadow-md transition">Start Live</button>
+                    <button id="btnStopTrack" onclick="stopLocationTracking()" class="hidden w-full md:w-auto bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-xl font-black shadow-md transition">End Live</button>
+                </div>
+            </div>`;
+        }
 
         c.innerHTML = `
             <h2 class="text-2xl font-bold mb-4">Mark Attendance</h2>
+            ${liveShareUI}
             <div class="flex gap-2 mb-4">
-                <select id="aBus" onchange="loadAttTbl()" class="p-2 border rounded w-1/3">
-                    <option value="">Select Bus</option>
-                    <option>KL32P4201SR</option>
-                    <option>KL32M0528VM</option>
-                    <option>KL32L2382K</option>
-                    <option>KL07BU4184C</option>
-                    <option>KL32L0827U</option>
+                <select id="aBus" onchange="loadAttTbl()" class="p-2 border rounded-xl w-1/3 shadow-sm ${curUser.role === 'Bus' ? 'bg-gray-200 cursor-not-allowed text-gray-700 font-bold' : ''}" ${curUser.role === 'Bus' ? 'disabled' : ''}>
+                    ${busOptions}
                 </select>
-                <!-- Added onchange here to switch lists automatically when changing FN/AN -->
-                <select id="aSec" onchange="loadAttTbl()" class="p-2 border rounded">
-                    <option>FN</option>
-                    <option>AN</option>
+                <select id="aSec" onchange="loadAttTbl()" class="p-2 border rounded-xl shadow-sm">
+                    <option>FN</option><option>AN</option>
                 </select>
-                <p class="italic text-sm text-gray-500">Select Present/Absent to save instantly.</p>
             </div>
-            <div class="overflow-x-auto"><table class="w-full text-left text-sm border"><tr class="bg-gray-800 text-white"><th class="p-2">Name</th><th class="p-2">School</th><th class="p-2">Class</th><th class="p-2">Action</th></tr>
-            <tbody id="attBody"><tr><td colspan="4" class="p-4 text-center">Select bus to load students</td></tr></tbody></table></div>
+            <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200">
+                <table class="w-full text-left text-sm border-collapse bg-white">
+                    <tr class="bg-gray-800 text-white"><th class="p-3">Name</th><th class="p-3">School</th><th class="p-3">Class</th><th class="p-3 text-center">Action</th></tr>
+                    <tbody id="attBody"><tr><td colspan="4" class="p-4 text-center text-gray-500">Select bus to load students</td></tr></tbody>
+                </table>
+            </div>
         `;
+
+        if (curUser.role === "Bus") loadAttTbl();
     }
 
     function loadAttTbl() {
@@ -1002,7 +1397,13 @@ _This is a system generated statement._
             return;
         }
 
+        // Get all students for the selected bus
         let sList = db.filter(s => s.BusId === bus);
+
+        // --- NEW LOGIC: If it's a Teacher, only show students from their Class & Division ---
+        if (curUser.role === "Teacher") {
+            sList = sList.filter(s => s.Class === curUser.tClass && s.Div === curUser.tDiv);
+        }
 
         // FILTER LOGIC: Remove students who are already marked for today in this specific Section (FN/AN)
         sList = sList.filter(s => {
@@ -1010,14 +1411,16 @@ _This is a system generated statement._
             return !isMarked; // Keep them ONLY if they are NOT marked
         });
 
-        // If everyone is already marked
+        // If everyone is already marked OR if there are no students from that class on this bus
         if (sList.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-green-600 font-bold">All students are already marked for ${sec} today!</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-green-600 font-bold">All targeted students are already marked for ${sec} today, or no students found!</td></tr>`;
             return;
         }
 
+        // Sort Alphabetically
         sList.sort((a, b) => a.StudentName.toLowerCase().localeCompare(b.StudentName.toLowerCase()));
 
+        // Render the filtered table
         tbody.innerHTML = sList.map((s, i) => `
             <tr id="attRow${i}">
                 <td class="p-2 border-b" id="anm${i}">${s.StudentName}</td>
@@ -1076,23 +1479,112 @@ async function saveOneAtt(i) {
 
     
     // --- Tab 3: Data ---
+    // --- Tab 3: Data ---
     function renderTab3(c) {
-        const fDB = getFilteredDB();
+        // 1. Get filtered data and apply initial Alphabetical Sorting
+        currentDataDB = getFilteredDB();
+        currentDataDB.sort((a, b) => String(a.StudentName).toLowerCase().localeCompare(String(b.StudentName).toLowerCase()));
+        
+        // Reset sort trackers
+        dataSortCol = 'StudentName';
+        dataSortAsc = true;
+
         c.innerHTML = `
-            <h2 class="text-2xl font-bold mb-4">Master Data</h2>
-            <div class="flex gap-2 mb-4"><input id="dSearch" onkeyup="searchT3()" placeholder="Search Name, Phone..." class="w-full p-2 border rounded"></div>
-            <div class="overflow-x-auto"><table class="w-full text-left text-xs border whitespace-nowrap"><tr class="bg-gray-800 text-white"><th class="p-2">Name</th><th class="p-2">Class</th><th class="p-2">Phone</th><th class="p-2">Total</th><th class="p-2">Balance</th><th class="p-2">Action</th></tr>
-            <tbody id="t3Body">${fDB.map(s=>`<tr><td class="p-2 border-b font-bold">${s.StudentName}</td><td class="p-2 border-b">${s.Class}-${s.Div}</td><td class="p-2 border-b">${s.Phone}</td><td class="p-2 border-b">₹${s.Total||0}</td><td class="p-2 border-b font-bold text-red-500">₹${s.Balance||0}</td><td class="p-2 border-b"><button
-    onclick="sendReminderWA('${s.Phone}')"
-    class="flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-green-700 transition"
-    title="Send Fee Reminder"
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-      <path d="M20.52 3.48A11.91 11.91 0 0012 0C5.37 0 0 5.37 0 12a11.7 11.7 0 001.95 6L0 24l6-1.95a11.86 11.86 0 005.94 1.7c6.63 0 12-5.37 12-12a11.89 11.89 0 00-3.42-8.27zM12 21a9.25 9.25 0 01-4.77-1.35l-.34-.22-3.57 1.16 1.11-3.48-.22-.36A9.25 9.25 0 012.75 12 9.25 9.25 0 0112 2.75 9.25 9.25 0 0121.25 12 9.25 9.25 0 0112 21zm5.37-6.31l-1.5-.43a.51.51 0 00-.47.14l-.98 1.07a7.38 7.38 0 01-3.46-3.44l1.07-.98a.53.53 0 00.15-.46l-.43-1.51a.54.54 0 00-.66-.37l-2.22.56a.51.51 0 00-.41.64A7 7 0 0014 16a7 7 0 002.37-1.17.5.5 0 00.13-.69z"/>
-    </svg>
-    Reminder
-  </button></tr>`).join('')}</tbody></table></div>
+            <h2 class="text-2xl font-bold mb-4">All Students Database</h2>
+            <div class="flex gap-2 mb-6">
+                <input id="dSearch" onkeyup="searchT3()" placeholder="Search Name, Phone, Class..." class="w-full p-2 border-2 border-gray-300 rounded focus:outline-none focus:border-blue-500">
+            </div>
+            
+            <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
+                <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
+                    <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
+                        <tr>
+                            <th onclick="sortDataTable('StudentName')" class="p-4 border cursor-pointer hover:bg-gray-700 sticky left-0 z-10 bg-gray-900 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Name ↕</th>
+                            <th onclick="sortDataTable('Class')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Class ↕</th>
+                            <th onclick="sortDataTable('Phone')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Phone ↕</th>
+                            <th onclick="sortDataTable('Total')" class="p-3 border cursor-pointer hover:bg-green-800 text-center bg-green-900">Total ↕</th>
+                            <th onclick="sortDataTable('Balance')" class="p-3 border cursor-pointer hover:bg-red-800 text-center bg-red-900">Balance ↕</th>
+                            <th class="p-3 border text-center cursor-default">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="t3Body">
+                        ${generateDataTableRows(currentDataDB)}
+                    </tbody>
+                </table>
+            </div>
         `;
+    }
+
+    // Generates the table HTML dynamically so we can re-render it instantly when sorted
+    function generateDataTableRows(data) {
+        if (!data || data.length === 0) return '<tr><td colspan="6" class="p-6 text-center text-gray-400 italic">No records found.</td></tr>';
+        
+        return data.map(s => `
+            <tr class="hover:bg-blue-50 bg-white border-b transition group">
+                <td class="p-3 border-r font-bold text-gray-800 sticky left-0 z-10 bg-white group-hover:bg-blue-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${s.StudentName}</td>
+                <td class="p-3 border-r text-gray-600 font-medium text-center">${s.Class}-${s.Div}</td>
+                <td class="p-3 border-r text-gray-600 text-center">${s.Phone}</td>
+                <td class="p-3 border-r font-black text-green-700 text-center bg-green-50">₹${s.Total || 0}</td>
+                <td class="p-3 border-r font-black text-red-600 text-center bg-red-50">₹${s.Balance || 0}</td>
+                <td class="p-2 text-center align-middle">
+                    <button onclick="sendReminderWA('${s.Phone}')" class="flex items-center gap-1 bg-green-600 text-white px-3 py-1.5 rounded text-[10px] font-bold hover:bg-green-700 transition mx-auto shadow-sm" title="Send Fee Reminder">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.52 3.48A11.91 11.91 0 0012 0C5.37 0 0 5.37 0 12a11.7 11.7 0 001.95 6L0 24l6-1.95a11.86 11.86 0 005.94 1.7c6.63 0 12-5.37 12-12a11.89 11.89 0 00-3.42-8.27zM12 21a9.25 9.25 0 01-4.77-1.35l-.34-.22-3.57 1.16 1.11-3.48-.22-.36A9.25 9.25 0 012.75 12 9.25 9.25 0 0112 2.75 9.25 9.25 0 0121.25 12 9.25 9.25 0 0112 21zm5.37-6.31l-1.5-.43a.51.51 0 00-.47.14l-.98 1.07a7.38 7.38 0 01-3.46-3.44l1.07-.98a.53.53 0 00.15-.46l-.43-1.51a.54.54 0 00-.66-.37l-2.22.56a.51.51 0 00-.41.64A7 7 0 0014 16a7 7 0 002.37-1.17.5.5 0 00.13-.69z"/></svg> Reminder
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Core sorting logic
+    function sortDataTable(col) {
+        if (dataSortCol === col) {
+            dataSortAsc = !dataSortAsc; // Toggle Asc/Desc
+        } else {
+            dataSortCol = col;
+            dataSortAsc = true;
+        }
+
+        currentDataDB.sort((a, b) => {
+            let valA = a[col] || '';
+            let valB = b[col] || '';
+
+            // Handle Number columns
+            if (col === 'Total' || col === 'Balance' || col === 'Phone') {
+                valA = parseFloat(valA) || 0;
+                valB = parseFloat(valB) || 0;
+            } 
+            // Handle Class column (so it sorts by Class and Division together)
+            else if (col === 'Class') {
+                valA = String(a.Class + '-' + a.Div).toLowerCase();
+                valB = String(b.Class + '-' + b.Div).toLowerCase();
+            } 
+            // Standard text
+            else {
+                valA = String(valA).toLowerCase();
+                valB = String(valB).toLowerCase();
+            }
+
+            if (valA < valB) return dataSortAsc ? -1 : 1;
+            if (valA > valB) return dataSortAsc ? 1 : -1;
+            return 0;
+        });
+
+        // Re-render table body
+        document.getElementById('t3Body').innerHTML = generateDataTableRows(currentDataDB);
+        
+        // Ensure search filter is maintained if user sorts while searching
+        searchT3();
+    }
+
+    // Maintained DOM Search function
+    function searchT3() { 
+        const searchInput = document.getElementById('dSearch');
+        if (!searchInput) return;
+        
+        const q = searchInput.value.toLowerCase(); 
+        Array.from(document.getElementById('t3Body').rows).forEach(r => {
+            r.style.display = r.innerText.toLowerCase().includes(q) ? '' : 'none';
+        }); 
     }
     
     function sendReminderWA(phone) {
@@ -1182,7 +1674,7 @@ function renderTab4(c) {
                     <option>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option><option>Oct</option><option>Nov</option><option>Dec</option><option>Jan</option><option>Feb</option><option>Mar</option>
                 </select>
                 <input type="number" id="feeAmt" placeholder="Amount (₹)" class="p-2.5 border rounded outline-none focus:border-blue-500 font-bold text-sm flex-grow">
-                <button onclick="payFee()" class="bg-green-600 text-white px-8 py-2.5 rounded font-black hover:bg-green-700 shadow-md">ADD PAYMENT</button>
+                <button onclick="payFee()" class="bg-green-600 text-white px-8 py-2.5 rounded font-black hover:bg-green-700 shadow-md">ADD</button>
             </div>
 
             <div class="overflow-x-auto mb-6">
@@ -1314,32 +1806,111 @@ function sortFeeTable(col) {
 
     
     let curFeeS = null;
+    
     function findFeeStu() {
         const q = document.getElementById('fSearch').value.toLowerCase();
         curFeeS = getFilteredDB().find(x => String(x.Phone).includes(q) || String(x.StudentName).toLowerCase().includes(q));
         if(!curFeeS) return msg("Not Found","Student not found in your access scope.","warning");
+        
         document.getElementById('feeArea').classList.remove('hidden');
         document.getElementById('feeDetails').innerHTML = `
-    <h3 class="text-lg font-bold">${curFeeS.StudentName}</h3>
-    <p class="text-sm">${curFeeS.School} | ${curFeeS.Class}-${curFeeS.Div} | Bus: ${curFeeS.BusId}</p>
-    <p><b>Entry Stop:</b> ${curFeeS.Entry || '-'} | <b>Exit Stop:</b> ${curFeeS.Exit || '-'}</p>
-    <p class="mt-2 text-blue-700 font-bold">Monthly Fee Base: ₹${curFeeS.Fee}</p>
-    <div class="flex justify-between mt-2 pt-2 border-t border-blue-200">
-        <span class="font-bold text-green-700">Total Paid: ₹${curFeeS.Total||0}</span>
-        <span class="font-bold text-red-600">Balance: ₹${curFeeS.Balance||0}</span>
-    </div>
-`;
+            <h3 class="text-lg font-bold">${curFeeS.StudentName}</h3>
+            <p class="text-sm">${curFeeS.School} | ${curFeeS.Class}-${curFeeS.Div} | Bus: ${curFeeS.BusId}</p>
+            <p><b>Entry Stop:</b> ${curFeeS.Entry || '-'} | <b>Exit Stop:</b> ${curFeeS.Exit || '-'}</p>
+            <p class="mt-2 text-blue-700 font-bold">Monthly Fee Base: ₹${curFeeS.Fee}</p>
+            <div class="flex justify-between mt-2 pt-2 border-t border-blue-200">
+                <span class="font-bold text-green-700">Total Paid: ₹${curFeeS.Total||0}</span>
+                <span class="font-bold text-red-600">Balance: ₹${curFeeS.Balance||0}</span>
+            </div>
+        `;
 
-        const m = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
-        document.getElementById('feeTable').innerHTML = m.map(x => `<tr class="border-b"><td class="p-2">${x}</td><td class="p-2 font-bold text-green-600">₹${curFeeS[x]||0}</td><td class="p-2 text-xs">${curFeeS[x+'Receipt']||'-'}</td><td class="p-2 text-xs">${formatMyDate(curFeeS[x+'DateTime'])||'-'}</td>
-</tr>`).join('');
+        const m =["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+        
+        // 1. DYNAMIC DROPDOWN LOGIC: Disable paid months
+        const feeMonSelect = document.getElementById('feeMon');
+        feeMonSelect.innerHTML = m.map(month => {
+            const isPaid = parseFloat(curFeeS[month]) > 0;
+            if (isPaid) {
+                return `<option value="${month}" disabled class="text-gray-400 bg-gray-100">${month} (Paid)</option>`;
+            } else {
+                return `<option value="${month}" class="font-bold text-blue-700">${month}</option>`;
+            }
+        }).join('');
+        
+        // 2. Automatically select the very first unpaid month in the list
+        const firstUnpaid = Array.from(feeMonSelect.options).find(opt => !opt.disabled);
+        if (firstUnpaid) {
+            firstUnpaid.selected = true;
+            document.getElementById('feeAmt').value = curFeeS.Fee || ''; // Auto-fill the base fee amount too
+        } else {
+            // If all months are paid, clear the amount
+            document.getElementById('feeAmt').value = '';
+        }
+
+        // 3. Render the standard payment history table below
+        document.getElementById('feeTable').innerHTML = m.map(x => `
+            <tr class="border-b">
+                <td class="p-2">${x}</td>
+                <td class="p-2 font-bold ${parseFloat(curFeeS[x]) > 0 ? 'text-green-600' : 'text-gray-400'}">₹${curFeeS[x]||0}</td>
+                <td class="p-2 text-xs">${curFeeS[x+'Receipt']||'-'}</td>
+                <td class="p-2 text-xs">${formatMyDate(curFeeS[x+'DateTime'])||'-'}</td>
+            </tr>
+        `).join('');
     }
+
     async function payFee() {
-        const m = document.getElementById('feeMon').value, a = document.getElementById('feeAmt').value;
-        if(!a) return msg("Error","Enter amount","warning");
-        showLoad(); await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"saveFee", rowIndex:curFeeS._rowIndex, data:{month:m, amount:a}})});
-        await fetchData(); hideLoad(); findFeeStu(); msg("Success","Fee updated instantly!","success");
+    const m = document.getElementById('feeMon').value;
+    const a = document.getElementById('feeAmt').value;
+    
+    if(!m) return msg("Error", "No valid month selected.", "warning");
+    if(parseFloat(curFeeS[m]) > 0) return msg("Already Paid", `The fee for ${m} is already paid!`, "error");
+    if(!a || a <= 0) return msg("Error", "Enter a valid amount", "warning");
+
+    showLoad(); 
+    try {
+        const res = await fetch(API_URL, {
+            method:'POST', 
+            body:JSON.stringify({
+                action:"saveFee", 
+                rowIndex:curFeeS._rowIndex, 
+                data:{
+                    month: m, 
+                    amount: a, 
+                    generator: curUser.name
+                }
+            })
+        }).then(r => r.json());
+
+        // Refresh master data from Google Sheet
+        await fetchData(); 
+        hideLoad();
+
+        if (res.success) {
+            msg("Success", `Payment for ${m} recorded successfully!`, "success");
+            
+            // 1. Update the currently selected student reference with the newly fetched data
+            const updatedStudent = db.find(x => x._rowIndex === curFeeS._rowIndex);
+            if (updatedStudent) {
+                curFeeS = updatedStudent;
+                
+                // 2. Temporarily set the search input to their phone to force an exact match refresh
+                document.getElementById('fSearch').value = curFeeS.Phone;
+                findFeeStu(); // Re-render the individual fee payment box
+                document.getElementById('fSearch').value = ''; // Clean up search bar
+            }
+            
+            // 3. Update the background massive fee table to reflect the new payment
+            currentFeeDB = getFilteredDB();
+            document.getElementById('defaultFeeTableBody').innerHTML = generateFeeTableRows(currentFeeDB);
+            
+        } else {
+            msg("Error", res.message || "Failed to process payment on server.", "error");
+        }
+    } catch(e) {
+        hideLoad();
+        msg("Error", "Network connection error.", "error");
     }
+}
     
     function createPrintHeader() {
     const userName = curUser ? curUser.name : "Unknown User";
@@ -1358,30 +1929,145 @@ function sortFeeTable(col) {
 
     
     function shareReport() {
-    const feeMgmtHeader = document.getElementById('feeMgmtHeader');
-    const feeArea = document.getElementById('feeArea');
-    const feeAddSection = document.getElementById('feeAddSection');
-
-    if (feeMgmtHeader) feeMgmtHeader.style.display = 'none'; // hide heading & search
-    if (feeAddSection) feeAddSection.style.display = 'none';   // hide fee add controls
-    if (feeArea) feeArea.style.borderTop = 'none'; // optional styling
-
-    const feeDetails = document.getElementById('feeDetails');
-    if (feeDetails) {
-        feeDetails.innerHTML = createPrintHeader() + feeDetails.innerHTML;
-    }
-
-    window.print();
-
-    setTimeout(() => {
-        if (feeMgmtHeader) feeMgmtHeader.style.display = '';
-        if (feeAddSection) feeAddSection.style.display = '';     // restore fee add controls
-        if (feeDetails) {
-            feeDetails.innerHTML = feeDetails.innerHTML.replace(/^.*<hr style="margin-top:10px;\/>"/s, '');
-            findFeeStu();
+        if (!curFeeS) {
+            alert("No student selected. Please search and select a student first.");
+            return;
         }
-    }, 500);
-}
+
+        const s = curFeeS;
+        const userName = curUser ? curUser.name : "System";
+        const generationDate = new Date().toLocaleDateString('en-GB'); // DD/MM/YYYY format
+        const months =["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+
+        // 1. Build the specific A4 Profile Layout
+        const html = `
+        <div id="a4-profile-wrapper" style="width: 210mm; min-height: 297mm; margin: 0 auto; padding: 40px; font-family: Arial, sans-serif; background: white; color: #333; box-sizing: border-box;">
+            
+            <!-- School Head with Logo -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1e40af; padding-bottom: 20px; margin-bottom: 30px;">
+                <div style="width: 100px;"></div>
+                <div style="text-align: center; flex-grow: 1;">
+                    <h1 style="margin: 0; font-size: 26px; font-weight: 900; color: #1e40af; text-transform: uppercase;">${s.School}</h1>
+                    <h2 style="margin: 6px 0; font-size: 16px; color: #374151; letter-spacing: 1px;">SCHOOL BUS MANAGEMENT 2026</h2>
+                    <span style="display: inline-block; margin-top: 10px; background: #eff6ff; color: #1d4ed8; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; border: 1px solid #bfdbfe;">
+                        FEE STATEMENT / STUDENT PROFILE
+                    </span>
+                </div>
+                <div style="width: 100px; text-align: right;">
+                    <!-- REPLACE WITH YOUR ACTUAL LOGO URL -->
+                    <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLs9jyTEZv_qb7Sl-eWiCONiB_n-Jjv4icm2S3lPnmoqXnCQedYEs_cA3dwEleMx_hl9ByCEFyLE2nH6wyatT_dKjQNScu5jwkMJngSC3q9RNdZmUaa12r1jmURQM8VnhQKugi1wCklnSYOWiG7uP2E1gNmCA29pXFrrMvw0yMoAhWhZA/s1600/Logo2.png" alt="School Logo" style="height: 80px; object-fit: contain;">
+                </div>
+            </div>
+            
+            <!-- Student/Staff Details -->
+            <div style="display: flex; justify-content: space-between; margin-bottom: 40px; font-size: 15px; line-height: 1.8;">
+                <div>
+                    <p style="margin: 0;"><b>Name:</b> <span style="font-weight: bold; font-size: 16px;">${s.StudentName}</span></p>
+                    <p style="margin: 0;"><b>School:</b> ${s.School}</p>
+                    <p style="margin: 0;"><b>Class and Div:</b> ${s.Class}-${s.Div || ''}</p>
+                    <p style="margin: 0;"><b>Entry Stop:</b> ${s.Entry || '-'}</p>
+                    <p style="margin: 0;"><b>Exit Stop:</b> ${s.Exit || '-'}</p>
+                </div>
+                <div style="text-align: right;">
+                    <p style="margin: 0;"><b>Date:</b> ${generationDate}</p>
+                    <p style="margin: 0;"><b>Monthly Fee:</b> <span style="color: #2563eb; font-weight: bold;">₹${s.Fee || 0}</span></p>
+                    <p style="margin: 0;"><b>Total Paid:</b> <span style="color: #166534; font-weight: bold;">₹${s.Total || 0}</span></p>
+                    <p style="margin: 0;"><b>Balance:</b> <span style="color: #dc2626; font-weight: bold;">₹${s.Balance || 0}</span></p>
+                </div>
+            </div>
+
+            <!-- Fee History Table -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px; font-size: 14px;">
+                <thead>
+                    <tr style="background-color: #f3f4f6; border-bottom: 2px solid #9ca3af;">
+                        <th style="padding: 12px; text-align: left; border: 1px solid #d1d5db;">Month</th>
+                        <th style="padding: 12px; text-align: center; border: 1px solid #d1d5db;">Amount Paid</th>
+                        <th style="padding: 12px; text-align: center; border: 1px solid #d1d5db;">Receipt No</th>
+                        <th style="padding: 12px; text-align: center; border: 1px solid #d1d5db;">Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${months.map(m => {
+                        const amt = parseFloat(s[m]);
+                        if (amt > 0) {
+                            return `
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #d1d5db; font-weight: bold;">${m}</td>
+                                <td style="padding: 12px; text-align: center; border: 1px solid #d1d5db; color: #166534; font-weight: bold;">₹${s[m]}</td>
+                                <td style="padding: 12px; text-align: center; border: 1px solid #d1d5db;">${s[m+'Receipt'] || '-'}</td>
+                                <td style="padding: 12px; text-align: center; border: 1px solid #d1d5db;">${formatMyDate(s[m+'DateTime'])}</td>
+                            </tr>`;
+                        } else {
+                            return `
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #d1d5db; font-weight: bold;">${m}</td>
+                                <td style="padding: 12px; text-align: center; border: 1px solid #d1d5db; color: #dc2626; font-style: italic;">Pending</td>
+                                <td style="padding: 12px; text-align: center; border: 1px solid #d1d5db;">-</td>
+                                <td style="padding: 12px; text-align: center; border: 1px solid #d1d5db;">-</td>
+                            </tr>`;
+                        }
+                    }).join('')}
+                </tbody>
+            </table>
+
+            <!-- Footer Message -->
+            <div style="margin-top: 60px; padding-top: 20px; border-top: 1px dashed #9ca3af; font-size: 13px; color: #4b5563;">
+                <p style="margin: 4px 0;"><b>Generated By:</b> ${userName}</p>
+                <p style="margin: 4px 0; font-style: italic; font-weight: bold;">Electronicaly Generated Receipt.No Signature Required.</p>
+            </div>
+        </div>
+        `;
+
+        // 2. Create a brand new container attached directly to the BODY (to escape existing CSS limits)
+        let printContainer = document.getElementById('a4ProfilePrintContainer');
+        if (!printContainer) {
+            printContainer = document.createElement('div');
+            printContainer.id = 'a4ProfilePrintContainer';
+            document.body.appendChild(printContainer);
+        }
+        printContainer.innerHTML = html;
+
+        // 3. Inject a temporary overpowering CSS rule to force A4 and hide absolutely everything else
+        let printStyle = document.getElementById('a4ProfilePrintStyle');
+        if (!printStyle) {
+            printStyle = document.createElement('style');
+            printStyle.id = 'a4ProfilePrintStyle';
+            document.head.appendChild(printStyle);
+        }
+        
+        printStyle.innerHTML = `
+            @media print {
+                /* Hide the entire app */
+                body * { visibility: hidden !important; }
+                /* Show ONLY the new profile container */
+                #a4ProfilePrintContainer, #a4ProfilePrintContainer * { visibility: visible !important; }
+                /* Force it to top left of paper */
+                #a4ProfilePrintContainer {
+                    position: absolute !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100% !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    border: none !important;
+                }
+                /* Force A4 Page Size */
+                @page { size: A4 portrait; margin: 0; }
+            }
+        `;
+
+        // 4. Trigger the Print dialog
+        setTimeout(() => {
+            window.print();
+            
+            // 5. Clean up instantly after printing to return screen to normal
+            setTimeout(() => {
+                printContainer.innerHTML = '';
+                printStyle.innerHTML = '';
+            }, 500);
+            
+        }, 200);
+    }
 
 
     
@@ -1450,22 +2136,175 @@ For queries contact: G Mahesh Kumar - 9497731772
     
     function renderTab5(c) {
         c.innerHTML = `
-            <h2 class="text-2xl font-bold mb-4">Receipt Management</h2>
-            <div class="flex gap-2 mb-6"><input type="text" id="rSearch" placeholder="Phone No" class="p-2 border rounded w-1/2"><button onclick="findReceiptStu()" class="bg-blue-600 text-white px-6 rounded font-bold">Search</button></div>
-            <div id="receiptResult" class="hidden">
-                <div class="grid grid-cols-2 gap-4 mb-4 p-4 bg-blue-50 rounded border" id="rStuInfo"></div>
-                <div class="overflow-x-auto mb-6">
-                    <table class="w-full text-sm border"><tr class="bg-gray-100"><th class="p-2 border">Month</th><th class="p-2 border">Amount</th><th class="p-2 border">Receipt No</th><th class="p-2 border">Action</th></tr>
-                    <tbody id="rPaymentTbl"></tbody></table>
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold mb-4">Search & Generate Receipt</h2>
+                <div class="flex gap-2 mb-6">
+                    <input type="text" id="rSearch" placeholder="Phone No or Name" class="p-2 border rounded w-1/2">
+                    <button onclick="findReceiptStu()" class="bg-blue-600 text-white px-6 rounded font-bold">Search</button>
                 </div>
-                <h3 class="font-bold text-sm mb-2 text-gray-500 uppercase">Generated History</h3>
-                <div id="historyArea" class="space-y-2"></div>
+                
+                <div id="receiptResult" class="hidden mb-8 border-b pb-8">
+                    <div class="grid grid-cols-2 gap-4 mb-4 p-4 bg-blue-50 rounded border" id="rStuInfo"></div>
+                    <div class="overflow-x-auto mb-6">
+                        <table class="w-full text-sm border"><tr class="bg-gray-100"><th class="p-2 border">Month</th><th class="p-2 border">Amount</th><th class="p-2 border">Receipt No</th><th class="p-2 border">Action</th></tr>
+                        <tbody id="rPaymentTbl"></tbody></table>
+                    </div>
+                    <h3 class="font-bold text-sm mb-2 text-gray-500 uppercase">Generated History for Student</h3>
+                    <div id="historyArea" class="space-y-2"></div>
+                </div>
             </div>
-            <div id="receiptPreviewContainer" style="height: 400px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px; background: white; padding: 10px;">
-    <div id="receiptPrintArea" class=""></div>
-</div>
 
+            <div id="allReceiptsSection" class="mt-8">
+                <div class="flex justify-between items-end mb-4 border-b border-gray-200 pb-2">
+                    <h2 class="text-2xl font-black text-gray-800 flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-blue-500"></span> All Generated Fees
+                    </h2>
+                    <button onclick="fetchAllReceipts()" class="text-xs font-bold bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded transition">Refresh List</button>
+                </div>
+                
+                <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
+                    <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
+                        <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
+                            <tr>
+                                <th onclick="sortReceiptTable('ReceiptNo')" class="cursor-pointer hover:bg-gray-700 p-3 border">Receipt No ↕</th>
+                                <th onclick="sortReceiptTable('Name')" class="cursor-pointer hover:bg-gray-700 p-3 border">Name ↕</th>
+                                <th onclick="sortReceiptTable('Months')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Month ↕</th>
+                                <th onclick="sortReceiptTable('Amount')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Amount ↕</th>
+                                <th onclick="sortReceiptTable('Class')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Class ↕</th>
+                                <th onclick="sortReceiptTable('Div')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Div ↕</th>
+                                <th class="p-3 border text-center cursor-default">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allReceiptsBody">
+                            <tr><td colspan="7" class="p-4 text-center text-gray-500 animate-pulse font-bold">Loading all receipts...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Print Area (Hidden safely out of view) -->
+            <div id="receiptPreviewContainer" class="hidden mt-6" style="height: 400px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px; background: white; padding: 10px;">
+                <div id="receiptPrintArea" class=""></div>
+            </div>
         `;
+        
+        // Auto-load all receipts
+        fetchAllReceipts();
+    }
+
+    // --- Core Logic for 'All Fee' Section ---
+
+    async function fetchAllReceipts() {
+        try {
+            const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getAllReceipts"})}).then(r=>r.json());
+            if (res.success && res.data) {
+                
+                let receipts = res.data;
+                
+                // FILTERING LOGIC based on user role
+                if (curUser.role === "Teacher") {
+                    // Restrict strictly to Teacher's assigned Class and Division
+                    receipts = receipts.filter(r => r.Class === curUser.tClass && r.Div === curUser.tDiv);
+                } else if (curUser.role === "School") {
+                    // Restrict strictly to School Admin's assigned School
+                    receipts = receipts.filter(r => r.School === curUser.tSchool);
+                }
+                
+                allReceiptsDB = receipts;
+                
+                // Run the sort function using ReceiptNo ascending by default
+                sortReceiptTable('ReceiptNo', false);
+            }
+        } catch(e) {
+            document.getElementById('allReceiptsBody').innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500 font-bold">Failed to load receipts.</td></tr>';
+        }
+    }
+
+    function sortReceiptTable(col, forceAsc = null) {
+        if (forceAsc !== null) {
+            receiptSortCol = col;
+            receiptSortAsc = forceAsc;
+        } else if (receiptSortCol === col) {
+            receiptSortAsc = !receiptSortAsc; // Toggle Asc/Desc
+        } else {
+            receiptSortCol = col;
+            receiptSortAsc = true;
+        }
+
+        allReceiptsDB.sort((a, b) => {
+            let valA = a[col] || '';
+            let valB = b[col] || '';
+
+            // Handle Amount numerically
+            if (col === 'Amount') {
+                valA = parseFloat(valA) || 0;
+                valB = parseFloat(valB) || 0;
+            } else {
+                valA = String(valA).toLowerCase();
+                valB = String(valB).toLowerCase();
+            }
+
+            // Handle smart alphanumeric sorting for Receipt No (so 002 comes after 001)
+            if (col === 'ReceiptNo') {
+                return receiptSortAsc 
+                    ? valA.localeCompare(valB, undefined, {numeric: true}) 
+                    : valB.localeCompare(valA, undefined, {numeric: true});
+            }
+
+            // Standard comparison
+            if (valA < valB) return receiptSortAsc ? -1 : 1;
+            if (valA > valB) return receiptSortAsc ? 1 : -1;
+            return 0;
+        });
+
+        document.getElementById('allReceiptsBody').innerHTML = generateReceiptRows(allReceiptsDB);
+    }
+
+    function generateReceiptRows(data) {
+        if (!data || data.length === 0) return '<tr><td colspan="7" class="p-4 text-center text-gray-500 italic">No receipts found.</td></tr>';
+        
+        return data.map(r => `
+            <tr class="hover:bg-blue-50 border-b transition">
+                <td class="p-3 border-r font-bold text-gray-700">${r.ReceiptNo}</td>
+                <td class="p-3 border-r font-semibold text-gray-900">${r.Name}</td>
+                <td class="p-3 border-r text-center font-bold text-gray-500">${r.Months}</td>
+                <td class="p-3 border-r text-center text-green-700 font-black">₹${r.Amount}</td>
+                <td class="p-3 border-r text-center">${r.Class}</td>
+                <td class="p-3 border-r text-center">${r.Div || '-'}</td>
+                <td class="p-3 text-center">
+                    <button onclick="reprintFromAll('${r.ReceiptNo}')" class="text-blue-600 text-[11px] font-black border-2 border-blue-600 px-3 py-1.5 rounded hover:bg-blue-600 hover:text-white transition shadow-sm uppercase">Reprint</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Required to reprint straight from the 'All Fees' table 
+    function reprintFromAll(receiptNo) {
+        const receipt = allReceiptsDB.find(r => r.ReceiptNo === receiptNo);
+        if(!receipt) return;
+        
+        // Match the student with the master database to get BusId, Entry, Exit
+        curRStu = db.find(x => String(x.Phone).replace(/\D/g,'') === String(receipt.Phone).replace(/\D/g,'') || x.StudentName === receipt.Name);
+        
+        // If student is mysteriously missing from master DB, create a dummy object so it still prints
+        if(!curRStu) {
+            curRStu = { Phone: receipt.Phone, BusId: '-', Entry: '-', Exit: '-', School: receipt.School, StudentName: receipt.Name, Class: receipt.Class, Div: receipt.Div };
+        }
+
+        const rData = {
+            ReceiptNo: receipt.ReceiptNo,
+            Date: receipt.Date,
+            Name: receipt.Name,
+            Phone: receipt.Phone,
+            School: receipt.School,
+            Class: receipt.Class + (receipt.Div ? ("-" + receipt.Div) : ""),
+            Months: receipt.Months,
+            Amount: receipt.Amount,
+            Total: receipt.Total || receipt.Amount
+        };
+
+        // Reuse your existing template renderer
+        renderReceiptTemplate(rData);
     }
 function shareFeeStatus(phone) {
     // Find the student in the database
@@ -1497,84 +2336,83 @@ function shareFeeStatus(phone) {
 }
 
     async function findReceiptStu() {
-    const q = document.getElementById('rSearch').value;
-    curRStu = db.find(x => String(x.Phone) === q || String(x.StudentName).toLowerCase().includes(q.toLowerCase()));
-    if(!curRStu) return msg("Not Found","Student not found.","warning");
+        const q = document.getElementById('rSearch').value.toLowerCase();
+        
+        // FIXED: Replaced 'db.find' with 'getFilteredDB().find'
+        // This automatically restricts Teachers to their Class/Div and prevents them from finding Staff or other students.
+        curRStu = getFilteredDB().find(x => String(x.Phone).toLowerCase() === q || String(x.StudentName).toLowerCase().includes(q));
+        
+        if(!curRStu) return msg("Not Found","Student not found in your access scope.","warning");
 
-    document.getElementById('receiptResult').classList.remove('hidden');
-    document.getElementById('rStuInfo').innerHTML = `
-    <div>
-      <b>${curRStu.StudentName}</b><br>
-      ${curRStu.School}<br>
-      ${curRStu.Class}-${curRStu.Div}<br>
-      <b>Entry Stop:</b> ${curRStu.Entry || '-'}<br>
-      <b>Exit Stop:</b> ${curRStu.Exit || '-'}
-    </div>
-    <div class="text-right">
-      Fee: ₹${curRStu.Fee}<br>
-      Paid: ₹${curRStu.Total || 0}<br>
-      <span class="text-red-600">Bal: ₹${curRStu.Balance || 0}</span>
-    </div>
-`;
+        document.getElementById('receiptResult').classList.remove('hidden');
+        document.getElementById('rStuInfo').innerHTML = `
+        <div>
+          <b>${curRStu.StudentName}</b><br>
+          ${curRStu.School}<br>
+          ${curRStu.Class}-${curRStu.Div}<br>
+          <b>Entry Stop:</b> ${curRStu.Entry || '-'}<br>
+          <b>Exit Stop:</b> ${curRStu.Exit || '-'}
+        </div>
+        <div class="text-right">
+          Fee: ₹${curRStu.Fee}<br>
+          Paid: ₹${curRStu.Total || 0}<br>
+          <span class="text-red-600">Bal: ₹${curRStu.Balance || 0}</span>
+        </div>
+        `;
 
-    const m = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+        const m =["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
 
-    // Fetch generated receipts for this student (to disable generate buttons)
-    showLoad();
-    const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getReceipts", phone:curRStu.Phone})}).then(r=>r.json());
-    hideLoad();
+        showLoad();
+        const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getReceipts", phone:curRStu.Phone})}).then(r=>r.json());
+        hideLoad();
 
-    // Set of receipt numbers already generated
-    const generatedReceipts = new Set(res.data.map(r => r[0]));
+        const generatedReceipts = new Set(res.data.map(r => r[0]));
 
-    // Render payment rows with GENERATE buttons disabled if receipt exists for that month
-    document.getElementById('rPaymentTbl').innerHTML = m.filter(x => curRStu[x]).map(x => {
-        const receiptNo = curRStu[x+'Receipt'] || null;
-        const receiptExists = receiptNo && generatedReceipts.has(receiptNo);
-        return `<tr>
-            <td class="p-2 border">${x}</td>
-            <td class="p-2 border">₹${curRStu[x]}</td>
-            <td class="p-2 border">${receiptNo || '-'}</td>
-            <td class="p-2 border text-center">
-                <button ${receiptExists ? 'disabled class="opacity-50 cursor-not-allowed"' : ''}
-                    onclick="generateReceiptUI('${x}')"
-                    class="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold">
-                    GENERATE
-                </button>
-            </td>
-        </tr>`;
-    }).join('');
+        document.getElementById('rPaymentTbl').innerHTML = m.filter(x => curRStu[x]).map(x => {
+            const receiptNo = curRStu[x+'Receipt'] || null;
+            const receiptExists = receiptNo && generatedReceipts.has(receiptNo);
+            return `<tr>
+                <td class="p-2 border">${x}</td>
+                <td class="p-2 border">₹${curRStu[x]}</td>
+                <td class="p-2 border">${receiptNo || '-'}</td>
+                <td class="p-2 border text-center">
+                    <button ${receiptExists ? 'disabled class="opacity-50 cursor-not-allowed"' : ''}
+                        onclick="generateReceiptUI('${x}')"
+                        class="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold">
+                        GENERATE
+                    </button>
+                </td>
+            </tr>`;
+        }).join('');
 
-    // Render generated receipts history with REPRINT buttons active (always enabled)
-    if(res.success && res.data.length > 0){
-        // Skip header if any
-        const history = res.data.filter(r => r[0] !== "ReceiptNo");
-        document.getElementById('historyArea').innerHTML = history.map(r => `
-  <div class="flex justify-between items-center p-3 bg-white border rounded shadow-sm hover:border-blue-300 transition">
-    <div>
-      <p class="font-bold text-gray-700">${r[0]} <span class="text-xs font-normal text-gray-400">(${r[7]})</span></p>
-      <p class="text-[10px] text-gray-500">${new Date(r[1]).toLocaleString()}</p>
-    </div>
-    <div class="flex gap-2 items-center">
-      <button onclick="reprint('${r[0]}', '${r[7]}')" class="text-blue-600 text-xs font-bold border border-blue-600 px-2 py-1 rounded">REPRINT</button>
-      <button 
-        title="Share via WhatsApp"
-        onclick="shareReceiptWA('${r[7]}', '${curRStu[r[7]] || 0}')" 
-        class="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M20.52 3.48A11.91 11.91 0 0012 0C5.37 0 0 5.37 0 12a11.7 11.7 0 001.95 6L0 24l6-1.95a11.86 11.86 0 005.94 1.7c6.63 0 12-5.37 12-12a11.89 11.89 0 00-3.42-8.27zM12 21a9.25 9.25 0 01-4.77-1.35l-.34-.22-3.57 1.16 1.11-3.48-.22-.36A9.25 9.25 0 012.75 12 9.25 9.25 0 0112 2.75 9.25 9.25 0 0121.25 12 9.25 9.25 0 0112 21zm5.37-6.31l-1.5-.43a.51.51 0 00-.47.14l-.98 1.07a7.38 7.38 0 01-3.46-3.44l1.07-.98a.53.53 0 00.15-.46l-.43-1.51a.54.54 0 00-.66-.37l-2.22.56a.51.51 0 00-.41.64A7 7 0 0014 16a7 7 0 002.37-1.17.5.5 0 00.13-.69z"/>
-        </svg>
-        WA
-      </button>
-    </div>
-  </div>
-`).join('');
+        if(res.success && res.data.length > 0){
+            const history = res.data.filter(r => r[0] !== "ReceiptNo");
+            document.getElementById('historyArea').innerHTML = history.map(r => `
+      <div class="flex justify-between items-center p-3 bg-white border rounded shadow-sm hover:border-blue-300 transition">
+        <div>
+          <p class="font-bold text-gray-700">${r[0]} <span class="text-xs font-normal text-gray-400">(${r[7]})</span></p>
+          <p class="text-[10px] text-gray-500">${new Date(r[1]).toLocaleString('en-GB')}</p>
+        </div>
+        <div class="flex gap-2 items-center">
+          <button onclick="reprint('${r[0]}', '${r[7]}')" class="text-blue-600 text-xs font-bold border border-blue-600 px-2 py-1 rounded">REPRINT</button>
+          <button 
+            title="Share via WhatsApp"
+            onclick="shareReceiptWA('${r[7]}', '${curRStu[r[7]] || 0}')" 
+            class="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M20.52 3.48A11.91 11.91 0 0012 0C5.37 0 0 5.37 0 12a11.7 11.7 0 001.95 6L0 24l6-1.95a11.86 11.86 0 005.94 1.7c6.63 0 12-5.37 12-12a11.89 11.89 0 00-3.42-8.27zM12 21a9.25 9.25 0 01-4.77-1.35l-.34-.22-3.57 1.16 1.11-3.48-.22-.36A9.25 9.25 0 012.75 12 9.25 9.25 0 0112 2.75 9.25 9.25 0 0121.25 12 9.25 9.25 0 0112 21zm5.37-6.31l-1.5-.43a.51.51 0 00-.47.14l-.98 1.07a7.38 7.38 0 01-3.46-3.44l1.07-.98a.53.53 0 00.15-.46l-.43-1.51a.54.54 0 00-.66-.37l-2.22.56a.51.51 0 00-.41.64A7 7 0 0014 16a7 7 0 002.37-1.17.5.5 0 00.13-.69z"/>
+            </svg>
+            WA
+          </button>
+        </div>
+      </div>
+    `).join('');
 
-    } else {
-        document.getElementById('historyArea').innerHTML = '<p class="text-gray-400 text-sm italic">No generated receipt history found.</p>';
+        } else {
+            document.getElementById('historyArea').innerHTML = '<p class="text-gray-400 text-sm italic">No generated receipt history found.</p>';
+        }
     }
-}
 
 
 
@@ -1622,14 +2460,17 @@ async function generateReceiptUI(month) {
         Name: curRStu.StudentName,
         Phone: curRStu.Phone,
         School: curRStu.School,
-        Class: curRStu.Class + "-" + curRStu.Div,
+        Class: curRStu.Class,
+        Div: curRStu.Div,
         Months: month,
         Amount: curRStu[month],
-        Total: curRStu[month]
+        Total: curRStu[month],
+        generator: curUser.name // ADD THIS LINE
     };
     
-    // Save to Google Sheet "Receipts" sheet
     showLoad();
+    // ... rest of your fetch code
+
     try {
         await fetch(API_URL, {
             method: 'POST', 
@@ -1646,65 +2487,124 @@ async function generateReceiptUI(month) {
 }
 
 function renderReceiptTemplate(r) {
-    const s = curRStu; // current student for full details
-    const userName = curUser ? curUser.name : "Unknown User";
-    const now = new Date();
-    const dateTimeStr = now.toLocaleString('en-GB', { hour12: false });
+        // Fallback to curRStu to fetch Entry, Exit, and Base Fee details
+        const s = curRStu || {}; 
+        const userName = curUser ? curUser.name : "System";
+        const generationDate = new Date().toLocaleDateString('en-GB'); // DD/MM/YYYY format
 
-    const html = `
-    <div style="width:210mm; min-height:297mm; padding:30mm 20mm 20mm 20mm; font-family: Arial, sans-serif; background: white; box-sizing: border-box; color:#333;">
-        <div style="text-align:center; margin-bottom:25px;">
-            <h1 style="margin:0; font-weight: 900; font-size: 28px; color:#1e40af;">TD SCHOOLS THURAVOOR</h1>
-            <h2 style="margin:4px 0; font-weight: 700; font-size: 20px; color:#2563eb;">SCHOOL BUS MANAGEMENT 2026</h2>
-            <h3 style="margin:2px 0 20px; font-weight: 600; font-size: 16px; color:#3b82f6;">${s.School || ''}</h3>
-            <h4 style="margin:2px 0 10px; font-weight: 700; font-size: 14px; border-bottom: 2px solid #2563eb; padding-bottom: 4px; color:#2563eb;">SCHOOL BUS TRANSPORTATION RECEIPT</h4>
+        // 1. Build the specific A4 Receipt Layout exactly as requested
+        const html = `
+        <div id="a4-receipt-wrapper" style="width: 210mm; min-height: 297mm; margin: 0 auto; padding: 40px; font-family: Arial, sans-serif; background: white; color: #333; box-sizing: border-box;">
+            
+            <!-- School Head with Logo -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1e40af; padding-bottom: 20px; margin-bottom: 30px;">
+                <div style="width: 100px;"></div>
+                <div style="text-align: center; flex-grow: 1;">
+                    <h1 style="margin: 0; font-size: 26px; font-weight: 900; color: #1e40af; text-transform: uppercase;">${r.School}</h1>
+                    <h2 style="margin: 6px 0; font-size: 16px; color: #374151; letter-spacing: 1px;">SCHOOL BUS MANAGEMENT 2026</h2>
+                </div>
+                <div style="width: 100px; text-align: right;">
+                    <!-- REPLACE WITH YOUR ACTUAL LOGO URL -->
+                    <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLs9jyTEZv_qb7Sl-eWiCONiB_n-Jjv4icm2S3lPnmoqXnCQedYEs_cA3dwEleMx_hl9ByCEFyLE2nH6wyatT_dKjQNScu5jwkMJngSC3q9RNdZmUaa12r1jmURQM8VnhQKugi1wCklnSYOWiG7uP2E1gNmCA29pXFrrMvw0yMoAhWhZA/s1600/Logo2.png" alt="School Logo" style="height: 80px; object-fit: contain;">
+                </div>
+            </div>
+            
+            <!-- Student/Staff Details -->
+            <div style="display: flex; justify-content: space-between; margin-bottom: 40px; font-size: 15px; line-height: 1.8;">
+                <div>
+                    <p style="margin: 0;"><b>Name:</b> <span style="font-weight: bold; font-size: 16px;">${r.Name}</span></p>
+                    <p style="margin: 0;"><b>School:</b> ${r.School}</p>
+                    <p style="margin: 0;"><b>Class and Div:</b> ${r.Class}</p>
+                    <p style="margin: 0;"><b>Entry Stop:</b> ${s.Entry || '-'}</p>
+                    <p style="margin: 0;"><b>Exit Stop:</b> ${s.Exit || '-'}</p>
+                </div>
+                <div style="text-align: right;">
+                    <p style="margin: 0;"><b>Date:</b> ${generationDate}</p>
+                    <p style="margin: 0;"><b>Fee:</b> ₹${s.Fee || r.Amount}</p>
+                </div>
+            </div>
+
+            <!-- Particulars Table -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px; font-size: 15px;">
+                <thead>
+                    <tr style="background-color: #f3f4f6; border-bottom: 2px solid #9ca3af;">
+                        <th style="padding: 15px; text-align: left; border: 1px solid #d1d5db;">Particulars</th>
+                        <th style="padding: 15px; text-align: center; border: 1px solid #d1d5db;">Receipt No</th>
+                        <th style="padding: 15px; text-align: right; border: 1px solid #d1d5db;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 15px; border: 1px solid #d1d5db;">${r.Months}</td>
+                        <td style="padding: 15px; text-align: center; border: 1px solid #d1d5db; font-weight: bold;">${r.ReceiptNo}</td>
+                        <td style="padding: 15px; text-align: right; border: 1px solid #d1d5db;">₹${r.Amount}</td>
+                    </tr>
+                    <tr style="background-color: #f9fafb;">
+                        <td colspan="2" style="padding: 15px; text-align: right; border: 1px solid #d1d5db; font-weight: 900; font-size: 16px;">Total</td>
+                        <!-- Total collected IN THIS RECEIPT -->
+                        <td style="padding: 15px; text-align: right; border: 1px solid #d1d5db; font-weight: 900; font-size: 16px; color: #166534;">₹${r.Amount}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Footer Message -->
+            <div style="margin-top: 60px; padding-top: 20px; border-top: 1px dashed #9ca3af; font-size: 13px; color: #4b5563;">
+                <p style="margin: 4px 0;"><b>Generated By:</b> ${userName}</p>
+                <p style="margin: 4px 0; font-style: italic; font-weight: bold;">Electronicaly Generated Receipt.No Signature Required.</p>
+            </div>
         </div>
-        <div style="font-size: 14px; line-height: 1.5; margin-bottom: 30px;">
-            <p><b>Name:</b> ${r.Name}</p>
-            <p><b>Class:</b> ${r.Class}</p>
-            <p><b>Phone:</b> ${s.Phone || '-'}</p>
-            <p><b>Bus ID:</b> ${s.BusId || '-'}</p>
-            <p><b>Entry Stop:</b> ${s.Entry || '-'}</p>
-            <p><b>Exit Stop:</b> ${s.Exit || '-'}</p>
-        </div>
+        `;
 
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 40px;">
-    <thead>
-        <tr style="background-color: #e0e7ff;">
-            <th style="border: 1px solid #c7d2fe; padding: 12px 15px; text-align: left;">Particulars</th>
-            <th style="border: 1px solid #c7d2fe; padding: 12px 15px; text-align: center;">Receipt No</th>
-            <th style="border: 1px solid #c7d2fe; padding: 12px 15px; text-align: right;">Amount (₹)</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td style="border: 1px solid #c7d2fe; padding: 12px 15px;">Bus Fee for ${r.Months}</td>
-            <td style="border: 1px solid #c7d2fe; padding: 12px 15px; text-align: center;">${r.ReceiptNo}</td>
-            <td style="border: 1px solid #c7d2fe; padding: 12px 15px; text-align: right;">${r.Amount}</td>
-        </tr>
-        <tr style="font-weight: 700; background-color: #e0e7ff;">
-            <td style="border: 1px solid #c7d2fe; padding: 12px 15px; text-align: right;">TOTAL</td>
-            <td style="border: 1px solid #c7d2fe; padding: 12px 15px;"></td>
-            <td style="border: 1px solid #c7d2fe; padding: 12px 15px; text-align: right;">${r.Total}</td>
-        </tr>
-    </tbody>
-</table>
+        // 2. Create a brand new container attached directly to the BODY (to escape existing CSS limits)
+        let printContainer = document.getElementById('a4PrintContainer');
+        if (!printContainer) {
+            printContainer = document.createElement('div');
+            printContainer.id = 'a4PrintContainer';
+            document.body.appendChild(printContainer);
+        }
+        printContainer.innerHTML = html;
 
+        // 3. Inject a temporary overpowering CSS rule to force A4 and hide absolutely everything else
+        let printStyle = document.getElementById('a4PrintStyle');
+        if (!printStyle) {
+            printStyle = document.createElement('style');
+            printStyle.id = 'a4PrintStyle';
+            document.head.appendChild(printStyle);
+        }
+        
+        printStyle.innerHTML = `
+            @media print {
+                /* Hide the entire app */
+                body * { visibility: hidden !important; }
+                /* Show ONLY the new receipt container */
+                #a4PrintContainer, #a4PrintContainer * { visibility: visible !important; }
+                /* Force it to top left of paper */
+                #a4PrintContainer {
+                    position: absolute !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100% !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    border: none !important;
+                }
+                /* Force A4 Page Size */
+                @page { size: A4 portrait; margin: 0; }
+            }
+        `;
 
-        <div style="font-size: 12px; color: #555;">
-            <p><b>Electronically Generated Receipt</b> - No signature required</p>
-            <p>Generated By: <b>${userName}</b></p>
-            <p>Date & Time: <b>${dateTimeStr}</b></p>
-        </div>
-    </div>
-    `;
-
-    document.getElementById('receiptPrintArea').innerHTML = html;
-    document.getElementById('receiptPrintArea').classList.remove('hidden');
-
-    // Directly open print without Swal alert
-    setTimeout(() => window.print(), 300);
-}
+        // 4. Trigger the Print dialog
+        setTimeout(() => {
+            window.print();
+            
+            // 5. Clean up instantly after printing to return screen to normal
+            setTimeout(() => {
+                printContainer.innerHTML = '';
+                printStyle.innerHTML = '';
+            }, 500);
+            
+        }, 200);
+    }
 
 
 function shareReceiptWA(month, amt) {
@@ -1891,6 +2791,625 @@ async function reprint(receiptNo, month = 'N/A') {
         renderLogTable(filtered);
     }
     
+    
+// --- Tab 7: Staff Records ---
+    function renderTab7(c) {
+        // Filter ONLY staff members
+        currentTab7DB = getFilteredDB().filter(s => s.Class === 'STAFF');
+        currentTab7DB.sort((a, b) => String(a.StudentName).toLowerCase().localeCompare(String(b.StudentName).toLowerCase()));
+        
+        tab7SortCol = 'StudentName';
+        tab7SortAsc = true;
+
+        c.innerHTML = `
+            <h2 class="text-2xl font-bold mb-4">Manage Staff</h2>
+            <form id="staffForm" onsubmit="saveStaff(event)" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 bg-gray-50 p-4 rounded border text-sm">
+                <select id="sf1" onchange="filterStops(this.value)" required class="p-2 border rounded">
+                    <option value="">Bus</option>
+                    <option>KL32P4201SR</option>
+                    <option>KL32M0528VM</option>
+                    <option>KL32L2382K</option>
+                    <option>KL07BU4184C</option>
+                    <option>KL32L0827U</option>
+                </select>
+                
+                <select id="sf2" required class="p-2 border rounded">
+                    <option value="">School</option>
+                    <option>TDEMNS-td1</option>
+                    <option>GTDLPS-34318</option>
+                    <option>TDTTI-34347</option>
+                    <option>TDHS-34028</option>
+                </select>                
+                
+                <input id="sf5" required placeholder="Staff Name" class="p-2 border rounded md:col-span-2">
+                <input id="sf6" placeholder="Designation (Optional)" class="p-2 border rounded">
+                <input id="sf7" required placeholder="Phone" class="p-2 border rounded">
+                
+                <input list="entryStops" id="sf8" placeholder="Entry Stop" class="p-2 border rounded">
+                <input list="exitStops" id="sf9" required placeholder="Exit Stop" class="p-2 border rounded">
+                
+                <select id="sf10" required class="p-2 border rounded"><option>Both Time</option><option>Morning Only</option><option>Evening Only</option></select>
+                <input id="sf11" required placeholder="Fee Amount" type="number" class="p-2 border rounded">
+                
+                <div class="col-span-2 md:col-span-4 flex gap-2">
+                    <button type="submit" id="staffBtn" class="bg-blue-600 text-white px-6 py-2 rounded font-bold">Save</button>
+                    <button type="button" onclick="renderTab7(document.getElementById('tabContent'))" class="bg-gray-400 text-white px-4 py-2 rounded hidden" id="staffCBtn">Cancel</button>
+                </div>
+            </form>
+            
+            <input type="text" id="sSearchT7" onkeyup="searchT7()" placeholder="Search Staff Name, Phone, School..." class="w-full p-2 border-2 border-gray-300 rounded mb-4 focus:outline-none focus:border-blue-500">
+            
+            <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
+                <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
+                    <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
+                        <tr>
+                            <th onclick="sortTab7Table('StudentName')" class="p-3 border cursor-pointer hover:bg-gray-700">Staff Name ↕</th>
+                            <th onclick="sortTab7Table('School')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">School ↕</th>
+                            <th onclick="sortTab7Table('Phone')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Phone ↕</th>
+                            <th onclick="sortTab7Table('Fee')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Fee ↕</th>
+                            <th class="p-3 border text-center cursor-default">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="t7Body">
+                        ${generateTab7Rows(currentTab7DB)}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Reuses the exact same UI Card container from Tab 1 -->
+            <div id="studentProfileCard" class="hidden mt-8"></div>
+        `;
+        
+        filterStops('');
+    }
+
+    function generateTab7Rows(data) {
+        if (!data || data.length === 0) return '<tr><td colspan="5" class="p-6 text-center text-gray-400 italic">No staff records found.</td></tr>';
+        
+        return data.map(s => `
+            <tr class="hover:bg-blue-50 bg-white border-b transition">
+                <td class="p-3 border-r font-bold text-gray-800">${s.StudentName}</td>
+                <td class="p-3 border-r text-gray-600 font-medium text-center">${s.School}</td>
+                <td class="p-3 border-r text-gray-600 text-center">${s.Phone}</td>
+                <td class="p-3 border-r font-bold text-gray-700 text-center">₹${s.Fee}</td>
+                <td class="p-2 border-r flex flex-wrap justify-center gap-1">
+                    <button type="button" onclick='viewStudentCard(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold shadow-sm">View</button>
+                    <button type="button" onclick='editStaff(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded text-xs shadow-sm">Edit</button>
+                    <!-- Passes '7' so it knows to return to the Staff tab after deleting -->
+                    <button type="button" onclick="delS(${s._rowIndex}, 7)" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs shadow-sm">Del</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function sortTab7Table(col) {
+        if (tab7SortCol === col) tab7SortAsc = !tab7SortAsc; 
+        else { tab7SortCol = col; tab7SortAsc = true; }
+
+        currentTab7DB.sort((a, b) => {
+            let valA = a[col] || ''; let valB = b[col] || '';
+            if (col === 'Fee' || col === 'Phone') {
+                valA = parseFloat(valA) || 0; valB = parseFloat(valB) || 0;
+            } else {
+                valA = String(valA).toLowerCase(); valB = String(valB).toLowerCase();
+            }
+            if (valA < valB) return tab7SortAsc ? -1 : 1;
+            if (valA > valB) return tab7SortAsc ? 1 : -1;
+            return 0;
+        });
+
+        document.getElementById('t7Body').innerHTML = generateTab7Rows(currentTab7DB);
+        searchT7();
+    }
+
+    function searchT7() { 
+        const searchInput = document.getElementById('sSearchT7');
+        if (!searchInput) return;
+        const q = searchInput.value.toLowerCase(); 
+        Array.from(document.getElementById('t7Body').rows).forEach(r => {
+            r.style.display = r.innerText.toLowerCase().includes(q) ? '' : 'none';
+        }); 
+    }
+
+    async function saveStaff(e) {
+        e.preventDefault();
+        // Automatically injects 'STAFF' into the Class column safely in the background
+        const d = { 
+            BusId: v('sf1'), School: v('sf2'), Class: 'STAFF', Div: '-', 
+            StudentName: v('sf5'), ParentName: v('sf6'), Phone: v('sf7'), 
+            Entry: v('sf8'), Exit: v('sf9'), Status: v('sf10'), Fee: v('sf11') 
+        };
+        showLoad();
+        await fetch(API_URL, {method:'POST', body:JSON.stringify({action: editID?"updateStudent":"saveStudent", data:d, rowIndex:editID})});
+        editID = null; await fetchData(); hideLoad(); renderTab7(document.getElementById('tabContent')); msg("Success","Staff record saved!","success");
+    }
+
+    function editStaff(s) {
+        editID = s._rowIndex; 
+        setV('sf1', s.BusId); filterStops(s.BusId); 
+        setV('sf2', s.School); 
+        setV('sf5', s.StudentName); 
+        setV('sf6', s['Parent Name'] || s.ParentName); 
+        setV('sf7', s.Phone); 
+        setV('sf8', s.Entry); 
+        setV('sf9', s.Exit); 
+        setV('sf10', s.Status); 
+        setV('sf11', s.Fee);
+        
+        document.getElementById('staffBtn').innerText = "Update"; 
+        document.getElementById('staffBtn').className = "bg-amber-500 text-white px-6 py-2 rounded font-bold"; 
+        document.getElementById('staffCBtn').classList.remove('hidden');
+    }
+    
+    
+  function renderTab8(c) {
+    c.innerHTML = `
+        <h2 class="text-2xl font-bold mb-4 text-red-700">Expense Management</h2>
+        
+        <!-- Expense Form (Keep as is) -->
+        <form id="expForm" onsubmit="saveExp(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 bg-red-50 p-6 rounded-2xl border border-red-100 shadow-sm">
+            <!-- ... form fields stay the same ... -->
+            <div>
+                <label class="block text-xs font-bold text-red-400 mb-1 uppercase">Bus ID</label>
+                <select id="exBus" required class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
+                    <option value="">Select Bus</option>
+                    <option>KL32P4201SR</option><option>KL32M0528VM</option><option>KL32L2382K</option>
+                    <option>KL07BU4184C</option><option>KL32L0827U</option><option>OFFICE</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-red-400 mb-1 uppercase">Expense Title</label>
+                <select id="exTitle" required class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
+                    <option value="">Select Category</option>
+                    <option>MAINTANANCE</option><option>FUEL</option><option>SALARY</option>
+                    <option>ADVANCE</option><option>MISC</option><option>EXTRA VECHICLE</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-red-400 mb-1 uppercase">Voucher No</label>
+                <input type="text" id="exVoucher" placeholder="V-001" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
+            </div>
+            <div class="md:col-span-2">
+                <label class="block text-xs font-bold text-red-400 mb-1 uppercase">Remarks / Description</label>
+                <input type="text" id="exRemarks" required placeholder="Details of expense..." class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-red-400 mb-1 uppercase">Amount (₹)</label>
+                <input type="number" id="exAmount" required placeholder="0.00" class="w-full p-2.5 border rounded-xl font-bold text-red-700 focus:ring-2 focus:ring-red-500 outline-none">
+            </div>
+            <div class="md:col-span-3">
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-100 transition-all transform active:scale-95">
+                    Save Expense Record
+                </button>
+            </div>
+        </form>
+
+        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+            <span class="w-2 h-6 bg-red-600 rounded-full"></span> Recent Expenses Log
+        </h3>
+        
+        <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
+            <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
+                <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider">
+                    <tr>
+                        <th class="p-4 border-r border-gray-700">Date & Time</th>
+                        <th class="p-4 border-r border-gray-700">Bus ID</th>
+                        <th class="p-4 border-r border-gray-700">Voucher</th>
+                        <th class="p-4 border-r border-gray-700">Category</th>
+                        <th class="p-4 border-r border-gray-700">Remarks</th>
+                        <th class="p-4 border-r border-gray-700 text-right">Amount</th>
+                        <th class="p-4">Authorised By</th>
+                    </tr>
+                </thead>
+                <tbody id="expTableBody">
+                    <tr><td colspan="7" class="p-8 text-center text-gray-400 animate-pulse font-bold">Loading expense database...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+    fetchExp();
+}
+
+async function saveExp(e) {
+    e.preventDefault();
+    const data = {
+        busId: v('exBus'),
+        title: v('exTitle'),
+        voucherNo: v('exVoucher'),
+        remarks: v('exRemarks'),
+        amount: v('exAmount'),
+        authorisedBy: curUser.name
+    };
+
+    showLoad();
+    try {
+        await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"saveExpense", data: data})});
+        msg("Success", "Expense recorded successfully", "success");
+        renderTab8(document.getElementById('tabContent')); // Refresh UI
+    } catch(err) {
+        msg("Error", "Failed to save", "error");
+    }
+    hideLoad();
+}
+
+async function fetchExp() {
+    try {
+        const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getExpenses"})}).then(r=>r.json());
+        const tbody = document.getElementById('expTableBody');
+        if(res.success && res.data.length > 0) {
+            tbody.innerHTML = res.data.map(ex => `
+    <tr class="border-b hover:bg-gray-50">
+        <td class="p-3 text-gray-700 font-mono text-xs">${ex.dateTime}</td> <!-- Clean DD/MM/YYYY HH:MM:SS -->
+        <td class="p-3 font-bold">${ex.busId}</td>
+        <td class="p-3">${ex.voucherNo || '-'}</td>
+        <td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-red-100 text-red-700">${ex.title}</span></td>
+        <td class="p-3"font-bold bg-red-100 text-red-700">${ex.remarks}</td>
+        <td class="p-3 font-black text-red-600">₹${ex.amount}</td>
+        <td class="p-3 text-gray-600">${ex.authorisedBy}</td>
+    </tr>
+    
+`).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">No expenses found.</td></tr>';
+        }
+    } catch(e) {
+        document.getElementById('expTableBody').innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500">Error loading data.</td></tr>';
+    }
+}
+
+async function renderTab9(c) {
+    const year = "2026-2027";
+    c.innerHTML = `
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <h2 class="text-3xl font-black text-slate-800">BALANCE SHEET ${year}</h2>
+            <button onclick="printFinancialReport('summary')" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg transition flex items-center gap-2">
+                📥 Export Summary PDF
+            </button>
+        </div>
+
+        <!-- 4-COLUMN SUMMARY TABLE -->
+        <div id="balanceSheetWrapper" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-8">
+            <table class="w-full text-sm border-collapse">
+                <thead>
+                    <tr class="bg-slate-800 text-white uppercase text-[11px] tracking-widest">
+                        <th class="p-4 border-r border-slate-700 w-1/4">Income Description</th>
+                        <th class="p-4 border-r border-slate-700 w-1/4 text-right">Amount (₹)</th>
+                        <th class="p-4 border-r border-slate-700 w-1/4">Expense Description</th>
+                        <th class="p-4 w-1/4 text-right">Amount (₹)</th>
+                    </tr>
+                </thead>
+                <tbody id="balanceSummaryBody">
+                    <tr><td colspan="4" class="p-20 text-center animate-pulse text-slate-400">Crunching financial data...</td></tr>
+                </tbody>
+                <tfoot id="balanceSummaryFoot" class="bg-slate-50 font-black text-slate-900 border-t-2 border-slate-200"></tfoot>
+            </table>
+        </div>
+
+        <!-- COLLAPSIBLE SECTIONS -->
+        <div class="space-y-4 no-print">
+            <!-- INCOME DETAIL -->
+            <details class="group bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                <summary class="flex justify-between items-center p-5 cursor-pointer bg-green-50 hover:bg-green-100 transition list-none">
+                    <span class="font-bold text-green-800 flex items-center gap-2">📊 1. INCOME (IN DETAIL)</span>
+                    <div class="flex items-center gap-4">
+                        <button onclick="event.preventDefault(); printFinancialReport('income')" class="text-xs bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg font-bold transition shadow-sm">Export Detailed PDF</button>
+                        <span class="transition group-open:rotate-180">▼</span>
+                    </div>
+                </summary>
+                <div class="p-4 overflow-x-auto">
+                    <table class="w-full text-[11px] border whitespace-nowrap">
+                        <thead class="bg-slate-100 uppercase">
+                            <tr><th class="p-2 border">Date</th><th class="p-2 border">Receipt No</th><th class="p-2 border">Name</th><th class="p-2 border">School</th><th class="p-2 border">Class</th><th class="p-2 border">Div</th><th class="p-2 border">Month</th><th class="p-2 border text-right">Amount</th><th class="p-2 border">Generated By</th></tr>
+                        </thead>
+                        <tbody id="incomeDetailBody" class="divide-y"></tbody>
+                    </table>
+                </div>
+            </details>
+
+            <!-- EXPENSE DETAIL -->
+            <details class="group bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                <summary class="flex justify-between items-center p-5 cursor-pointer bg-red-50 hover:bg-red-100 transition list-none">
+                    <span class="font-bold text-red-800 flex items-center gap-2">📉 2. EXPENSES (IN DETAIL)</span>
+                    <div class="flex items-center gap-4">
+                        <button onclick="event.preventDefault(); printFinancialReport('expense')" class="text-xs bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-lg font-bold transition shadow-sm">Export Detailed PDF</button>
+                        <span class="transition group-open:rotate-180">▼</span>
+                    </div>
+                </summary>
+                <div class="p-4 overflow-x-auto">
+                    <table class="w-full text-[11px] border whitespace-nowrap">
+                        <thead class="bg-slate-100 uppercase">
+                            <tr><th class="p-2 border">Date & Time</th><th class="p-2 border">Bus ID</th><th class="p-2 border">Voucher No</th><th class="p-2 border">Title</th><th class="p-2 border">Remarks</th><th class="p-2 border text-right">Amount</th><th class="p-2 border">Authorised By</th></tr>
+                        </thead>
+                        <tbody id="expenseDetailBody" class="divide-y"></tbody>
+                    </table>
+                </div>
+            </details>
+        </div>
+    `;
+    fetchBalanceSheetData();
+}
+
+async function fetchBalanceSheetData() {
+    showLoad();
+    try {
+        const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getBalanceSheetData"})}).then(r=>r.json());
+        if(res.success) {
+            processBalanceSheet(res.data.income, res.data.expenses);
+        }
+    } catch(e) { console.error(e); }
+    hideLoad();
+}
+
+function processBalanceSheet(income, expenses) {
+    let incMap = { student: {}, donor: {}, other: 0 };
+    let expMap = { heads: {}, office: 0, misc: 0 };
+
+    let totalInc = 0, totalExp = 0;
+    
+    // Using Sets to automatically catch all Schools, Buses, and Expense types
+    let dynamicSchools = new Set();
+    let dynamicBuses = new Set();
+    let dynamicExpHeads = new Set();
+
+    const knownSchools =["TDEMNS-td1", "GTDLPS-34318", "TDTTI-34347", "TDHS-34028"];
+
+    // 1. Process Raw Income
+    income.forEach(r => {
+        if (!r || r.length < 5) return;
+        const amt = parseFloat(String(r[7]).replace(/[^0-9.]/g, '')) || 0;
+        if (amt === 0) return;
+
+        let sch = "Other/Unknown School";
+        for (let i = 0; i < r.length; i++) {
+            const cell = String(r[i]).trim();
+            if (knownSchools.includes(cell) || cell.includes("TDEMNS") || cell.includes("GTDLPS") || cell.includes("TDTTI") || cell.includes("TDHS")) {
+                sch = cell;
+                break;
+            }
+        }
+        if (sch === "Other/Unknown School" && r[4]) sch = String(r[4]).trim();
+
+        let role = "Student";
+        for (let i = 0; i < r.length; i++) {
+            const cell = String(r[i]).trim().toLowerCase();
+            if (cell === "staff" || cell === "teacher" || cell === "donor" || cell === "donar") {
+                role = "Staff";
+                break;
+            }
+        }
+
+        dynamicSchools.add(sch);
+        totalInc += amt;
+
+        if (role === "Student") {
+            incMap.student[sch] = (incMap.student[sch] || 0) + amt;
+        } else {
+            incMap.donor[sch] = (incMap.donor[sch] || 0) + amt;
+        }
+    });
+
+    // 2. Process Raw Expenses
+    expenses.forEach(e => {
+        if (!e || e.length < 6) return;
+        const amt = parseFloat(String(e[5]).replace(/[^0-9.]/g, '')) || 0;
+        if (amt === 0) return;
+
+        const bus = String(e[1] || 'Unknown').trim();
+        const title = String(e[3] || 'MISC').trim().toUpperCase();
+        
+        dynamicBuses.add(bus);
+        totalExp += amt;
+
+        if (bus === "OFFICE" || title === "OFFICE") {
+            expMap.office += amt;
+        } else if (title === "MISC") {
+            expMap.misc += amt;
+        } else {
+            dynamicExpHeads.add(title);
+            if (!expMap.heads[title]) expMap.heads[title] = {};
+            expMap.heads[title][bus] = (expMap.heads[title][bus] || 0) + amt;
+        }
+    });
+
+    // 3. Prepare Subheads & Data Rows
+    let incRows =[];
+    const allSchools = Array.from(dynamicSchools).sort();
+    
+    // --- Income Side Construction ---
+    // Student Fees
+    let hasStudentFee = allSchools.some(s => incMap.student[s] > 0);
+    if (hasStudentFee) {
+        incRows.push({ isSubhead: true, desc: "STUDENT FEES" });
+        allSchools.forEach(s => {
+            if (incMap.student[s] > 0) incRows.push({ isSubhead: false, desc: s, amt: incMap.student[s] });
+        });
+        incRows.push({ isEmpty: true }); // Line break
+    }
+
+    // Staff / Donor Fees
+    let hasDonorFee = allSchools.some(s => incMap.donor[s] > 0);
+    if (hasDonorFee) {
+        incRows.push({ isSubhead: true, desc: "STAFF / DONOR FEES" });
+        allSchools.forEach(s => {
+            if (incMap.donor[s] > 0) incRows.push({ isSubhead: false, desc: s, amt: incMap.donor[s] });
+        });
+        incRows.push({ isEmpty: true });
+    }
+
+    // Other Income
+    if (incMap.other > 0) {
+        incRows.push({ isSubhead: true, desc: "OTHER INCOME" });
+        incRows.push({ isSubhead: false, desc: "Miscellaneous / Uncategorised", amt: incMap.other });
+        incRows.push({ isEmpty: true });
+    }
+
+    // --- Expense Side Construction ---
+    let expRows =[];
+    const allBuses = Array.from(dynamicBuses).sort();
+    const allHeads = Array.from(dynamicExpHeads).sort();
+    
+    // Dynamic Expense Heads (Maintenance, Fuel, Salary, etc.)
+    allHeads.forEach(h => {
+        let hasExpForHead = allBuses.some(b => expMap.heads[h] && expMap.heads[h][b] > 0);
+        if (hasExpForHead) {
+            expRows.push({ isSubhead: true, desc: `${h} EXPENSES` });
+            allBuses.forEach(b => {
+                if (expMap.heads[h] && expMap.heads[h][b] > 0) {
+                    expRows.push({ isSubhead: false, desc: b, amt: expMap.heads[h][b] });
+                }
+            });
+            expRows.push({ isEmpty: true }); // Line break
+        }
+    });
+
+    // Office Expenses
+    if (expMap.office > 0) {
+        expRows.push({ isSubhead: true, desc: "OFFICE EXPENSES" });
+        expRows.push({ isSubhead: false, desc: "General Office", amt: expMap.office });
+        expRows.push({ isEmpty: true });
+    }
+
+    // Misc Expenses
+    if (expMap.misc > 0) {
+        expRows.push({ isSubhead: true, desc: "MISCELLANEOUS EXPENSES" });
+        expRows.push({ isSubhead: false, desc: "Misc Items", amt: expMap.misc });
+        expRows.push({ isEmpty: true });
+    }
+
+    // Clean up trailing empty lines so the table ends cleanly
+    if (incRows.length > 0 && incRows[incRows.length - 1].isEmpty) incRows.pop();
+    if (expRows.length > 0 && expRows[expRows.length - 1].isEmpty) expRows.pop();
+
+    // 4. Render Summary Balance Sheet Table
+    const max = Math.max(incRows.length, expRows.length);
+    let html = "";
+    
+    for (let i = 0; i < max; i++) {
+        const inc = incRows[i] || { isEmpty: true };
+        const exp = expRows[i] || { isEmpty: true };
+        
+        // Render Income Cell Logic
+        let incCellHtml = "";
+        let incAmtHtml = "";
+        if (inc.isSubhead) {
+            incCellHtml = `<div class="font-black text-blue-900 text-[10px] tracking-widest uppercase border-b-2 border-blue-200 inline-block pb-0.5">${inc.desc}</div>`;
+        } else if (inc.isEmpty) {
+            incCellHtml = `&nbsp;`;
+        } else {
+            incCellHtml = `<div class="pl-4 text-slate-700 font-bold text-sm flex items-center gap-2"><span class="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>${inc.desc}</div>`;
+            incAmtHtml = `₹${inc.amt.toLocaleString('en-IN')}`;
+        }
+
+        // Render Expense Cell Logic
+        let expCellHtml = "";
+        let expAmtHtml = "";
+        if (exp.isSubhead) {
+            expCellHtml = `<div class="font-black text-red-900 text-[10px] tracking-widest uppercase border-b-2 border-red-200 inline-block pb-0.5">${exp.desc}</div>`;
+        } else if (exp.isEmpty) {
+            expCellHtml = `&nbsp;`;
+        } else {
+            expCellHtml = `<div class="pl-4 text-slate-700 font-bold text-sm flex items-center gap-2"><span class="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>${exp.desc}</div>`;
+            expAmtHtml = `₹${exp.amt.toLocaleString('en-IN')}`;
+        }
+
+        html += `
+            <tr class="hover:bg-slate-50 transition border-b border-slate-50">
+                <td class="p-3 border-r border-slate-200 align-middle">${incCellHtml}</td>
+                <td class="p-3 border-r border-slate-200 text-right font-black text-green-700 align-middle">${incAmtHtml}</td>
+                <td class="p-3 border-r border-slate-200 align-middle">${expCellHtml}</td>
+                <td class="p-3 text-right font-black text-red-600 align-middle">${expAmtHtml}</td>
+            </tr>`;
+    }
+
+    if (max === 0) {
+         html = `<tr><td colspan="4" class="p-10 text-center text-slate-400 font-bold italic">No financial records found for this period.</td></tr>`;
+    }
+
+    document.getElementById('balanceSummaryBody').innerHTML = html;
+    document.getElementById('balanceSummaryFoot').innerHTML = `
+        <tr>
+            <td class="p-4 border-r border-slate-200 uppercase text-slate-500 font-bold text-xs tracking-wider">Total Income</td>
+            <td class="p-4 border-r border-slate-200 text-right text-xl font-black text-green-800 bg-green-100">₹${totalInc.toLocaleString('en-IN')}</td>
+            <td class="p-4 border-r border-slate-200 uppercase text-slate-500 font-bold text-xs tracking-wider">Total Expenses</td>
+            <td class="p-4 text-right text-xl font-black text-red-800 bg-red-100">₹${totalExp.toLocaleString('en-IN')}</td>
+        </tr>
+        <tr class="bg-slate-900 text-white shadow-inner">
+            <td colspan="2" class="p-5 text-center uppercase tracking-widest font-black text-sm border-r border-slate-700 text-slate-300">Net Profit / Loss</td>
+            <td colspan="2" class="p-5 text-center text-3xl font-black ${(totalInc - totalExp) >= 0 ? 'text-green-400' : 'text-red-400'}">
+                ₹${(totalInc - totalExp).toLocaleString('en-IN')}
+            </td>
+        </tr>
+    `;
+
+    // 5. Render Detailed Tables
+    document.getElementById('incomeDetailBody').innerHTML = income.map(r => {
+         let mnt = r[9] || '-'; // Guaranteed to show correctly via Index 9
+         let amt = parseFloat(String(r[7]).replace(/[^0-9.]/g, '')) || 0;
+         return `
+         <tr class="border-b hover:bg-slate-50">
+            <td class="p-2 border text-center">${r[0] || '-'}</td><td class="p-2 border font-bold text-center text-blue-600">${r[1] || '-'}</td>
+            <td class="p-2 border font-bold">${r[2] || '-'}</td><td class="p-2 border text-center">${r[4] || '-'}</td>
+            <td class="p-2 border text-center">${r[5] || '-'}</td><td class="p-2 border text-center">${r[6] || '-'}</td>
+            <td class="p-2 border text-center font-bold text-indigo-600">${mnt}</td><td class="p-2 border text-right font-black text-green-600">₹${amt}</td>
+            <td class="p-2 border text-center text-slate-500 text-[10px]">${r[8] || '-'}</td>
+        </tr>
+        `;
+    }).join('');
+
+    document.getElementById('expenseDetailBody').innerHTML = expenses.map(e => {
+        let amt = parseFloat(String(e[5]).replace(/[^0-9.]/g, '')) || 0;
+        return `
+        <tr class="border-b hover:bg-slate-50">
+            <td class="p-2 border text-center">${e[0] || '-'}</td><td class="p-2 border font-bold text-center text-orange-600">${e[1] || '-'}</td>
+            <td class="p-2 border text-center">${e[2] || '-'}</td><td class="p-2 border font-bold text-red-700">${e[3] || '-'}</td>
+            <td class="p-2 border italic text-slate-600">${e[4] || '-'}</td><td class="p-2 border text-right font-black text-red-600">₹${amt}</td>
+            <td class="p-2 border text-center text-slate-500 text-[10px]">${e[6] || '-'}</td>
+        </tr>
+        `;
+    }).join('');
+}
+
+function printFinancialReport(type) {
+    let title = "", elementId = "";
+    if (type === 'summary') { title = "ANNUAL BALANCE SHEET SUMMARY 2026-27"; elementId = "balanceSheetWrapper"; }
+    else if (type === 'income') { title = "INCOME DETAILED REPORT"; elementId = "incomeDetailBody"; }
+    else { title = "EXPENSE DETAILED REPORT"; elementId = "expenseDetailBody"; }
+
+    const content = document.getElementById(elementId).tagName === "TBODY" 
+        ? `<table style="width:100%; border-collapse:collapse; font-size:10px;">${document.getElementById(elementId).parentElement.innerHTML}</table>`
+        : document.getElementById(elementId).innerHTML;
+
+    const html = `
+        <div style="padding: 15mm; font-family: Arial, sans-serif;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e40af; padding-bottom: 10px; margin-bottom: 15px;">
+                <div style="text-align: left;">
+                    <h1 style="margin: 0; font-size: 24px; color: #1e40af;">TD SCHOOLS THURAVOOR</h1>
+                    <h2 style="margin: 5px 0; font-size: 14px; color: #666;">${title}</h2>
+                </div>
+                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLs9jyTEZv_qb7Sl-eWiCONiB_n-Jjv4icm2S3lPnmoqXnCQedYEs_cA3dwEleMx_hl9ByCEFyLE2nH6wyatT_dKjQNScu5jwkMJngSC3q9RNdZmUaa12r1jmURQM8VnhQKugi1wCklnSYOWiG7uP2E1gNmCA29pXFrrMvw0yMoAhWhZA/s1600/Logo2.png" style="height: 70px;">
+            </div>
+            <div style="font-size: 11px; margin-bottom: 15px; display: flex; justify-content: space-between;">
+                <span>Report Generated By: <b>${curUser.name}</b></span>
+                <span>Date: ${new Date().toLocaleString('en-GB')}</span>
+            </div>
+            <style>
+                table { width: 100%; border-collapse: collapse; font-size: 10px; }
+                th { background-color: #1e293b !important; color: white !important; border: 1px solid #000; padding: 6px; }
+                td { border: 1px solid #999; padding: 5px; }
+                .text-right { text-align: right; }
+                .bg-slate-900 { background: #000 !important; color: #fff !important; }
+                tr { page-break-inside: avoid; }
+            </style>
+            ${content}
+        </div>
+    `;
+
+    const pw = window.open('', '_blank');
+    pw.document.write(html);
+    pw.document.close();
+    pw.onload = () => { pw.print(); pw.close(); };
+}
+    
 
 function formatMyDate(dateStr) {
     if (!dateStr || dateStr === '-') return '-';
@@ -1910,4 +3429,3 @@ function formatMyDate(dateStr) {
 </script>
 </body>
 </html>
-
