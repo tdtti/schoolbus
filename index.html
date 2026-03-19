@@ -237,7 +237,7 @@
     </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwI-ujokMGdLNm8WR9VbrXomZLv6Mg887rjK_d1mSETe5JRRWalnZ4GaBtQJLebvJclqw/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbyGCJXiceGxfsGS4YjPGCFNfVQzJ8aeEOx6CBxBAnduRrgVEwcMk-KWBXWFTXt-mxisRA/exec";
    const users = {
   "4201": { id: "4201",pass: "buspass",role: "Bus",name: "KL32P4201SR",filter: "KL32P4201SR",access: [2] },
   "teacher1": { id: "teacher1", pass: "teachpass",role: "Teacher",name: "S ABHILASHA (VA)",tClass: "V-34347",tDiv: "A",access: [1,2,4,5] },
@@ -245,11 +245,15 @@
   "4201": { id: "4201", pass: "buspass", role: "Bus", name: "KL32P4201SR", filter: "KL32P4201SR", access: [2] },
   "teacher1": { id: "teacher1", pass: "teachpass", role: "Teacher", name: "S ABHILASHA (VA)", tClass: "V-34347", tDiv: "A", access: [1, 2, 4, 5] },
   "td1": { id: "td1", pass: "schpass", role: "School", name: "TDEMNS Admin", tSchool: "TDEMNS-td1", access: [1, 2, 3, 4, 5, 7] },
-  "principal": { id: "principal", pass: "prin2026", role: "Principal", name: "School Principal", access: [1, 2, 3, 4, 5, 6, 7, 8] },
-  "busman": { id: "busman", pass: "busman2026", role: "Bus Manager", name: "Bus Operations Manager", access: [1, 2, 3, 4, 5, 7, 8] },
-  "manager": { id: "manager", pass: "man2026", role: "Manager", name: "General Manager", access: [1, 3, 4, 5, 6, 7, 8] },
-  "admin": { id: "admin", pass: "adminpass", role: "Admin", name: "AJITH V", access:[1,2,3,4,5,6,7,8,9] }
+  "principal": { id: "principal", pass: "prin2026", role: "Principal", name: "School Principal", access:[1, 2, 3, 4, 5, 6, 7, 8, 10] },
+  "busman": { id: "busman", pass: "busman2026", role: "Bus Manager", name: "Bus Operations Manager", access:[1, 2, 3, 4, 5, 7, 8, 10] },
+  "manager": { id: "manager", pass: "man2026", role: "Manager", name: "General Manager", access:[1, 3, 4, 5, 6, 7, 8, 10] },
+  "admin": { id: "admin", pass: "adminpass", role: "Admin", name: "AJITH V", access:[1,2,3,4,5,6,7,8,9,10] }
 };
+    
+    let adminLocInterval = null; 
+    let adminTickInterval = null; 
+    let activeAdminBuses = {};
     
     let locWatchId = null; 
     let locDurationInterval = null;
@@ -464,6 +468,8 @@ async function logout() {
 }
 
 function cleanupLogoutUI() {
+    if (adminLocInterval) { clearInterval(adminLocInterval); adminLocInterval = null; }
+    if (adminTickInterval) { clearInterval(adminTickInterval); adminTickInterval = null; }
     // NEW: Stop all location tracking immediately
     stopLocationTracking();
     if (stuLocInterval) {
@@ -491,7 +497,7 @@ function cleanupLogoutUI() {
     function renderTabs() {
         const t = document.getElementById('tabs'); t.innerHTML = '';
         if(curUser.role === "Student") { loadTab(0); return; }
-        const n = {1:"Students Record", 2:"Attendance", 3:"Data", 4:"Fee", 5:"Receipt Management", 6:"Logs", 7:"Staff Records", 8:"Expenses", 9:"Balance Sheet 2026-27"};
+        const n = {1:"Students Record", 2:"Attendance", 3:"Data", 4:"Fee", 5:"Receipt Management", 6:"Logs", 7:"Staff Records", 8:"Expenses", 9:"Balance Sheet 2026-27", 10:"Live Locations"};
         curUser.access.forEach(id => {
             const b = document.createElement('button');
             b.className = "px-4 py-2 bg-gray-200 hover:bg-blue-200 font-bold rounded text-sm";
@@ -501,6 +507,9 @@ function cleanupLogoutUI() {
     }
 
     function loadTab(id) {
+        // Stop admin tracking if switching away from the Location tab
+        if (adminLocInterval) { clearInterval(adminLocInterval); adminLocInterval = null; }
+        if (adminTickInterval) { clearInterval(adminTickInterval); adminTickInterval = null; }
         const c = document.getElementById('tabContent');
         if(id === 0) renderStudentDash(c);
         if(id === 1) renderTab1(c);
@@ -512,6 +521,7 @@ function cleanupLogoutUI() {
         if(id === 7) renderTab7(c);
         if(id === 8) renderTab8(c);
         if(id === 9) renderTab9(c);
+        if(id === 10) renderTab10(c);
         
     }
 
@@ -3411,6 +3421,133 @@ function printFinancialReport(type) {
     pw.onload = () => { pw.print(); pw.close(); };
 }
     
+// --- Tab 10: Admin Live Locations ---
+function renderTab10(c) {
+    c.innerHTML = `
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-3xl font-black text-slate-800">Live Bus Tracking Overview</h2>
+            <button onclick="renderTab10(document.getElementById('tabContent'))" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg transition">
+                Refresh Maps
+            </button>
+        </div>
+        
+        <!-- Large gap (space-y-12) keeps 2-3 lines of space between each bus card -->
+        <div id="adminLocationsContainer" class="space-y-12 pb-10">
+            <p class="text-slate-400 font-bold animate-pulse text-center p-10">Fetching live coordinates from active buses...</p>
+        </div>
+    `;
+    startAdminMapRefresh();
+}
+
+function startAdminMapRefresh() {
+    const container = document.getElementById('adminLocationsContainer');
+    if (!container) return;
+    
+    // List of buses to check
+    const buses =["KL32P4201SR", "KL32M0528VM", "KL32L2382K", "KL07BU4184C", "KL32L0827U"];
+    
+    const fetchAllLocs = async () => {
+        try {
+            const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getAllBusLocations"})}).then(r=>r.json());
+            
+            if (res.success && document.getElementById('adminLocationsContainer')) {
+                let html = '';
+                activeAdminBuses = {}; // Reset active tracker reference
+                
+                buses.forEach(busId => {
+                    const data = res.data[busId]; // Returns object if active, undefined if offline
+                    
+                    html += `<div class="bg-white rounded-3xl shadow-md border border-slate-200 overflow-hidden">`;
+                    html += `  <div class="bg-slate-50 p-5 border-b border-slate-200 flex justify-between items-center">
+                                    <div>
+                                        <h3 class="font-black text-slate-800 text-lg uppercase tracking-widest flex items-center gap-2">
+                                            <span class="text-2xl">🚌</span> BUS: ${busId}
+                                        </h3>
+                                    </div>`;
+                    
+                    if (data) {
+                        activeAdminBuses[busId] = data.startTime; // Store start time for ticking clock
+                        const mapUrl = `https://maps.google.com/maps?q=${data.lat},${data.lng}&z=16&output=embed`;
+                        
+                        html += `       <div class="text-right flex flex-col items-end">
+                                            <span class="text-xs font-black text-green-700 bg-green-100 px-3 py-1.5 rounded-full uppercase flex items-center gap-2 shadow-sm">
+                                                <span class="relative flex h-2.5 w-2.5">
+                                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-600"></span>
+                                                </span>
+                                                Sharing Location
+                                            </span>
+                                            <span id="admin_dur_${busId}" class="text-sm font-mono text-slate-700 mt-1.5 font-bold">Duration: 00:00:00</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Embedded Map -->
+                                    <div class="h-72 md:h-96 w-full relative bg-slate-100">
+                                        <iframe src="${mapUrl}" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+                                    </div>
+                                    
+                                    <!-- Stop Button Area -->
+                                    <div class="p-4 bg-white flex justify-end border-t border-slate-100">
+                                        <button onclick="adminEndBusLocation('${busId}')" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2.5 rounded-xl text-sm font-black shadow-lg shadow-red-200 transition">
+                                            End Live Location
+                                        </button>
+                                    </div>
+                                </div>`;
+                    } else {
+                        html += `       <div class="text-right">
+                                            <span class="text-xs font-bold text-slate-500 bg-slate-200 px-3 py-1.5 rounded-full uppercase flex items-center gap-2 shadow-sm">
+                                                <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span> Offline
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="p-10 text-center bg-slate-50">
+                                        <span class="text-5xl mb-3 block opacity-20">📴</span>
+                                        <p class="text-sm text-slate-500 font-bold tracking-wide">Bus location is currently offline</p>
+                                    </div>
+                                </div>`;
+                    }
+                });
+                
+                container.innerHTML = html;
+            }
+        } catch(e) {}
+    };
+    
+    // Fetch Map Coordinates instantly, then every 15 seconds
+    fetchAllLocs();
+    if (adminLocInterval) clearInterval(adminLocInterval);
+    adminLocInterval = setInterval(fetchAllLocs, 15000);
+    
+    // Ticking Timer (Updates the HH:MM:SS text dynamically every second without refreshing the map)
+    if (adminTickInterval) clearInterval(adminTickInterval);
+    adminTickInterval = setInterval(() => {
+        for (let bus in activeAdminBuses) {
+            let start = activeAdminBuses[bus];
+            const diff = Math.floor((Date.now() - start) / 1000);
+            const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+            const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+            const s = String(diff % 60).padStart(2, '0');
+            const el = document.getElementById(`admin_dur_${bus}`);
+            if (el) el.innerText = `Duration: ${h}:${m}:${s}`;
+        }
+    }, 1000);
+}
+
+// Function to forcibly end a specific bus's live location from Admin Panel
+async function adminEndBusLocation(busId) {
+    if(!confirm("Are you sure you want to forcibly stop Live Location sharing for " + busId + "?")) return;
+    
+    showLoad();
+    try {
+        await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"updateBusLocation", busId: busId, lat: null, lng: null})});
+        msg("Terminated", "Live location ended for " + busId, "success");
+        startAdminMapRefresh(); // Instantly refresh UI
+    } catch(e) {
+        msg("Error", "Failed to end location", "error");
+    }
+    hideLoad();
+}
+
 
 function formatMyDate(dateStr) {
     if (!dateStr || dateStr === '-') return '-';
