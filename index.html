@@ -1506,12 +1506,52 @@ async function saveOneAtt(i) {
                         </tr>
                     </thead>
                     <tbody id="t3Body">
-                        ${generateDataTableRows(currentDataDB)}
-                    </tbody>
-                </table>
+        ${generateDataTableRows(currentDataDB)}
+    </tbody>
+    
+<tfoot class="bg-gray-200 font-black border-t-2 border-gray-500">
+    <tr>
+        <td colspan="3" class="p-3 text-right uppercase">Grand Totals:</td>
+        <td id="dataGrandTotal" class="p-3 text-center text-green-700 text-base">₹0</td>
+        <td id="dataGrandBalance" class="p-3 text-center text-red-600 text-base">₹0</td>
+        <td></td>
+    </tr>
+</tfoot>
+</table>
             </div>
         `;
+        // Add this as the last line inside function renderTab3(c)
+setTimeout(() => updateDataTotals(currentDataDB), 100);
     }
+    
+    function updateDataTotals(data) {
+    if (!data) return;
+
+    let sumPaid = 0;
+    let sumBal = 0;
+
+    data.forEach(s => {
+        // This looks for the key regardless of case (Total, total, TOTAL)
+        const totalKey = Object.keys(s).find(k => k.toLowerCase().trim() === 'total');
+        const balanceKey = Object.keys(s).find(k => k.toLowerCase().trim() === 'balance');
+
+        if (totalKey) {
+            let val = String(s[totalKey] || "0").replace(/[^\d.]/g, '');
+            sumPaid += (parseFloat(val) || 0);
+        }
+        if (balanceKey) {
+            let val = String(s[balanceKey] || "0").replace(/[^\d.]/g, '');
+            sumBal += (parseFloat(val) || 0);
+        }
+    });
+
+    const totalEl = document.getElementById('dataGrandTotal');
+    const balEl = document.getElementById('dataGrandBalance');
+    
+    if (totalEl) totalEl.innerText = '₹' + sumPaid.toLocaleString('en-IN');
+    if (balEl) balEl.innerText = '₹' + sumBal.toLocaleString('en-IN');
+}
+
 
     // Generates the table HTML dynamically so we can re-render it instantly when sorted
     function generateDataTableRows(data) {
@@ -1566,24 +1606,36 @@ async function saveOneAtt(i) {
             if (valA > valB) return dataSortAsc ? 1 : -1;
             return 0;
         });
-
+        // Add this as the last line inside the sortDataTable function:
+        updateDataTotals(currentDataDB);
         // Re-render table body
         document.getElementById('t3Body').innerHTML = generateDataTableRows(currentDataDB);
         
         // Ensure search filter is maintained if user sorts while searching
         searchT3();
+        
     }
 
     // Maintained DOM Search function
     function searchT3() { 
-        const searchInput = document.getElementById('dSearch');
-        if (!searchInput) return;
-        
-        const q = searchInput.value.toLowerCase(); 
-        Array.from(document.getElementById('t3Body').rows).forEach(r => {
-            r.style.display = r.innerText.toLowerCase().includes(q) ? '' : 'none';
-        }); 
-    }
+    const searchInput = document.getElementById('dSearch');
+    if (!searchInput) return;
+    
+    const q = searchInput.value.toLowerCase(); 
+    
+    // 1. Filter the actual data source
+    const filteredResults = currentDataDB.filter(s => {
+        return s.StudentName.toLowerCase().includes(q) || 
+               s.Phone.toString().includes(q) || 
+               (s.Class + "-" + s.Div).toLowerCase().includes(q);
+    });
+
+    // 2. Update the table body with ONLY filtered results
+    document.getElementById('t3Body').innerHTML = generateDataTableRows(filteredResults);
+    
+    // 3. Update the Totals based on what is visible
+    updateDataTotals(filteredResults);
+}
     
     function sendReminderWA(phone) {
   const s = db.find(x => String(x.Phone) === String(phone));
@@ -3291,43 +3343,96 @@ function processBalanceSheet(income, expenses) {
 
 function printFinancialReport(type) {
     let title = "", elementId = "";
-    if (type === 'summary') { title = "ANNUAL BALANCE SHEET SUMMARY 2026-27"; elementId = "balanceSheetWrapper"; }
-    else if (type === 'income') { title = "INCOME DETAILED REPORT"; elementId = "incomeDetailBody"; }
-    else { title = "EXPENSE DETAILED REPORT"; elementId = "expenseDetailBody"; }
+    if (type === 'summary') { 
+        title = "ANNUAL BALANCE SHEET SUMMARY 2026-27"; 
+        elementId = "balanceSheetWrapper"; 
+    }
+    else if (type === 'income') { 
+        title = "INCOME DETAILED REPORT"; 
+        elementId = "incomeDetailBody"; 
+    }
+    else { 
+        title = "EXPENSE DETAILED REPORT"; 
+        elementId = "expenseDetailBody"; 
+    }
 
-    const content = document.getElementById(elementId).tagName === "TBODY" 
-        ? `<table style="width:100%; border-collapse:collapse; font-size:10px;">${document.getElementById(elementId).parentElement.innerHTML}</table>`
-        : document.getElementById(elementId).innerHTML;
+    const sourceElement = document.getElementById(elementId);
+    let contentHtml = "";
 
-    const html = `
-        <div style="padding: 15mm; font-family: Arial, sans-serif;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e40af; padding-bottom: 10px; margin-bottom: 15px;">
-                <div style="text-align: left;">
-                    <h1 style="margin: 0; font-size: 24px; color: #1e40af;">TD SCHOOLS THURAVOOR</h1>
-                    <h2 style="margin: 5px 0; font-size: 14px; color: #666;">${title}</h2>
-                </div>
-                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLs9jyTEZv_qb7Sl-eWiCONiB_n-Jjv4icm2S3lPnmoqXnCQedYEs_cA3dwEleMx_hl9ByCEFyLE2nH6wyatT_dKjQNScu5jwkMJngSC3q9RNdZmUaa12r1jmURQM8VnhQKugi1wCklnSYOWiG7uP2E1gNmCA29pXFrrMvw0yMoAhWhZA/s1600/Logo2.png" style="height: 70px;">
-            </div>
-            <div style="font-size: 11px; margin-bottom: 15px; display: flex; justify-content: space-between;">
-                <span>Report Generated By: <b>${curUser.name}</b></span>
-                <span>Date: ${new Date().toLocaleString('en-GB')}</span>
-            </div>
+    // If it's a table body, we must wrap it in a table structure so headers and CSS apply
+    if (sourceElement.tagName === "TBODY") {
+        const parentTable = sourceElement.closest('table');
+        const headerHtml = parentTable.querySelector('thead') ? parentTable.querySelector('thead').innerHTML : "";
+        contentHtml = `
+            <table style="width:100%; border-collapse:collapse; font-size:10px;">
+                <thead>${headerHtml}</thead>
+                <tbody>${sourceElement.innerHTML}</tbody>
+            </table>`;
+    } else {
+        contentHtml = sourceElement.innerHTML;
+    }
+
+    // Build the Document for the Print Frame
+    const printDocContent = `
+        <html>
+        <head>
+            <title>${title}</title>
             <style>
-                table { width: 100%; border-collapse: collapse; font-size: 10px; }
-                th { background-color: #1e293b !important; color: white !important; border: 1px solid #000; padding: 6px; }
-                td { border: 1px solid #999; padding: 5px; }
+                body { font-family: sans-serif; padding: 15px; color: #333; margin: 0; }
+                .print-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1e40af; padding-bottom: 10px; margin-bottom: 15px; }
+                .print-header h1 { margin: 0; font-size: 18px; color: #1e40af; text-transform: uppercase; }
+                .print-header h2 { margin: 3px 0; font-size: 12px; color: #666; }
+                table { width: 100%; border-collapse: collapse; font-size: 9px; margin-top: 10px; }
+                th { background-color: #1e293b !important; color: white !important; border: 1px solid #000; padding: 5px; text-align: left; -webkit-print-color-adjust: exact; }
+                td { border: 1px solid #ccc; padding: 4px; vertical-align: top; }
                 .text-right { text-align: right; }
-                .bg-slate-900 { background: #000 !important; color: #fff !important; }
-                tr { page-break-inside: avoid; }
+                .font-black { font-weight: 900; }
+                .bg-gray-100 { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; }
+                .bg-gray-50 { background-color: #f9fafb !important; -webkit-print-color-adjust: exact; }
+                .text-green-700 { color: #15803d !important; }
+                .text-red-700 { color: #b91c1c !important; }
+                @page { size: auto; margin: 10mm; }
             </style>
-            ${content}
-        </div>
+        </head>
+        <body>
+            <div class="print-header">
+                <div>
+                    <h1>TD Schools Thuravoor</h1>
+                    <h2>${title}</h2>
+                    <p style="font-size: 10px; margin: 5px 0 0 0;">Generated By: ${curUser.name} | ${new Date().toLocaleString('en-GB')}</p>
+                </div>
+                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLs9jyTEZv_qb7Sl-eWiCONiB_n-Jjv4icm2S3lPnmoqXnCQedYEs_cA3dwEleMx_hl9ByCEFyLE2nH6wyatT_dKjQNScu5jwkMJngSC3q9RNdZmUaa12r1jmURQM8VnhQKugi1wCklnSYOWiG7uP2E1gNmCA29pXFrrMvw0yMoAhWhZA/s1600/Logo2.png" style="height: 50px;">
+            </div>
+            <div class="print-content">
+                ${contentHtml}
+            </div>
+        </body>
+        </html>
     `;
 
-    const pw = window.open('', '_blank');
-    pw.document.write(html);
-    pw.document.close();
-    pw.onload = () => { pw.print(); pw.close(); };
+    // MOBILE FIX: Use a hidden iframe instead of window.open
+    let printFrame = document.getElementById('mobilePrintFrame');
+    if (!printFrame) {
+        printFrame = document.createElement('iframe');
+        printFrame.id = 'mobilePrintFrame';
+        printFrame.style.position = 'absolute';
+        printFrame.style.top = '-9999px';
+        printFrame.style.left = '-9999px';
+        printFrame.style.width = '0';
+        printFrame.style.height = '0';
+        document.body.appendChild(printFrame);
+    }
+
+    const frameDoc = printFrame.contentWindow.document;
+    frameDoc.open();
+    frameDoc.write(printDocContent);
+    frameDoc.close();
+
+    // Small delay to allow mobile browser to render CSS and Images inside the frame
+    setTimeout(() => {
+        printFrame.contentWindow.focus();
+        printFrame.contentWindow.print();
+    }, 800);
 }
     
 // --- Tab 10: Admin Live Locations ---
