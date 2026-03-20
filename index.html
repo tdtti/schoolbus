@@ -3069,10 +3069,10 @@ async function renderTab9(c) {
         <div id="balanceSheetWrapper" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-8">
             <table class="w-full text-sm border-collapse">
                 <thead>
-                    <tr class="bg-slate-800 text-white uppercase text-[11px] tracking-widest">
-                        <th class="p-4 border-r border-slate-700 w-1/4">Income Description</th>
+                    <tr class="bg-slate-600 text-white uppercase text-[11px] tracking-widest">
+                        <th class="p-4 border-r border-slate-700 w-1/4">Income </th>
                         <th class="p-4 border-r border-slate-700 w-1/4 text-right">Amount (₹)</th>
-                        <th class="p-4 border-r border-slate-700 w-1/4">Expense Description</th>
+                        <th class="p-4 border-r border-slate-700 w-1/4">Expense </th>
                         <th class="p-4 w-1/4 text-right">Amount (₹)</th>
                     </tr>
                 </thead>
@@ -3139,232 +3139,154 @@ async function fetchBalanceSheetData() {
 }
 
 function processBalanceSheet(income, expenses) {
+    const schools = ["TDEMNS-td1", "GTDLPS-34318", "TDTTI-34347", "TDHS-34028"];
+    const buses = ["KL32P4201SR", "KL32M0528VM", "KL32L2382K", "KL07BU4184C", "KL32L0827U"];
+    const expHeads = ["MAINTANANCE", "FUEL", "SALARY", "ADVANCE", "EXTRA VECHICLE"];
+
+    const clean = (str) => String(str || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+
     let incMap = { student: {}, donor: {}, other: 0 };
+    schools.forEach(s => { 
+        incMap.student[clean(s)] = 0; 
+        incMap.donor[clean(s)] = 0; 
+    });
+
     let expMap = { heads: {}, office: 0, misc: 0 };
+    expHeads.forEach(h => { 
+        expMap.heads[h] = {}; 
+        buses.forEach(b => expMap.heads[h][b] = 0); 
+    });
 
     let totalInc = 0, totalExp = 0;
-    
-    // Using Sets to automatically catch all Schools, Buses, and Expense types
-    let dynamicSchools = new Set();
-    let dynamicBuses = new Set();
-    let dynamicExpHeads = new Set();
 
-    const knownSchools =["TDEMNS-td1", "GTDLPS-34318", "TDTTI-34347", "TDHS-34028"];
-
-    // 1. Process Raw Income
-    income.forEach(r => {
+    // 1. Process Income
+    income.forEach((r) => {
         if (!r || r.length < 5) return;
-        const amt = parseFloat(String(r[7]).replace(/[^0-9.]/g, '')) || 0;
-        if (amt === 0) return;
-
-        let sch = "Other/Unknown School";
-        for (let i = 0; i < r.length; i++) {
-            const cell = String(r[i]).trim();
-            if (knownSchools.includes(cell) || cell.includes("TDEMNS") || cell.includes("GTDLPS") || cell.includes("TDTTI") || cell.includes("TDHS")) {
-                sch = cell;
-                break;
-            }
-        }
-        if (sch === "Other/Unknown School" && r[4]) sch = String(r[4]).trim();
-
-        let role = "Student";
-        for (let i = 0; i < r.length; i++) {
-            const cell = String(r[i]).trim().toLowerCase();
-            if (cell === "staff" || cell === "teacher" || cell === "donor" || cell === "donar") {
-                role = "Staff";
-                break;
-            }
-        }
-
-        dynamicSchools.add(sch);
+        let rawAmt = (r.length >= 9) ? r[7] : r[8];
+        let amt = parseFloat(String(rawAmt || "0").replace(/[^\d.]/g, "")) || 0;
         totalInc += amt;
 
-        if (role === "Student") {
-            incMap.student[sch] = (incMap.student[sch] || 0) + amt;
+        let role = String(r[3] || "").trim().toLowerCase();
+        let schClean = clean(r[4]); 
+
+        if (role === "student") {
+            if (incMap.student.hasOwnProperty(schClean)) incMap.student[schClean] += amt;
+            else incMap.other += amt;
+        } else if (["teacher", "staff", "donar", "donor"].includes(role)) {
+            if (incMap.donor.hasOwnProperty(schClean)) incMap.donor[schClean] += amt;
+            else incMap.other += amt;
         } else {
-            incMap.donor[sch] = (incMap.donor[sch] || 0) + amt;
+            incMap.other += amt;
         }
     });
 
-    // 2. Process Raw Expenses
+    // 2. Process Expenses
     expenses.forEach(e => {
         if (!e || e.length < 6) return;
-        const amt = parseFloat(String(e[5]).replace(/[^0-9.]/g, '')) || 0;
-        if (amt === 0) return;
-
-        const bus = String(e[1] || 'Unknown').trim();
-        const title = String(e[3] || 'MISC').trim().toUpperCase();
-        
-        dynamicBuses.add(bus);
+        const amt = parseFloat(String(e[5] || "0").replace(/[^\d.]/g, "")) || 0;
+        const bus = String(e[1] || "").trim();
+        const title = String(e[3] || "").trim();
         totalExp += amt;
-
-        if (bus === "OFFICE" || title === "OFFICE") {
-            expMap.office += amt;
-        } else if (title === "MISC") {
-            expMap.misc += amt;
-        } else {
-            dynamicExpHeads.add(title);
-            if (!expMap.heads[title]) expMap.heads[title] = {};
+        if (bus === "OFFICE") expMap.office += amt;
+        else if (title === "MISC") expMap.misc += amt;
+        else if (expMap.heads[title]) {
             expMap.heads[title][bus] = (expMap.heads[title][bus] || 0) + amt;
         }
     });
 
-    // 3. Prepare Subheads & Data Rows
-    let incRows =[];
-    const allSchools = Array.from(dynamicSchools).sort();
-    
-    // --- Income Side Construction ---
-    // Student Fees
-    let hasStudentFee = allSchools.some(s => incMap.student[s] > 0);
-    if (hasStudentFee) {
-        incRows.push({ isSubhead: true, desc: "STUDENT FEES" });
-        allSchools.forEach(s => {
-            if (incMap.student[s] > 0) incRows.push({ isSubhead: false, desc: s, amt: incMap.student[s] });
+    // 3. Summary Table Logic
+    let incRows = [];
+    if (Object.values(incMap.student).some(v => v > 0)) {
+        incRows.push({ isHeader: true, desc: "STUDENT FEES" });
+        schools.forEach(s => {
+            let val = incMap.student[clean(s)];
+            if (val > 0) incRows.push({ desc: s, amt: val });
         });
-        incRows.push({ isEmpty: true }); // Line break
     }
-
-    // Staff / Donor Fees
-    let hasDonorFee = allSchools.some(s => incMap.donor[s] > 0);
-    if (hasDonorFee) {
-        incRows.push({ isSubhead: true, desc: "STAFF / DONOR FEES" });
-        allSchools.forEach(s => {
-            if (incMap.donor[s] > 0) incRows.push({ isSubhead: false, desc: s, amt: incMap.donor[s] });
+    if (Object.values(incMap.donor).some(v => v > 0)) {
+        incRows.push({ isHeader: true, desc: "STAFF / DONOR FEES" });
+        schools.forEach(s => {
+            let val = incMap.donor[clean(s)];
+            if (val > 0) incRows.push({ desc: s, amt: val });
         });
-        incRows.push({ isEmpty: true });
     }
-
-    // Other Income
     if (incMap.other > 0) {
-        incRows.push({ isSubhead: true, desc: "OTHER INCOME" });
-        incRows.push({ isSubhead: false, desc: "Miscellaneous / Uncategorised", amt: incMap.other });
-        incRows.push({ isEmpty: true });
+        incRows.push({ isHeader: true, desc: "OTHER INCOME" });
+        incRows.push({ desc: "General Misc", amt: incMap.other });
     }
 
-    // --- Expense Side Construction ---
-    let expRows =[];
-    const allBuses = Array.from(dynamicBuses).sort();
-    const allHeads = Array.from(dynamicExpHeads).sort();
-    
-    // Dynamic Expense Heads (Maintenance, Fuel, Salary, etc.)
-    allHeads.forEach(h => {
-        let hasExpForHead = allBuses.some(b => expMap.heads[h] && expMap.heads[h][b] > 0);
-        if (hasExpForHead) {
-            expRows.push({ isSubhead: true, desc: `${h} EXPENSES` });
-            allBuses.forEach(b => {
-                if (expMap.heads[h] && expMap.heads[h][b] > 0) {
-                    expRows.push({ isSubhead: false, desc: b, amt: expMap.heads[h][b] });
-                }
+    let expRows = [];
+    expHeads.forEach(h => {
+        let headTotal = buses.reduce((acc, b) => acc + expMap.heads[h][b], 0);
+        if (headTotal > 0) {
+            expRows.push({ isHeader: true, desc: h });
+            buses.forEach(b => {
+                if (expMap.heads[h][b] > 0) expRows.push({ desc: b, amt: expMap.heads[h][b] });
             });
-            expRows.push({ isEmpty: true }); // Line break
         }
     });
-
-    // Office Expenses
-    if (expMap.office > 0) {
-        expRows.push({ isSubhead: true, desc: "OFFICE EXPENSES" });
-        expRows.push({ isSubhead: false, desc: "General Office", amt: expMap.office });
-        expRows.push({ isEmpty: true });
+    if (expMap.office > 0 || expMap.misc > 0) {
+        expRows.push({ isHeader: true, desc: "OFFICE & MISC" });
+        if (expMap.office > 0) expRows.push({ desc: "OFFICE EXPENSES", amt: expMap.office });
+        if (expMap.misc > 0) expRows.push({ desc: "MISC EXPENSES", amt: expMap.misc });
     }
 
-    // Misc Expenses
-    if (expMap.misc > 0) {
-        expRows.push({ isSubhead: true, desc: "MISCELLANEOUS EXPENSES" });
-        expRows.push({ isSubhead: false, desc: "Misc Items", amt: expMap.misc });
-        expRows.push({ isEmpty: true });
-    }
-
-    // Clean up trailing empty lines so the table ends cleanly
-    if (incRows.length > 0 && incRows[incRows.length - 1].isEmpty) incRows.pop();
-    if (expRows.length > 0 && expRows[expRows.length - 1].isEmpty) expRows.pop();
-
-    // 4. Render Summary Balance Sheet Table
     const max = Math.max(incRows.length, expRows.length);
-    let html = "";
-    
+    let summaryHtml = "";
     for (let i = 0; i < max; i++) {
         const inc = incRows[i] || { isEmpty: true };
         const exp = expRows[i] || { isEmpty: true };
-        
-        // Render Income Cell Logic
-        let incCellHtml = "";
-        let incAmtHtml = "";
-        if (inc.isSubhead) {
-            incCellHtml = `<div class="font-black text-blue-900 text-[10px] tracking-widest uppercase border-b-2 border-blue-200 inline-block pb-0.5">${inc.desc}</div>`;
-        } else if (inc.isEmpty) {
-            incCellHtml = `&nbsp;`;
-        } else {
-            incCellHtml = `<div class="pl-4 text-slate-700 font-bold text-sm flex items-center gap-2"><span class="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>${inc.desc}</div>`;
-            incAmtHtml = `₹${inc.amt.toLocaleString('en-IN')}`;
-        }
-
-        // Render Expense Cell Logic
-        let expCellHtml = "";
-        let expAmtHtml = "";
-        if (exp.isSubhead) {
-            expCellHtml = `<div class="font-black text-red-900 text-[10px] tracking-widest uppercase border-b-2 border-red-200 inline-block pb-0.5">${exp.desc}</div>`;
-        } else if (exp.isEmpty) {
-            expCellHtml = `&nbsp;`;
-        } else {
-            expCellHtml = `<div class="pl-4 text-slate-700 font-bold text-sm flex items-center gap-2"><span class="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>${exp.desc}</div>`;
-            expAmtHtml = `₹${exp.amt.toLocaleString('en-IN')}`;
-        }
-
-        html += `
-            <tr class="hover:bg-slate-50 transition border-b border-slate-50">
-                <td class="p-3 border-r border-slate-200 align-middle">${incCellHtml}</td>
-                <td class="p-3 border-r border-slate-200 text-right font-black text-green-700 align-middle">${incAmtHtml}</td>
-                <td class="p-3 border-r border-slate-200 align-middle">${expCellHtml}</td>
-                <td class="p-3 text-right font-black text-red-600 align-middle">${expAmtHtml}</td>
-            </tr>`;
+        const getCell = (item) => {
+            if (item.isEmpty) return `<td class="p-2 border-r" colspan="2"></td>`;
+            if (item.isHeader) return `<td class="p-2 border-r border-b font-bold text-gray-800 text-xs uppercase pt-4" colspan="2">${item.desc}</td>`;
+            return `<td class="p-2 border-r text-gray-600 pl-6 text-xs">${item.desc}</td><td class="p-2 border-r text-right text-xs text-gray-900 font-medium">₹${(item.amt || 0).toLocaleString('en-IN')}</td>`;
+        };
+        summaryHtml += `<tr class="">${getCell(inc)}${getCell(exp)}</tr>`;
     }
 
-    if (max === 0) {
-         html = `<tr><td colspan="4" class="p-10 text-center text-slate-400 font-bold italic">No financial records found for this period.</td></tr>`;
-    }
-
-    document.getElementById('balanceSummaryBody').innerHTML = html;
+    document.getElementById('balanceSummaryBody').innerHTML = summaryHtml;
     document.getElementById('balanceSummaryFoot').innerHTML = `
-        <tr>
-            <td class="p-4 border-r border-slate-200 uppercase text-slate-500 font-bold text-xs tracking-wider">Total Income</td>
-            <td class="p-4 border-r border-slate-200 text-right text-xl font-black text-green-800 bg-green-100">₹${totalInc.toLocaleString('en-IN')}</td>
-            <td class="p-4 border-r border-slate-200 uppercase text-slate-500 font-bold text-xs tracking-wider">Total Expenses</td>
-            <td class="p-4 text-right text-xl font-black text-red-800 bg-red-100">₹${totalExp.toLocaleString('en-IN')}</td>
+        <tr class="border-t-2 border-black font-bold">
+            <td class="p-3 border-r text-xs">TOTAL INCOME</td>
+            <td class="p-3 border-r text-right text-xs text-green-700">₹${totalInc.toLocaleString('en-IN')}</td>
+            <td class="p-3 border-r text-xs">TOTAL EXPENSES</td>
+            <td class="p-3 text-right text-xs text-red-700">₹${totalExp.toLocaleString('en-IN')}</td>
         </tr>
-        <tr class="bg-slate-900 text-white shadow-inner">
-            <td colspan="2" class="p-5 text-center uppercase tracking-widest font-black text-sm border-r border-slate-700 text-slate-300">Net Profit / Loss</td>
-            <td colspan="2" class="p-5 text-center text-3xl font-black ${(totalInc - totalExp) >= 0 ? 'text-green-400' : 'text-red-400'}">
-                ₹${(totalInc - totalExp).toLocaleString('en-IN')}
-            </td>
+        <tr class="border-t-2 border-black bg-gray-50">
+            <td colspan="2" class="p-4 text-center font-bold text-gray-700 text-sm border-r">NET SURPLUS / (DEFICIT)</td>
+            <td colspan="2" class="p-4 text-center font-black text-xl text-gray-900">₹${(totalInc - totalExp).toLocaleString('en-IN')}</td>
         </tr>
     `;
 
-    // 5. Render Detailed Tables
-    document.getElementById('incomeDetailBody').innerHTML = income.map(r => {
-         let mnt = r[9] || '-'; // Guaranteed to show correctly via Index 9
-         let amt = parseFloat(String(r[7]).replace(/[^0-9.]/g, '')) || 0;
-         return `
-         <tr class="border-b hover:bg-slate-50">
-            <td class="p-2 border text-center">${r[0] || '-'}</td><td class="p-2 border font-bold text-center text-blue-600">${r[1] || '-'}</td>
-            <td class="p-2 border font-bold">${r[2] || '-'}</td><td class="p-2 border text-center">${r[4] || '-'}</td>
-            <td class="p-2 border text-center">${r[5] || '-'}</td><td class="p-2 border text-center">${r[6] || '-'}</td>
-            <td class="p-2 border text-center font-bold text-indigo-600">${mnt}</td><td class="p-2 border text-right font-black text-green-600">₹${amt}</td>
-            <td class="p-2 border text-center text-slate-500 text-[10px]">${r[8] || '-'}</td>
-        </tr>
-        `;
+    // 4. DETAILED INCOME WITH TOTAL ROW
+    let incDetailHtml = income.map(r => {
+        let month = (r.length >= 9) ? r[8] : "-"; 
+        let amount = (r.length >= 9) ? r[7] : r[8];
+        return `<tr class="border-b text-[10px]"><td class="p-1 border">${r[0]}</td><td class="p-1 border">${r[1]}</td><td class="p-1 border font-medium">${r[2]}</td><td class="p-1 border">${r[4]}</td><td class="p-1 border">${r[5]}</td><td class="p-1 border">${r[6]}</td><td class="p-1 border font-bold text-blue-600">${month}</td><td class="p-1 border text-right font-bold text-green-700">₹${amount}</td><td class="p-1 border text-center text-gray-400">${r[r.length-1]}</td></tr>`;
     }).join('');
+    
+    // Append the Total Row to Income Detail
+    incDetailHtml += `
+        <tr class="bg-gray-100 font-black text-sm">
+            <td colspan="7" class="p-2 text-right border uppercase">Total Detailed Income:</td>
+            <td class="p-2 text-right border text-green-800">₹${totalInc.toLocaleString('en-IN')}</td>
+            <td class="border"></td>
+        </tr>`;
+    document.getElementById('incomeDetailBody').innerHTML = incDetailHtml;
 
-    document.getElementById('expenseDetailBody').innerHTML = expenses.map(e => {
-        let amt = parseFloat(String(e[5]).replace(/[^0-9.]/g, '')) || 0;
-        return `
-        <tr class="border-b hover:bg-slate-50">
-            <td class="p-2 border text-center">${e[0] || '-'}</td><td class="p-2 border font-bold text-center text-orange-600">${e[1] || '-'}</td>
-            <td class="p-2 border text-center">${e[2] || '-'}</td><td class="p-2 border font-bold text-red-700">${e[3] || '-'}</td>
-            <td class="p-2 border italic text-slate-600">${e[4] || '-'}</td><td class="p-2 border text-right font-black text-red-600">₹${amt}</td>
-            <td class="p-2 border text-center text-slate-500 text-[10px]">${e[6] || '-'}</td>
-        </tr>
-        `;
-    }).join('');
+    // 5. DETAILED EXPENSE WITH TOTAL ROW
+    let expDetailHtml = expenses.map(e => `
+        <tr class="border-b text-[10px]"><td class="p-1 border">${e[0]}</td><td class="p-1 border">${e[1]}</td><td class="p-1 border">${e[2]}</td><td class="p-1 border font-medium">${e[3]}</td><td class="p-1 border italic">${e[4]}</td><td class="p-1 border text-right text-red-600 font-bold">₹${e[5]}</td><td class="p-1 border text-center text-gray-400">${e[6]}</td></tr>
+    `).join('');
+
+    // Append the Total Row to Expense Detail
+    expDetailHtml += `
+        <tr class="bg-gray-100 font-black text-sm">
+            <td colspan="5" class="p-2 text-right border uppercase">Total Detailed Expenses:</td>
+            <td class="p-2 text-right border text-red-800">₹${totalExp.toLocaleString('en-IN')}</td>
+            <td class="border"></td>
+        </tr>`;
+    document.getElementById('expenseDetailBody').innerHTML = expDetailHtml;
 }
 
 function printFinancialReport(type) {
