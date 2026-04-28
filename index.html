@@ -227,17 +227,9 @@
     </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyGCJXiceGxfsGS4YjPGCFNfVQzJ8aeEOx6CBxBAnduRrgVEwcMk-KWBXWFTXt-mxisRA/exec";
-   const users = {
-  "4201": { id: "4201",pass: "buspass",role: "Bus",name: "KL32P4201SR",filter: "KL32P4201SR",access: [2] },
-  "teacher1": { id: "teacher1", pass: "teachpass",role: "Teacher",name: "S ABHILASHA (VA)",tClass: "V-34347",tDiv: "A",access: [1,2,4,5] },
-  "td1": { id: "td1", pass: "schpass",role: "School",name: "TDEMNS Admin", tSchool: "TDEMNS-td1", access: [1,3,4,5,7] },
-  "td1": { id: "td1", pass: "prin2026", role: "School", name: " TDEMNS Principal", tSchool: "TDEMNS-td1", access:[3, 4, 5, 9, 10] },
-  "busman": { id: "busman", pass: "busman2026", role: "Admin", name: "G MAHESH KUMAR", access:[1, 3, 4, 5, 7, 8, 9, 10] },
-  "manager": { id: "manager", pass: "man2026", role: "Admin", name: "S RAJKUMAR", access:[3, 9, 10] },
-  "admin": { id: "admin", pass: "adminpass", role: "Admin", name: "AJITH V", access:[1,2,3,4,5,6,7,8,9,10] }
-};
-    
+    const API_URL = "https://script.google.com/macros/s/AKfycbzZLq1qhSpu-D6PHq1b-JQ96O8Ioi6Md_A63s_4cAydF0_mZNE6q8Ko1XphaDIGEZZv2w/exec";
+   
+    let users = {}; // Now an empty object, will be filled from Sheet    
     let adminLocInterval = null; 
     let adminTickInterval = null; 
     let activeAdminBuses = {};
@@ -299,8 +291,11 @@
     
     
     window.onload = () => {
+    fetchUsers(); // Start loading users as soon as the page opens
     resetTimer();
-    document.onmousemove = resetTimer; document.onkeypress = resetTimer;
+    document.onmousemove = resetTimer; 
+    document.onkeypress = resetTimer;
+    
     const savedU = localStorage.getItem('keepUser'),
           savedP = localStorage.getItem('keepPass');
 
@@ -308,11 +303,26 @@
         document.getElementById('offUser').value = savedU;
         document.getElementById('offPass').value = savedP;
         document.getElementById('keepLogin').checked = true;
-        loginOfficial(); // auto-login
-      }
+        // Small delay to ensure fetchUsers finishes before auto-login
+        setTimeout(loginOfficial, 1500); 
     }
+}
 
-
+    async function fetchUsers() {
+    try {
+        const r = await fetch(API_URL, {
+            method: 'POST', 
+            body: JSON.stringify({ action: "getUsers" })
+        }).then(x => x.json());
+        
+        if (r.success) {
+            users = r.data;
+            console.log("Users loaded successfully");
+        }
+    } catch (e) {
+        console.error("User fetch error:", e);
+    }
+}
 
     async function fetchData() {
         showLoad();
@@ -324,22 +334,43 @@
     }
 
     async function loginStudent() {
-        const q = document.getElementById('stuSearch').value.toLowerCase();
-        if(!q) return;
-        await fetchData();
-        const s = db.find(x => String(x.Phone).includes(q) || String(x.StudentName).toLowerCase().includes(q));
-        if(s) startSession({role:"Student", name:s.StudentName, data:s});
-        else msg("Not Found","No records match.","warning");
+    const q = document.getElementById('stuSearch').value.trim();
+    if (!q) return msg("Wait", "Please enter a Name or Phone", "info");
+
+    showLoad(); // Show "Processing..."
+    try {
+        // We only fetch the specific student, not the whole DB
+        const r = await fetch(API_URL, {
+            method: 'POST', 
+            body: JSON.stringify({ action: "findStudent", query: q })
+        }).then(x => x.json());
+
+        if (r.success && r.data) {
+            startSession({ role: "Student", name: r.data.StudentName, data: r.data });
+        } else {
+            msg("Not Found", "No records match that Name or Phone.", "warning");
+        }
+    } catch (e) {
+        msg("Error", "Network connection failed. Try again.", "error");
+    }
+    hideLoad();
+}
+
+    async function loginOfficial() {
+    const u = document.getElementById('offUser').value.trim();
+    const p = document.getElementById('offPass').value.trim();
+    const keep = document.getElementById('keepLogin').checked;
+
+    // Failsafe: if users aren't loaded yet, try to fetch them now
+    if (Object.keys(users).length === 0) {
+        showLoad();
+        await fetchUsers();
+        hideLoad();
     }
 
-    function loginOfficial() {
-    const u = document.getElementById('offUser').value,
-          p = document.getElementById('offPass').value,
-          keep = document.getElementById('keepLogin').checked;
-
-    if(users[u] && users[u].pass === p) {
+    if (users[u] && String(users[u].pass) === String(p)) {
         startSession(users[u]);
-        if(keep) {
+        if (keep) {
             localStorage.setItem('keepUser', u);
             localStorage.setItem('keepPass', p);
         } else {
@@ -347,7 +378,7 @@
             localStorage.removeItem('keepPass');
         }
     } else {
-        msg("Error","Invalid Login","error");
+        msg("Error", "Invalid Official ID or Password", "error");
     }
 }
     
@@ -373,34 +404,48 @@
         }
     }
 
-    async function startSession(u) {
+    function startSession(u) {
     curUser = u; 
     loginDT = new Date(); 
     resetTimer();
+
+    // 1. INSTANT UI SWITCH
+    const displayName = u.name || u.Name || u.StudentName || "User";
+
     document.getElementById('loginSection').classList.add('hidden');
     document.getElementById('appHeader').classList.remove('hidden');
     document.getElementById('mainApp').classList.remove('hidden');
-    document.getElementById('welcomeUser').innerText = `Hello, ${u.name}`;
+    document.getElementById('welcomeUser').innerText = `Hello, ${displayName}`;
+
+    // 2. LOG LOGIN (Fire and forget, don't wait for it)
+    navigator.sendBeacon(API_URL, JSON.stringify({
+        action: "log", UserId: u.id || u.name, Role: u.role, Name: u.name, type: "login"
+    }));
+
+    // 3. BACKGROUND INITIALIZATION
+    if (u.role !== "Student") {
+        renderTabs();
+        // Load the first tab with a localized spinner so the whole app isn't stuck
+        document.getElementById('tabContent').innerHTML = `
+            <div class="flex flex-col items-center justify-center h-64">
+                <div class="loader mb-4"></div>
+                <p class="text-blue-600 font-bold animate-pulse">Establishing Secure Connection...</p>
+            </div>`;
+        
+        // Fetch data in background
+        fetchData().then(() => {
+            loadTab(u.access[0]); // Refresh the tab once data arrives
+        });
+    } else {
+        renderTabs(); // Students already have their data from the loginStudent step
+    }
+
+    // Session Timer
+    if (durInt) clearInterval(durInt);
     durInt = setInterval(() => {
         const d = Math.floor((new Date() - loginDT) / 1000);
         document.getElementById('sessionTime').innerText = `Duration: ${Math.floor(d / 60)}m ${d % 60}s`;
     }, 1000);
-
-    // Send full user info to log login time correctly
-    fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify({
-            action: "log",
-            UserId: u.id || u.name,
-            Role: u.role,
-            Name: u.name,
-            LoginTime: loginDT.toISOString(),
-            type: "login"
-        })
-    });
-
-    if (u.role !== "Student") await fetchData();
-    renderTabs();
 }
 
     
@@ -482,16 +527,59 @@ function cleanupLogoutUI() {
 
     // --- UI Routing ---
     function renderTabs() {
-        const t = document.getElementById('tabs'); t.innerHTML = '';
-        if(curUser.role === "Student") { loadTab(0); return; }
-        const n = {1:"Students Record", 2:"Attendance", 3:"Data", 4:"Fee", 5:"Receipt Management", 6:"Logs", 7:"Staff Records", 8:"Expenses", 9:"Balance Sheet 2026-27", 10:"Live Locations"};
-        curUser.access.forEach(id => {
-            const b = document.createElement('button');
-            b.className = "px-4 py-2 bg-gray-200 hover:bg-blue-200 font-bold rounded text-sm";
-            b.innerText = n[id]; b.onclick = () => loadTab(id); t.appendChild(b);
-        });
-        loadTab(curUser.access[0]);
+    const t = document.getElementById('tabs'); 
+    t.innerHTML = '';
+    
+    if(!curUser) return;
+    if(curUser.role === "Student") { loadTab(0); return; }
+    
+    if(!curUser.access || !Array.isArray(curUser.access)) {
+        t.innerHTML = '<p class="text-red-500 text-xs font-bold">Error: Access denied.</p>';
+        return;
     }
+
+    // MAP OF ICONS AND NAMES
+    const tabConfig = {
+        1:  { name: "Students", icon: "🎓" },
+        2:  { name: "Attendance", icon: "✅" },
+        3:  { name: "Database", icon: "📊" },
+        11: { name: "Pending", icon: "⏳" },
+        4:  { name: "Fee Pay", icon: "💰" },
+        5:  { name: "Receipts", icon: "🧾" },
+        6:  { name: "Logs", icon: "📜" },
+        7:  { name: "Staff", icon: "👔" },
+        8:  { name: "Expenses", icon: "💸" },
+        9:  { name: "Balance", icon: "⚖️" },
+        10: { name: "Live Map", icon: "📍" },
+        12: { name: "Settings", icon: "⚙️" }
+    };
+    
+    curUser.access.forEach(id => {
+        if (tabConfig[id]) {
+            const btn = document.createElement('button');
+            // Styled as a card-style icon button
+            btn.className = "flex flex-col items-center justify-center p-3 min-w-[80px] bg-white border border-gray-200 rounded-2xl hover:bg-blue-50 hover:border-blue-300 transition-all shadow-sm active:scale-95 group";
+            
+            btn.innerHTML = `
+                <span class="text-2xl mb-1 group-hover:scale-110 transition-transform">${tabConfig[id].icon}</span>
+                <span class="text-[10px] font-black uppercase tracking-tighter text-gray-500 group-hover:text-blue-600">${tabConfig[id].name}</span>
+            `;
+            
+            btn.onclick = () => {
+                // Remove active styling from others
+                Array.from(t.children).forEach(c => c.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50'));
+                // Add active styling to this one
+                btn.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
+                loadTab(id);
+            };
+            
+            t.appendChild(btn);
+        }
+    });
+
+    // Auto-click the first tab to load it
+    if (t.firstChild) t.firstChild.click();
+}
 
     function loadTab(id) {
         // Stop admin tracking if switching away from the Location tab
@@ -509,6 +597,8 @@ function cleanupLogoutUI() {
         if(id === 8) renderTab8(c);
         if(id === 9) renderTab9(c);
         if(id === 10) renderTab10(c);
+        if(id === 11) renderTab11(c);
+        if(id === 12) renderTab12(c);
         
     }
 
@@ -572,8 +662,9 @@ function cleanupLogoutUI() {
     <div><p class="text-[10px] text-gray-400 font-bold uppercase">Balance</p><p class="font-bold text-red-600">₹${d.Balance || 0}</p></div>
 </div>
 
-<!-- DYNAMIC LIVE TRACKING MAP -->
-    <div id="studentLiveTrackContainer" class="mt-8 mb-8"></div>
+
+    <!-- DYNAMIC LIVE TRACKING MAP - Hidden on Print -->
+<div id="studentLiveTrackContainer" class="mt-8 mb-8 no-print"></div>
     
 
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -587,7 +678,7 @@ function cleanupLogoutUI() {
                 </table>
             </div>
 
-            <div class="p-6 bg-blue-50 rounded-2xl border border-blue-100 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="p-6 bg-blue-50 rounded-2xl border border-blue-100 flex flex-col md:flex-row items-center justify-between gap-4 no-print">
                 <div>
                     <h4 class="font-bold text-blue-900 text-sm">For More Details Contact:</h4>
                     <p class="text-blue-700 text-lg font-black">G Mahesh Kumar</p>
@@ -876,36 +967,24 @@ function downloadStudentPDF() {
         
     };
 
-    function filterClasses(schoolId) {
-        const classSelect = document.getElementById('f3');
-        if (!classSelect) return;
-        
-        // 1. Clear current options
-        classSelect.innerHTML = '<option value="">Class</option>';
-        
-        // 2. If no school is selected, load everything
-        if (!schoolId || schoolId === "") {
-            const allClasses =[
-                "PREKG-td1", "LKG-td1", "UKG-td1","TEACHER-td1",
-                "I-34318", "II-34318", "III-34318", "IV-34318","TEACHER-34318",
-                "V-34347", "VI-34347", "VII-34347","TEACHER-34347",
-                "VIII-34028", "IX-34028", "X-34028","TEACHER-34028"
-            ];
-            allClasses.forEach(function(c) {
-                classSelect.innerHTML += '<option value="' + c + '">' + c + '</option>';
-            });
-            return;
-        }
-        
-        // 3. If a school is selected, load only its classes
-        const allowedClasses = classMapping[schoolId];
-        
-        if (allowedClasses) {
-            allowedClasses.forEach(function(c) {
-                classSelect.innerHTML += '<option value="' + c + '">' + c + '</option>';
-            });
-        }
+    function filterClasses(schoolId, targetId = 'f3') {
+    const classSelect = document.getElementById(targetId);
+    if (!classSelect) return;
+    
+    classSelect.innerHTML = '<option value="">Class</option>';
+    
+    // If no school selected, show all classes
+    if (!schoolId) {
+        const all = ["PREKG-td1", "LKG-td1", "UKG-td1", "I-34318", "II-34318", "III-34318", "IV-34318", "V-34347", "VI-34347", "VII-34347", "VIII-34028", "IX-34028", "X-34028"];
+        all.forEach(c => classSelect.innerHTML += `<option value="${c}">${c}</option>`);
+        return;
     }
+    
+    const allowed = classMapping[schoolId];
+    if (allowed) {
+        allowed.forEach(c => classSelect.innerHTML += `<option value="${c}">${c}</option>`);
+    }
+}
     
     
     async function saveS(e) {
@@ -1326,64 +1405,101 @@ function stopLocationTracking() {
     
     // --- Tab 2: Attendance ---
     
-    async function renderTab2(c) {
-        c.innerHTML = `<h2 class="text-2xl font-bold mb-4">Mark Attendance</h2><p class="text-blue-500 animate-pulse">Loading today's records...</p>`;
-        
-        try {
-            const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getTodayAttendance"})}).then(r=>r.json());
-            if(res.success) todayAtt = res.data;
-        } catch(e) {}
+    let currentHistoryData = []; // To store search results for printing/sharing
 
-        let busOptions = '';
-        if (curUser.role === "Bus") {
-            busOptions = `<option value="${curUser.filter}">${curUser.filter}</option>`;
-        } else {
-            busOptions = `<option value="">Select Bus</option>
-                <option>KL32P4201SR</option><option>KL32M0528VM</option>
-                <option>KL32L2382K</option><option>KL07BU4184C</option><option>KL32L0827U</option>`;
-        }
+async function renderTab2(c) {
+    c.innerHTML = `<h2 class="text-2xl font-bold mb-4">Mark Attendance</h2><p class="text-blue-500 animate-pulse text-center">Loading today's records...</p>`;
+    
+    try {
+        const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getTodayAttendance"})}).then(r=>r.json());
+        if(res.success) todayAtt = res.data;
+    } catch(e) {}
 
-        // Live Tracking Control Panel
-        let liveShareUI = '';
-        if (curUser.role === "Bus" || curUser.role === "Admin" || curUser.role === "Manager") {
-            liveShareUI = `
-            <div class="bg-indigo-50 border border-indigo-200 p-4 rounded-2xl mb-6 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div>
-                    <h3 class="font-black text-indigo-900 flex items-center gap-2">
-                        <span id="locStatusDot" class="w-3 h-3 rounded-full bg-gray-400"></span>
-                        <span id="locStatusText">Live GPS Tracking (Offline)</span>
-                    </h3>
-                    <p id="locDurationText" class="text-xs text-indigo-700 font-medium font-mono mt-1">Duration: 00:00:00</p>
-                </div>
-                <div class="flex gap-2 w-full md:w-auto">
-                    <button id="btnStartTrack" onclick="startLocationTracking()" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-black shadow-md transition">Start Live</button>
-                    <button id="btnStopTrack" onclick="stopLocationTracking()" class="hidden w-full md:w-auto bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-xl font-black shadow-md transition">End Live</button>
-                </div>
-            </div>`;
-        }
+    let busOptions = `<option value="">Select Bus</option>
+        <option>KL32P4201SR</option><option>KL32M0528VM</option>
+        <option>KL32L2382K</option><option>KL07BU4184C</option><option>KL32L0827U</option>`;
 
-        c.innerHTML = `
-            <h2 class="text-2xl font-bold mb-4">Mark Attendance</h2>
-            
-            <div class="flex gap-2 mb-4">
-                <select id="aBus" onchange="loadAttTbl()" class="p-2 border rounded-xl w-1/3 shadow-sm ${curUser.role === 'Bus' ? 'bg-gray-200 cursor-not-allowed text-gray-700 font-bold' : ''}" ${curUser.role === 'Bus' ? 'disabled' : ''}>
-                    ${busOptions}
-                </select>
-                <select id="aSec" onchange="loadAttTbl()" class="p-2 border rounded-xl shadow-sm">
-                    <option>FN</option><option>AN</option>
-                </select>
+    // ROLE-BASED GPS VISIBILITY (Admin and Bus Only)
+    let liveShareUI = '';
+    if (curUser.role === "Bus" || curUser.role === "Admin") {
+        liveShareUI = `
+        <div class="bg-indigo-50 border border-indigo-200 p-4 rounded-2xl mb-6 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div>
+                <h3 class="font-black text-indigo-900 flex items-center gap-2">
+                    <span id="locStatusDot" class="w-3 h-3 rounded-full bg-gray-400"></span>
+                    <span id="locStatusText">Live GPS Tracking (Offline)</span>
+                </h3>
+                <p id="locDurationText" class="text-xs text-indigo-700 font-medium font-mono mt-1">Duration: 00:00:00</p>
             </div>
-            ${liveShareUI}
-            <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200">
-                <table class="w-full text-left text-sm border-collapse bg-white">
-                    <tr class="bg-gray-800 text-white"><th class="p-3">Name</th><th class="p-3">School</th><th class="p-3">Class</th><th class="p-3 text-center">Action</th></tr>
-                    <tbody id="attBody"><tr><td colspan="4" class="p-4 text-center text-gray-500">Select bus to load students</td></tr></tbody>
+            <div class="flex gap-2 w-full md:w-auto">
+                <button id="btnStartTrack" onclick="startLocationTracking()" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-black shadow-md transition">Start Live</button>
+                <button id="btnStopTrack" onclick="stopLocationTracking()" class="hidden w-full md:w-auto bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-xl font-black shadow-md transition">End Live</button>
+            </div>
+        </div>`;
+    }
+
+    c.innerHTML = `
+        <h2 class="text-2xl font-black text-slate-800 mb-4">Mark Attendance</h2>
+        <div class="flex gap-2 mb-4">
+            <select id="aBus" onchange="loadAttTbl()" class="p-3 border rounded-2xl w-1/3 shadow-sm font-bold ${curUser.role === 'Bus' ? 'bg-gray-100' : ''}" ${curUser.role === 'Bus' ? 'disabled' : ''}>
+                ${curUser.role === 'Bus' ? `<option>${curUser.filter}</option>` : busOptions}
+            </select>
+            <select id="aSec" onchange="loadAttTbl()" class="p-3 border rounded-2xl shadow-sm font-bold">
+                <option>FN</option><option>AN</option>
+            </select>
+        </div>
+        ${liveShareUI}
+        <div class="overflow-x-auto shadow-sm rounded-2xl border border-gray-200 mb-12">
+            <table class="w-full text-left text-sm border-collapse bg-white">
+                <tr class="bg-slate-800 text-white"><th class="p-3">Name</th><th class="p-3">School</th><th class="p-3">Class</th><th class="p-3 text-center">Action</th></tr>
+                <tbody id="attBody"><tr><td colspan="4" class="p-4 text-center text-gray-500">Select bus to load students</td></tr></tbody>
+            </table>
+        </div>
+
+        <!-- HISTORY SECTION -->
+        <div class="border-t-4 border-slate-100 pt-8 mt-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-black text-blue-900">Attendance History</h2>
+                <div id="historyActions" class="hidden flex gap-2">
+                    <button onclick="printAttendanceHistory()" class="bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-black transition">🖨️ Print</button>
+                    <button onclick="shareAttendanceWA()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-green-700 transition">💬 Share</button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6 bg-blue-50 p-4 rounded-3xl border border-blue-100 shadow-inner">
+                <input type="text" id="histDate" placeholder="DD/MM/YYYY" class="p-3 border rounded-2xl shadow-sm font-bold text-center">
+                <select id="histBus" class="p-3 border rounded-2xl shadow-sm font-bold">${busOptions}</select>
+                <select id="histSec" class="p-3 border rounded-2xl shadow-sm font-bold">
+                    <option value="">Session</option><option>FN</option><option>AN</option>
+                </select>
+                <!-- SEARCH LOGO BUTTON -->
+                <button onclick="searchAttendanceHistory()" class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-2xl font-bold transition shadow-lg flex items-center justify-center text-xl">
+                    🔍
+                </button>
+            </div>
+            
+            <div class="overflow-x-auto shadow-sm rounded-3xl border border-slate-200 bg-white">
+                <table class="w-full text-left text-sm border-collapse">
+                    <thead class="bg-slate-100 text-slate-600 font-black uppercase text-[10px] tracking-widest">
+                        <tr><th class="p-4">Student Name</th><th class="p-4">School</th><th class="p-4">Class</th><th class="p-4">Session</th><th class="p-4 text-center">Status</th></tr>
+                    </thead>
+                    <tbody id="histBody">
+                        <tr><td colspan="5" class="p-10 text-center text-slate-300 italic">Select filters and search...</td></tr>
+                    </tbody>
                 </table>
             </div>
-        `;
+        </div>
+    `;
 
-        if (curUser.role === "Bus") loadAttTbl();
+    // Initialize Date
+    const today = new Date();
+    document.getElementById('histDate').value = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+    
+    if (curUser.role === "Bus") {
+        loadAttTbl();
+        document.getElementById('histBus').value = curUser.filter;
     }
+}
 
     function loadAttTbl() {
         const bus = document.getElementById('aBus').value;
@@ -1474,6 +1590,131 @@ async function saveOneAtt(i) {
     }
     hideLoad();
 }
+
+async function searchAttendanceHistory() {
+    const date = document.getElementById('histDate').value;
+    const bus = document.getElementById('histBus').value;
+    const sec = document.getElementById('histSec').value;
+
+    if (!date || !bus || !sec) return msg("Wait", "Select Date, Bus and Session", "info");
+
+    const tbody = document.getElementById('histBody');
+    const actionBtns = document.getElementById('historyActions');
+    
+    tbody.innerHTML = '<tr><td colspan="5" class="p-10 text-center animate-pulse font-bold text-blue-600">Syncing Records...</td></tr>';
+    actionBtns.classList.add('hidden');
+
+    try {
+        const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "getAttendanceByFilter", date, bus, sec })
+        }).then(r => r.json());
+
+        if (res.success && res.data.length > 0) {
+            currentHistoryData = res.data; // Save for print/share
+            actionBtns.classList.remove('hidden'); // Show Print/Share buttons
+            
+            tbody.innerHTML = res.data.map(row => `
+                <tr class="border-b hover:bg-slate-50 transition">
+                    <td class="p-4 font-bold text-slate-800">${row.name}</td>
+                    <td class="p-4 text-slate-600">${row.school}</td>
+                    <td class="p-4 text-slate-600">${row.class}-${row.div}</td>
+                    <td class="p-4 text-slate-500 font-bold text-xs">${row.section}</td>
+                    <td class="p-4 text-center">
+                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase ${row.status === 'Present' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                            ${row.status}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-red-500 font-bold">No records found.</td></tr>';
+        }
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-red-600">Connection Error</td></tr>';
+    }
+}
+
+function printAttendanceHistory() {
+    if (currentHistoryData.length === 0) return;
+    
+    const date = document.getElementById('histDate').value;
+    const bus = document.getElementById('histBus').value;
+    const sec = document.getElementById('histSec').value;
+
+    let html = `
+        <div style="padding:20px; font-family:sans-serif;">
+            <h2 style="text-align:center; margin-bottom:5px;">TD SCHOOLS THURAVOOR</h2>
+            <h4 style="text-align:center; margin-top:0; color:#555;">ATTENDANCE REPORT: ${bus}</h4>
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px; border-bottom:1px solid #000; padding-bottom:10px;">
+                <span><b>Date:</b> ${date}</span>
+                <span><b>Session:</b> ${sec}</span>
+            </div>
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                <thead>
+                    <tr style="background:#eee;">
+                        <th style="border:1px solid #000; padding:8px; text-align:left;">Student Name</th>
+                        <th style="border:1px solid #000; padding:8px; text-align:left;">School</th>
+                        <th style="border:1px solid #000; padding:8px; text-align:left;">Class</th>
+                        <th style="border:1px solid #000; padding:8px; text-align:center;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${currentHistoryData.map(r => `
+                        <tr>
+                            <td style="border:1px solid #000; padding:8px;">${r.name}</td>
+                            <td style="border:1px solid #000; padding:8px;">${r.school}</td>
+                            <td style="border:1px solid #000; padding:8px;">${r.class}-${r.div}</td>
+                            <td style="border:1px solid #000; padding:8px; text-align:center; font-weight:bold; color:${r.status==='Present'?'green':'red'};">${r.status.toUpperCase()}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            <p style="font-size:10px; margin-top:20px;">Generated on: ${new Date().toLocaleString()}</p>
+        </div>
+    `;
+
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
+    setTimeout(() => { win.print(); win.close(); }, 500);
+}
+
+function shareAttendanceWA() {
+    if (currentHistoryData.length === 0) return;
+
+    const date = document.getElementById('histDate').value;
+    const bus = document.getElementById('histBus').value;
+    const sec = document.getElementById('histSec').value;
+
+    const presentCount = currentHistoryData.filter(r => r.status === 'Present').length;
+    const absentCount = currentHistoryData.length - presentCount;
+
+    let text = `*ATTENDANCE REPORT - TD SCHOOLS*\n`;
+    text += `*Bus:* ${bus}\n`;
+    text += `*Date:* ${date}\n`;
+    text += `*Session:* ${sec}\n`;
+    text += `--------------------------\n`;
+    text += `*Total Students:* ${currentHistoryData.length}\n`;
+    text += `✅ *Present:* ${presentCount}\n`;
+    text += `❌ *Absent:* ${absentCount}\n`;
+    text += `--------------------------\n\n`;
+    
+    text += `*ABSENTEES LIST:*\n`;
+    const absentees = currentHistoryData.filter(r => r.status === 'Absent');
+    if(absentees.length > 0) {
+        absentees.forEach((r, i) => text += `${i+1}. ${r.name} (${r.class}-${r.div})\n`);
+    } else {
+        text += `None. All present! 🎉\n`;
+    }
+
+    text += `\n_Generated via School Bus Portal_`;
+
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(waUrl, '_blank');
+}
+
+
 
     
     // --- Tab 3: Data ---
@@ -1769,11 +2010,49 @@ function renderTab4(c) {
                         </tr>
                     </thead>
                     <tbody id="defaultFeeTableBody">
-                        ${generateFeeTableRows(currentFeeDB)}
-                    </tbody>
+    ${generateFeeTableRows(currentFeeDB)}
+</tbody>
+<tfoot id="feeOverviewFooter" class="bg-gray-200 font-black border-t-2 border-gray-500">
+    <!-- Totals will be injected here -->
+</tfoot>
                 </table>
             </div>
         </div>
+    `;
+    setTimeout(() => updateFeeTotals(currentFeeDB), 100);
+}
+
+function updateFeeTotals(data) {
+    if (!data) return;
+    const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+    let totals = { fee: 0, total: 0, balance: 0 };
+    months.forEach(m => totals[m] = 0);
+
+    data.forEach(s => {
+        totals.fee += parseFloat(s.Fee) || 0;
+        totals.total += parseFloat(s.Total) || 0;
+        totals.balance += parseFloat(s.Balance) || 0;
+        months.forEach(m => {
+            totals[m] += parseFloat(s[m]) || 0;
+        });
+    });
+
+    const footer = document.getElementById('feeOverviewFooter');
+    if (!footer) return;
+
+    footer.innerHTML = `
+        <tr class="text-[11px] uppercase bg-gray-200">
+            <td class="p-3 border sticky left-0 z-10 bg-gray-300 font-black shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Grand Total</td>
+            <td class="p-2 border text-center font-black bg-gray-100">₹${totals.fee.toLocaleString('en-IN')}</td>
+            ${months.map(m => `
+                <td class="p-2 border text-center font-black ${totals[m] > 0 ? 'text-green-700' : 'text-gray-400'}">
+                    ₹${totals[m].toLocaleString('en-IN')}
+                </td>
+            `).join('')}
+            <td class="p-2 border text-center font-black text-green-800 bg-green-100">₹${totals.total.toLocaleString('en-IN')}</td>
+            <td class="p-2 border text-center font-black text-red-700 bg-red-100">₹${totals.balance.toLocaleString('en-IN')}</td>
+            <td class="p-2 border"></td>
+        </tr>
     `;
 }
 
@@ -1850,8 +2129,21 @@ function sortFeeTable(col) {
 
     // Re-render only the table body
     document.getElementById('defaultFeeTableBody').innerHTML = generateFeeTableRows(currentFeeDB);
+    
+    // ADD THIS LINE AT THE END:
+    updateFeeTotals(currentFeeDB);
 }
 
+function searchFeeOverview(q) {
+    const query = q.toLowerCase();
+    const filtered = currentFeeDB.filter(s => 
+        s.StudentName.toLowerCase().includes(query) || 
+        s.Phone.toString().includes(query)
+    );
+    
+    document.getElementById('defaultFeeTableBody').innerHTML = generateFeeTableRows(filtered);
+    updateFeeTotals(filtered); // Totals update to match visible rows
+}
 
 
     
@@ -2770,33 +3062,48 @@ async function reprint(receiptNo, month = 'N/A') {
 
 // --- Tab 6: Logs (Admin Only) ---
     function renderTab6(c) {
-        c.innerHTML = `
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold">System Logs</h2>
-                <button onclick="loadTab(6)" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-bold shadow">
-                    Refresh Logs
+    c.innerHTML = `
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <div>
+                <h2 class="text-2xl font-black text-slate-800">System Activity Logs</h2>
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-widest">Admin Control Panel</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="clearAllLogsUI()" class="bg-red-100 text-red-600 hover:bg-red-600 hover:text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm">
+                    🗑️ Clear All Logs
+                </button>
+                <button onclick="loadTab(6)" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg transition-all">
+                    🔄 Refresh
                 </button>
             </div>
-            <input type="text" id="logSearch" onkeyup="searchLogs(this.value)" placeholder="Search User ID, Name, or Role..." class="w-full p-2 border-2 rounded mb-4">
-            
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm border whitespace-nowrap">
-                    <tr class="bg-gray-800 text-white">
-                        <th class="p-2 border">Login Time</th>
-                        <th class="p-2 border">User ID</th>
-                        <th class="p-2 border">Role</th>
-                        <th class="p-2 border">Name</th>
-                        <th class="p-2 border">Logout Time</th>
-                        <th class="p-2 border">Duration</th>
+        </div>
+        
+        <div class="relative mb-6">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">🔍</span>
+            <input type="text" id="logSearch" onkeyup="searchLogs(this.value)" placeholder="Search by Name, ID, or Role..." class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm">
+        </div>
+        
+        <div class="overflow-x-auto shadow-sm rounded-3xl border border-slate-200 bg-white">
+            <table class="w-full text-left text-sm border-collapse whitespace-nowrap">
+                <thead class="bg-slate-800 text-white text-[10px] uppercase tracking-widest">
+                    <tr>
+                        <th class="p-4">Login Time</th>
+                        <th class="p-4">User ID</th>
+                        <th class="p-4">Role</th>
+                        <th class="p-4">Name</th>
+                        <th class="p-4">Logout Time</th>
+                        <th class="p-4">Duration</th>
+                        <th class="p-4 text-center">Action</th>
                     </tr>
-                    <tbody id="logBody">
-                        <tr><td colspan="6" class="p-4 text-center animate-pulse font-bold text-gray-500">Loading logs from server...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        `;
-        fetchLogs();
-    }
+                </thead>
+                <tbody id="logBody">
+                    <tr><td colspan="7" class="p-10 text-center animate-pulse text-slate-400 font-bold">Fetching logs...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+    fetchLogs();
+}
 
     async function fetchLogs() {
         try {
@@ -2814,21 +3121,53 @@ async function reprint(receiptNo, month = 'N/A') {
     }
 
     function renderLogTable(data) {
-        const tbody = document.getElementById('logBody');
-        tbody.innerHTML = data.map(L => {
-            const loginStr = L.LoginTime ? new Date(L.LoginTime).toLocaleString('en-GB') : '-';
-            const logoutStr = L.LogoutTime ? new Date(L.LogoutTime).toLocaleString('en-GB') : '<span class="text-green-600 font-bold">Active/Pending</span>';
-            return `
-            <tr class="border-b hover:bg-gray-50">
-                <td class="p-2 border-r">${loginStr}</td>
-                <td class="p-2 border-r font-bold">${L.UserId}</td>
-                <td class="p-2 border-r text-blue-700 font-semibold">${L.Role}</td>
-                <td class="p-2 border-r">${L.Name}</td>
-                <td class="p-2 border-r">${logoutStr}</td>
-                <td class="p-2 font-mono text-gray-600 bg-gray-50">${L.Duration || '-'}</td>
-            </tr>`;
-        }).join('');
+    const tbody = document.getElementById('logBody');
+    tbody.innerHTML = data.map(L => {
+        const loginStr = L.LoginTime ? new Date(L.LoginTime).toLocaleString('en-GB') : '-';
+        const logoutStr = L.LogoutTime ? new Date(L.LogoutTime).toLocaleString('en-GB') : '<span class="text-green-600 font-bold">Active</span>';
+        return `
+        <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+            <td class="p-4 text-xs text-slate-600">${loginStr}</td>
+            <td class="p-4 font-bold text-slate-800">${L.UserId}</td>
+            <td class="p-4"><span class="px-2 py-0.5 rounded text-[10px] font-black bg-blue-50 text-blue-700 uppercase">${L.Role}</span></td>
+            <td class="p-4 font-medium">${L.Name}</td>
+            <td class="p-4 text-xs text-slate-500">${logoutStr}</td>
+            <td class="p-4 font-mono text-slate-700">${L.Duration || '-'}</td>
+            <td class="p-4 text-center">
+                <button onclick="deleteLogUI(${L._rowIndex})" class="text-red-400 hover:text-red-600 transition-colors p-2" title="Delete Log">
+                    ✕
+                </button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+async function deleteLogUI(rIdx) {
+    if(!confirm("Delete this log entry?")) return;
+    showLoad();
+    await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"deleteLog", rowIndex:rIdx})});
+    hideLoad();
+    fetchLogs(); // Refresh the table
+}
+
+async function clearAllLogsUI() {
+    const { isConfirmed } = await Swal.fire({
+        title: 'Clear All Logs?',
+        text: "This will permanently delete all session history. This action cannot be undone!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete all!'
+    });
+
+    if (isConfirmed) {
+        showLoad();
+        await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"clearAllLogs"})});
+        hideLoad();
+        fetchLogs();
     }
+}
 
     function searchLogs(q) {
         q = q.toLowerCase();
@@ -3580,6 +3919,350 @@ async function adminEndBusLocation(busId) {
         msg("Error", "Failed to end location", "error");
     }
     hideLoad();
+}
+
+
+function renderTab11(c) {
+    const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+    
+    // Auto-calculate current academic month
+    const now = new Date();
+    const curMonthIdx = now.getMonth(); 
+    // Added 3 (April) to the map
+    const academicMap = {5:"Jun", 6:"Jul", 7:"Aug", 8:"Sep", 9:"Oct", 10:"Nov", 11:"Dec", 0:"Jan", 1:"Feb", 2:"Mar", 3:"Mar"};
+    const defaultMonth = academicMap[curMonthIdx] || "Jun";
+
+    c.innerHTML = `
+        <h2 class="text-2xl font-black text-red-600 mb-4">Pending Fee Tracker</h2>
+        
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6 bg-red-50 p-4 rounded-2xl border border-red-100 shadow-sm">
+            <select id="pSch" onchange="filterClasses(this.value, 'pCls')" class="p-2 border rounded-xl shadow-sm text-sm font-bold">
+                <option value="">All Schools</option>
+                <option>TDEMNS-td1</option><option>GTDLPS-34318</option><option>TDTTI-34347</option><option>TDHS-34028</option>
+            </select>
+            
+            <select id="pCls" class="p-2 border rounded-xl shadow-sm text-sm">
+                <option value="">All Classes</option>
+            </select>
+
+            <select id="pDiv" class="p-2 border rounded-xl shadow-sm text-sm">
+                <option value="">All Div</option>
+                <option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>STAFF</option>
+            </select>
+
+            <select id="pMon" class="p-2 border rounded-xl shadow-sm text-sm font-black text-blue-700">
+                ${months.map(m => `<option ${m === defaultMonth ? 'selected':''}>${m}</option>`).join('')}
+            </select>
+
+            <button onclick="fetchPending()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-xl shadow-md transition md:col-span-1 col-span-2">
+                Search Pending
+            </button>
+        </div>
+
+        <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
+            <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
+                <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider">
+                    <tr>
+                        <th class="p-4 border-r border-gray-700">Student Name</th>
+                        <th class="p-4 border-r border-gray-700">Class</th>
+                        <th class="p-4 border-r border-gray-700">Phone</th>
+                        <th class="p-4 border-r border-gray-700">Bus ID</th>
+                        <th class="p-4 border-r border-gray-700 text-center">Monthly Fee</th>
+                        <th class="p-4 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="pendingBody"></tbody>
+                <tfoot id="pendingFoot" class="bg-gray-100 font-black border-t-2 border-gray-300"></tfoot>
+            </table>
+        </div>
+    `;
+
+    // Teacher & School Restricted Initialization
+    if(curUser.role === "School") {
+        document.getElementById('pSch').value = curUser.tSchool;
+        document.getElementById('pSch').disabled = true;
+        filterClasses(curUser.tSchool, 'pCls');
+    } 
+    else if(curUser.role === "Teacher") {
+        // Find matching school by checking the class suffix (e.g., 34347)
+        const schoolOptions = ["TDEMNS-td1", "GTDLPS-34318", "TDTTI-34347", "TDHS-34028"];
+        const mySchool = schoolOptions.find(s => curUser.tClass.includes(s.split('-')[1]));
+        
+        const schD = document.getElementById('pSch');
+        const clsD = document.getElementById('pCls');
+        const divD = document.getElementById('pDiv');
+
+        if(mySchool) {
+            schD.value = mySchool;
+            filterClasses(mySchool, 'pCls');
+        }
+        
+        clsD.value = curUser.tClass;
+        divD.value = curUser.tDiv;
+
+        // Lock fields for teachers
+        schD.disabled = true;
+        clsD.disabled = true;
+        divD.disabled = true;
+    }
+
+    fetchPending();
+}
+
+async function fetchPending() {
+    const tbody = document.getElementById('pendingBody');
+    const tfoot = document.getElementById('pendingFoot');
+
+    // Ensure database is loaded
+    if (!db || db.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center">Fetching database, please wait...</td></tr>';
+        await fetchData();
+    }
+
+    const sch = document.getElementById('pSch').value;
+    const cls = document.getElementById('pCls').value;
+    const div = document.getElementById('pDiv').value;
+    const mon = document.getElementById('pMon').value;
+
+    tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center animate-pulse text-gray-400">Filtering records...</td></tr>';
+
+    let list = db.filter(s => {
+        // 1. Check if unpaid
+        const isUnpaid = !s[mon] || parseFloat(s[mon]) === 0;
+        if (!isUnpaid) return false;
+
+        // 2. Role Based Access
+        if (curUser.role === "Teacher") {
+            // Teacher must match EXACT Class AND Division
+            return String(s.Class) === String(curUser.tClass) && String(s.Div) === String(curUser.tDiv);
+        }
+        
+        if (curUser.role === "School") {
+            return s.School === curUser.tSchool;
+        }
+
+        // 3. Admin / General Filters
+        const matchSch = !sch || s.School === sch;
+        const matchCls = !cls || s.Class === cls;
+        const matchDiv = !div || s.Div === div;
+        
+        return matchSch && matchCls && matchDiv;
+    });
+
+    list.sort((a, b) => a.StudentName.localeCompare(b.StudentName));
+
+    if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-green-600 font-bold">🎉 No pending fees found for ${mon}!</td></tr>`;
+        tfoot.innerHTML = '';
+        return;
+    }
+
+    let totalDue = 0;
+    tbody.innerHTML = list.map(s => {
+        const feeAmt = parseFloat(s.Fee) || 0;
+        totalDue += feeAmt;
+        return `
+        <tr class="border-b hover:bg-red-50 transition">
+            <td class="p-3 border-r font-bold text-gray-800">${s.StudentName}</td>
+            <td class="p-3 border-r text-gray-600 text-xs">${s.Class}-${s.Div}</td>
+            <td class="p-3 border-r text-gray-600">${s.Phone}</td>
+            <td class="p-3 border-r text-gray-500 italic">${s.BusId}</td>
+            <td class="p-3 border-r text-center font-black text-red-600">₹${feeAmt}</td>
+            <td class="p-3 text-center">
+                <button onclick="sendReminderWA('${s.Phone}')" class="bg-green-600 text-white px-3 py-1 rounded text-[10px] font-bold shadow-sm">WA REMIND</button>
+            </td>
+        </tr>`;
+    }).join('');
+
+    tfoot.innerHTML = `
+        <tr>
+            <td colspan="4" class="p-3 text-right text-gray-700 uppercase">Total Expected Collection (${mon}):</td>
+            <td class="p-3 text-center text-red-700 text-lg">₹${totalDue.toLocaleString('en-IN')}</td>
+            <td></td>
+        </tr>
+    `;
+}
+
+let editUserId = null;
+
+async function renderTab12(c) {
+    // Initial UI structure with Form and Table placeholder
+    c.innerHTML = `
+        <div class="animate-fadeIn">
+            <h2 class="text-2xl font-black mb-6 text-slate-800 flex items-center gap-2">
+                <span class="bg-slate-800 text-white p-2 rounded-lg text-sm">⚙️</span>
+                User Management & Settings
+            </h2>
+            
+            <!-- USER FORM -->
+            <form id="userForm" onsubmit="saveUserUI(event)" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-sm">
+                <div class="col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">User ID / Login</label>
+                    <input id="uID" required placeholder="e.g. admin2" class="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                </div>
+                <div class="col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Password</label>
+                    <input id="uPass" required type="text" placeholder="••••••••" class="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                </div>
+                <div class="col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">User Role</label>
+                    <select id="uRole" class="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                        <option>Admin</option><option>School</option><option>Teacher</option><option>Bus</option>
+                    </select>
+                </div>
+                <div class="col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Full Name</label>
+                    <input id="uName" required placeholder="Full Name" class="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                </div>
+
+                <!-- PHONE NUMBER FIELD -->
+                <div class="col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Phone Number</label>
+                    <input id="uPhone" required placeholder="Official Phone" class="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                </div>
+
+                <div class="col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Bus Filter (Bus Only)</label>
+                    <input id="uFilter" placeholder="Bus ID" class="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                </div>
+                <div class="col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Class (Teacher Only)</label>
+                    <input id="uTClass" placeholder="e.g. V-34347" class="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                </div>
+                <div class="col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Div (Teacher Only)</label>
+                    <input id="uTDiv" placeholder="e.g. A" class="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">T-School (School Admin Only)</label>
+                    <input id="uTSchool" placeholder="TDEMNS-td1" class="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Access IDs (1, 2, 11, 4...)</label>
+                    <input id="uAccess" required placeholder="Comma separated numbers" class="w-full p-2.5 border border-slate-200 rounded-xl font-mono text-blue-600 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                </div>
+                
+                <div class="col-span-2 md:col-span-4 flex gap-3 mt-2">
+                    <button type="submit" id="uBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-3 rounded-2xl font-bold shadow-lg shadow-blue-100 transition-all active:scale-95">
+                        Create / Update User
+                    </button>
+                    <button type="button" onclick="renderTab12(document.getElementById('tabContent'))" class="bg-slate-200 hover:bg-slate-300 text-slate-600 px-8 py-3 rounded-2xl font-bold hidden transition-all" id="uCancel">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+
+            <!-- USER LIST TABLE -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="bg-slate-800 p-4 flex justify-between items-center">
+                    <h3 class="text-white font-bold text-sm uppercase tracking-widest">Active System Users</h3>
+                    <span class="text-[10px] text-slate-400 font-bold uppercase">Admin Restricted Area</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse whitespace-nowrap">
+                        <thead class="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-200">
+                            <tr>
+                                <th class="p-4">Login ID</th>
+                                <th class="p-4">Name</th>
+                                <th class="p-4">Role</th>
+                                <th class="p-4">Phone</th>
+                                <th class="p-4">Access IDs</th>
+                                <th class="p-4 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userTableBody">
+                            <tr><td colspan="6" class="p-20 text-center animate-pulse text-slate-400 font-medium text-sm">Syncing user database...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Fetch and populate the table
+    try {
+        const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getUsers"})}).then(r=>r.json());
+        if(res.success) {
+            const uList = Object.values(res.data);
+            document.getElementById('userTableBody').innerHTML = uList.map(u => `
+                <tr class="border-b border-slate-100 hover:bg-blue-50/30 transition-colors group">
+                    <td class="p-4 font-black text-slate-700">${u.id}</td>
+                    <td class="p-4 font-bold text-slate-900">${u.name}</td>
+                    <td class="p-4">
+                        <span class="px-2 py-1 rounded-md text-[10px] font-black uppercase ${
+                            u.role === 'Admin' ? 'bg-purple-100 text-purple-700' : 
+                            u.role === 'Teacher' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                        }">
+                            ${u.role}
+                        </span>
+                    </td>
+                    <td class="p-4 text-slate-500 font-medium">${u.phone || '-'}</td>
+                    <td class="p-4 text-slate-400 font-mono italic">${u.access ? u.access.join(', ') : '-'}</td>
+                    <td class="p-4 text-center">
+                        <div class="flex justify-center gap-3">
+                            <button onclick='editUserUI(${JSON.stringify(u)})' class="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-3 py-1.5 rounded-lg font-bold transition-all">Edit</button>
+                            <button onclick="delUserUI('${u.id}')" class="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white px-3 py-1.5 rounded-lg font-bold transition-all">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (e) {
+        document.getElementById('userTableBody').innerHTML = '<tr><td colspan="6" class="p-10 text-center text-red-500">Error loading users.</td></tr>';
+    }
+}
+
+function editUserUI(u) {
+    editUserId = u.id;
+    setV('uID', u.id);
+    document.getElementById('uID').disabled = true; // Cannot change ID during edit
+    setV('uPass', u.pass);
+    setV('uRole', u.role);
+    setV('uName', u.name);
+    setV('uPhone', u.phone || ''); 
+    setV('uFilter', u.filter || '');
+    setV('uTClass', u.tclass || '');
+    setV('uTDiv', u.tdiv || '');
+    setV('uTSchool', u.tschool || '');
+    setV('uAccess', u.access.join(', '));
+    
+    
+    document.getElementById('uBtn').innerText = "Update User";
+    document.getElementById('uBtn').className = "bg-amber-500 text-white px-8 py-2 rounded-xl font-bold shadow-lg";
+    document.getElementById('uCancel').classList.remove('hidden');
+}
+
+async function saveUserUI(e) {
+    e.preventDefault();
+    const data = {
+        id: v('uID'), 
+        pass: v('uPass'), 
+        role: v('uRole'), 
+        name: v('uName'),
+        filter: v('uFilter'), 
+        tClass: v('uTClass'), 
+        tDiv: v('uTDiv'), 
+        tSchool: v('uTSchool'),
+        access: v('uAccess'),
+        phone: v('uPhone') // <--- ADD THIS LINE
+    };
+
+    showLoad();
+    const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"saveUser", data: data})}).then(r=>r.json());
+    hideLoad();
+    
+    if(res.success) {
+        msg("Success", "User list updated", "success");
+        renderTab12(document.getElementById('tabContent'));
+    }
+}
+
+async function delUserUI(id) {
+    if(!confirm("Delete user "+id+"?")) return;
+    showLoad();
+    await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"deleteUser", id: id})});
+    hideLoad();
+    renderTab12(document.getElementById('tabContent'));
 }
 
 
