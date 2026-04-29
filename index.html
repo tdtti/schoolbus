@@ -227,7 +227,7 @@
     </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzZLq1qhSpu-D6PHq1b-JQ96O8Ioi6Md_A63s_4cAydF0_mZNE6q8Ko1XphaDIGEZZv2w/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxKhMNPqxHTcQtOtb2Q2JPCwaUU9rFpYske9AzZsw4ZRZEiJm0U2OOqkHhvy5mM3onl5g/exec";
    
     let users = {}; // Now an empty object, will be filled from Sheet    
     let adminLocInterval = null; 
@@ -500,10 +500,10 @@ async function logout() {
 }
 
 function cleanupLogoutUI() {
-    if (adminLocInterval) { clearInterval(adminLocInterval); adminLocInterval = null; }
-    if (adminTickInterval) { clearInterval(adminTickInterval); adminTickInterval = null; }
-    // NEW: Stop all location tracking immediately
-    stopLocationTracking();
+    // If they are currently live, kill the broadcast before logging out
+    if (locWatchId || currentSharingBusId) {
+        stopLocationTracking(); 
+    }
     if (stuLocInterval) {
         clearInterval(stuLocInterval);
         stuLocInterval = null;
@@ -1340,7 +1340,7 @@ _This is a system generated statement._
     function startLocationTracking() {
     const busId = document.getElementById('aBus').value;
     if(!busId) return msg("Error", "Select a bus first", "warning");
-    if (!navigator.geolocation) return msg("Error", "GPS not supported by your browser", "error");
+    if (!navigator.geolocation) return msg("Error", "GPS not supported", "error");
 
     document.getElementById('btnStartTrack').classList.add('hidden');
     document.getElementById('btnStopTrack').classList.remove('hidden');
@@ -1348,7 +1348,7 @@ _This is a system generated statement._
     document.getElementById('locStatusText').innerText = "Broadcasting Live Location...";
     
     locStartTime = Date.now();
-    currentSharingBusId = busId;
+    currentSharingBusId = busId; // Store globally
 
     locDurationInterval = setInterval(() => {
         const diff = Math.floor((Date.now() - locStartTime) / 1000);
@@ -1364,43 +1364,58 @@ _This is a system generated statement._
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
             try {
-                // Silently push updates to backend
-                await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"updateBusLocation", busId: busId, lat: lat, lng: lng, startTime: locStartTime})});
+                // Background update
+                fetch(API_URL, {
+                    method:'POST', 
+                    mode: 'no-cors', 
+                    body:JSON.stringify({action:"updateBusLocation", busId: busId, lat: lat, lng: lng, startTime: locStartTime})
+                });
             } catch(e) {}
         },
         (err) => {
-            msg("GPS Error", "Please allow location permissions in your browser settings.", "error");
+            msg("GPS Error", "Please enable GPS/Location", "error");
             stopLocationTracking();
         },
         { enableHighAccuracy: true, maximumAge: 5000, timeout: 5000 }
     );
 }
 
-function stopLocationTracking() {
+async function stopLocationTracking() {
+    // 1. Instantly stop local GPS hardware
     if (locWatchId) navigator.geolocation.clearWatch(locWatchId);
     if (locDurationInterval) clearInterval(locDurationInterval);
     
+    // Use the ID from the dropdown if the global variable is empty
+    const busId = currentSharingBusId || document.getElementById('aBus').value;
+
+    if (busId) {
+        showLoad(); // Show spinner to confirm server update
+        try {
+            // 2. FORCE DELETE on Server (Setting lat/lng to null)
+            await fetch(API_URL, {
+                method: 'POST', 
+                body: JSON.stringify({ action: "updateBusLocation", busId: busId, lat: null, lng: null })
+            });
+            console.log("Broadcast Terminated for " + busId);
+        } catch(e) {
+            console.error("Server update failed, broadcast might linger.");
+        }
+        hideLoad();
+    }
+
+    // 3. Reset UI Elements
     locWatchId = null;
     locDurationInterval = null;
     locStartTime = null;
+    currentSharingBusId = null;
 
-    const btnStart = document.getElementById('btnStartTrack');
-    const btnStop = document.getElementById('btnStopTrack');
-    const dot = document.getElementById('locStatusDot');
-    const statusText = document.getElementById('locStatusText');
-    const durationText = document.getElementById('locDurationText');
+    if (document.getElementById('btnStartTrack')) document.getElementById('btnStartTrack').classList.remove('hidden');
+    if (document.getElementById('btnStopTrack')) document.getElementById('btnStopTrack').classList.add('hidden');
+    if (document.getElementById('locStatusDot')) document.getElementById('locStatusDot').className = "w-3 h-3 rounded-full bg-gray-400";
+    if (document.getElementById('locStatusText')) document.getElementById('locStatusText').innerText = "Live GPS Tracking (Offline)";
+    if (document.getElementById('locDurationText')) document.getElementById('locDurationText').innerText = "Duration: 00:00:00";
     
-    if (btnStart) btnStart.classList.remove('hidden');
-    if (btnStop) btnStop.classList.add('hidden');
-    if (dot) dot.className = "w-3 h-3 rounded-full bg-gray-400";
-    if (statusText) statusText.innerText = "Live GPS Tracking (Offline)";
-    if (durationText) durationText.innerText = "Duration: 00:00:00";
-
-    // Inform backend to delete location data
-    if (currentSharingBusId) {
-        fetch(API_URL, {method:'POST', body:JSON.stringify({action:"updateBusLocation", busId: currentSharingBusId, lat: null, lng: null})});
-        currentSharingBusId = null;
-    }
+    msg("Ended", "Live broadcasting has been stopped for everyone.", "success");
 }
     
     // --- Tab 2: Attendance ---
