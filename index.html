@@ -279,6 +279,7 @@
 
 <!-- BUS GROUP (Added id="regBusGroup") -->
 <!-- Locate this element and update the select tag: -->
+<!-- 1. Ensure your Bus select matches this exact layout: -->
 <div id="regBusGroup">
     <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Select Bus</label>
     <select id="regBus" required onchange="populatePredefinedStops(this.value)" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
@@ -291,36 +292,16 @@
     </select>
 </div>
 
-<!-- STOPS GROUP (Added id="regStopsGroup") -->
-<div id="regStopsGroup" class="grid grid-cols-2 gap-3">
-    <div>
-        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Entry Stop (Strict)</label>
-        <select id="regEntry" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-            <option value="">Select Entry</option>
-        </select>
-    </div>
-    <!-- Locate this select tag inside your stops group and update it: -->
+<!-- 2. Ensure your Exit select has the onchange trigger: -->
 <div>
     <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Exit Stop (Strict)</label>
     <select id="regExit" required onchange="autoFillRegFee(this.value)" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
         <option value="">Select Exit</option>
     </select>
 </div>
-</div>
 
-<!-- STATUS GROUP (Added id="regStatusGroup") -->
-<div id="regStatusGroup">
-    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Travel Time</label>
-    <select id="regStatus" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-        <option>Both Time</option>
-        <option>Morning Only</option>
-        <option>Evening Only</option>
-    </select>
-</div>
-
-
-
-<!-- 1. STUDENT AUTO-CALCULATED FEE BOX (Visible for Students, Hidden for Staff) -->
+<!-- 3. Dynamic Fee Displays inside the form: -->
+<!-- STUDENT AUTO-CALCULATED FEE BOX -->
 <div id="regFeeGroup" class="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex justify-between items-center mt-3">
     <div>
         <span class="block text-xs font-bold text-blue-500 uppercase tracking-wider">Estimated Monthly Fee</span>
@@ -331,7 +312,7 @@
     </div>
 </div>
 
-<!-- 2. STAFF MANUAL FEE INPUT BOX (Visible for Staff, Hidden for Students) -->
+<!-- STAFF MANUAL FEE INPUT BOX -->
 <div id="regStaffFeeGroup" class="hidden mt-3">
     <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Decided Transport Fee (₹)</label>
     <input type="number" id="regStaffFeeInput" placeholder="Enter decided fee amount (e.g. 1000)" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-700">
@@ -409,30 +390,58 @@
     
     
     window.onload = async () => {
-    showLoad();
-    await fetchStops(); // Sync stops and fees from Google Sheets first
-    await fetchUsers(); 
-    hideLoad();
-
-    resetTimer();
-    document.onmousemove = resetTimer; 
-    document.onkeypress = resetTimer;
-    
     const urlParams = new URLSearchParams(window.location.search);
     const regType = urlParams.get('register');
-    
-    if (regType === 'student' || regType === 'staff') {
-        initializeRegistrationMode(regType);
-    } else {
-        const savedU = localStorage.getItem('keepUser'),
-              savedP = localStorage.getItem('keepPass');
+    const isPublicRegistration = (regType === 'student' || regType === 'staff');
 
-        if(savedU && savedP) {
-            document.getElementById('offUser').value = savedU;
-            document.getElementById('offPass').value = savedP;
-            document.getElementById('keepLogin').checked = true;
-            setTimeout(loginOfficial, 1500); 
+    showLoad();
+
+    // 1. Set up a 4-second network timeout for slow connections
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000); 
+
+    try {
+        // 2. Fetch the predefined stops with the timeout controller attached
+        await fetchStops(controller.signal);
+        clearTimeout(timeoutId);
+
+        // 3. SPEED OPTIMIZATION: Only fetch users if NOT in public registration mode
+        if (!isPublicRegistration) {
+            await fetchUsers(); 
         }
+
+        hideLoad();
+
+        if (isPublicRegistration) {
+            initializeRegistrationMode(regType);
+        } else {
+            handleAutoLogin();
+        }
+    } catch (error) {
+        clearTimeout(timeoutId);
+        hideLoad();
+        
+        // 4. Low Data Speed handling: Prevent broken page rendering, show diagnostic overlay
+        document.body.innerHTML = `
+            <div class="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-6 text-center">
+                <span class="text-5xl mb-4">📶</span>
+                <h2 class="text-xl font-bold mb-2">Weak Connection Detected</h2>
+                <p class="text-sm text-slate-400 max-w-md">Your internet connection is too slow to retrieve the transport database safely. Please move to a stronger coverage area and try again.</p>
+                <button onclick="window.location.reload()" class="mt-6 bg-blue-600 hover:bg-blue-700 px-6 py-2.5 rounded-xl font-bold text-sm transition">Retry Loading</button>
+            </div>
+        `;
+    }
+};
+
+// Simple auto-login helper
+function handleAutoLogin() {
+    const savedU = localStorage.getItem('keepUser'),
+          savedP = localStorage.getItem('keepPass');
+    if(savedU && savedP) {
+        document.getElementById('offUser').value = savedU;
+        document.getElementById('offPass').value = savedP;
+        document.getElementById('keepLogin').checked = true;
+        setTimeout(loginOfficial, 500); 
     }
 }
 
@@ -4461,7 +4470,6 @@ function formatMyDate(dateStr) {
     }
 }
 
-// Switches UI layout specifically for direct registration access
 function initializeRegistrationMode(type) {
     document.getElementById('loginSection').classList.add('hidden');
     document.getElementById('selfRegisterSection').classList.remove('hidden');
@@ -4480,19 +4488,16 @@ function initializeRegistrationMode(type) {
     if (type === 'staff') {
         regFormTitle.innerText = "Staff Registration Portal";
         
-        // Hide all student-specific inputs
         classDivGroup.classList.add('hidden'); 
         parentGroup.classList.add('hidden'); 
         busGroup.classList.add('hidden');
         stopsGroup.classList.add('hidden');
         statusGroup.classList.add('hidden');
-        studentFeeGroup.classList.add('hidden'); // Hide auto-calculated box
+        studentFeeGroup.classList.add('hidden'); // Hide auto calculated fee
         
-        // Show staff-specific manual fee input
-        staffFeeGroup.classList.remove('hidden'); 
-        staffFeeInput.required = true; // Make manual fee input mandatory for staff
+        staffFeeGroup.classList.remove('hidden'); // Show staff input
+        staffFeeInput.required = true; 
         
-        // Clear requirements for hidden fields
         document.getElementById('regBus').required = false;
         document.getElementById('regEntry').required = false;
         document.getElementById('regExit').required = false;
@@ -4501,20 +4506,17 @@ function initializeRegistrationMode(type) {
     } else {
         regFormTitle.innerText = "Student Registration Portal";
         
-        // Show student inputs
         classDivGroup.classList.remove('hidden');
         parentGroup.classList.remove('hidden');
         busGroup.classList.remove('hidden');
         stopsGroup.classList.remove('hidden');
         statusGroup.classList.remove('hidden');
-        studentFeeGroup.classList.remove('hidden'); // Show auto-calculated box
+        studentFeeGroup.classList.remove('hidden'); // Show auto calculated fee
         
-        // Hide staff manual fee input
-        staffFeeGroup.classList.add('hidden');
+        staffFeeGroup.classList.add('hidden'); // Hide staff input
         staffFeeInput.required = false;
         staffFeeInput.value = '';
         
-        // Re-enforce requirements for student fields
         document.getElementById('regBus').required = true;
         document.getElementById('regEntry').required = true;
         document.getElementById('regExit').required = true;
@@ -4567,7 +4569,6 @@ function populatePredefinedStops(busId) {
     });
 }
 
-// Handles form submission with API dispatching and dynamic validation
 async function submitSelfRegistration(e) {
     e.preventDefault();
     
@@ -4575,11 +4576,10 @@ async function submitSelfRegistration(e) {
     const regType = urlParams.get('register');
     const isStaff = (regType === 'staff');
 
-    // 1. Resolve final fee dynamically: read staff input or student resolved stop fee
+    // 1. Resolve final fee: read manual staff input or dynamic student calculated stop fee
     const staffManualFee = parseFloat(document.getElementById('regStaffFeeInput').value) || 0;
     const resolvedFinalFee = isStaff ? staffManualFee : currentRegCalculatedFee;
 
-    // 2. Assemble the payload
     const payload = {
         BusId: isStaff ? '-' : document.getElementById('regBus').value,
         School: document.getElementById('regSchool').value,
@@ -4591,7 +4591,7 @@ async function submitSelfRegistration(e) {
         Entry: isStaff ? '-' : document.getElementById('regEntry').value,
         Exit: isStaff ? '-' : document.getElementById('regExit').value,
         Status: isStaff ? '-' : document.getElementById('regStatus').value,
-        Fee: resolvedFinalFee // This saves the correct value to the "Students" sheet
+        Fee: resolvedFinalFee // This value is sent directly to your Google Sheet backend
     };
 
     showLoad();
@@ -4605,7 +4605,7 @@ async function submitSelfRegistration(e) {
         if (response.success) {
             Swal.fire({
                 title: 'Success!',
-                text: 'Registration details logged successfully.',
+                text: 'Registration completed successfully.',
                 icon: 'success',
                 confirmButtonColor: '#2563eb'
             }).then(() => {
@@ -4805,6 +4805,26 @@ function autoFillRegFee(stopValue) {
     const displayEl = document.getElementById('regFeeDisplay');
     if (displayEl) {
         displayEl.innerText = "₹" + currentRegCalculatedFee;
+    }
+}
+
+async function fetchStops(signal) {
+    try {
+        const res = await fetch(API_URL, {
+            method: 'POST', 
+            body: JSON.stringify({ action: "getStops" }),
+            signal: signal // Binds the fetch request to the abort signal
+        }).then(x => x.json());
+        
+        if (res.success && res.data) {
+            stopsRawDB = res.data;
+            allStops = res.data.map(item => item.StopName + "-" + item.BusId);
+        } else {
+            throw new Error("No data returned");
+        }
+    } catch(e) {
+        // Propagate the error so window.onload can catch it and display the low-data UI
+        throw e; 
     }
 }
 </script>
