@@ -275,40 +275,46 @@
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Select Bus</label>
-                <select id="regBus" required onchange="populatePredefinedStops(this.value)" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option value="">Select Bus</option>
-                    <option>KL32P4201SR</option>
-                    <option>KL32M0528VM</option>
-                    <option>KL32L2382K</option>
-                    <option>KL07BU4184C</option>
-                    <option>KL32L0827U</option>
-                </select>
-            </div>
+                <!-- Update the middle section of your #selfRegForm to match this structure: -->
 
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Entry Stop (Strict)</label>
-                    <select id="regEntry" required class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                        <option value="">Select Entry</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Exit Stop (Strict)</label>
-                    <select id="regExit" required class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                        <option value="">Select Exit</option>
-                    </select>
-                </div>
-            </div>
+<!-- BUS GROUP (Added id="regBusGroup") -->
+<div id="regBusGroup">
+    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Select Bus</label>
+    <select id="regBus" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+        <option value="">Select Bus</option>
+        <option>KL32P4201SR</option>
+        <option>KL32M0528VM</option>
+        <option>KL32L2382K</option>
+        <option>KL07BU4184C</option>
+        <option>KL32L0827U</option>
+    </select>
+</div>
 
-            <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Travel Time</label>
-                <select id="regStatus" required class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option>Both Time</option>
-                    <option>Morning Only</option>
-                    <option>Evening Only</option>
-                </select>
-            </div>
+<!-- STOPS GROUP (Added id="regStopsGroup") -->
+<div id="regStopsGroup" class="grid grid-cols-2 gap-3">
+    <div>
+        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Entry Stop (Strict)</label>
+        <select id="regEntry" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="">Select Entry</option>
+        </select>
+    </div>
+    <div>
+        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Exit Stop (Strict)</label>
+        <select id="regExit" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="">Select Exit</option>
+        </select>
+    </div>
+</div>
+
+<!-- STATUS GROUP (Added id="regStatusGroup") -->
+<div id="regStatusGroup">
+    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Travel Time</label>
+    <select id="regStatus" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+        <option>Both Time</option>
+        <option>Morning Only</option>
+        <option>Evening Only</option>
+    </select>
+</div>
 
             <button type="submit" class="w-full mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-bold hover:shadow-lg transition-all">
                 Submit Registration
@@ -317,7 +323,7 @@
     </div>
 </div>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwI1IFU70CkmUPHrt-iISrsUtrIEy7JIuzcYnO7ihQdp_8mu-BkAo0Cln-0GYznhHfndg/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycby7To9I24LKjTXZSV9Z9FrH0mNtFNIaYMYHt3bcrpsbB6OU_QZQXY1Qc6As_BNgZAAOjA/exec";
    
     let users = {}; // Now an empty object, will be filled from Sheet    
     let adminLocInterval = null; 
@@ -918,11 +924,11 @@ function downloadStudentPDF() {
             <form id="sForm" onsubmit="saveS(event)" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 bg-gray-50 p-4 rounded border text-sm">
                 <select id="f1" onchange="filterStops(this.value)" required class="p-2 border rounded">
                     <option value="">Bus</option>
-                    <option>KL32P4201SAJI-REVATHI</option>
-                    <option>KL32M0528VENU-RAJI</option>
-                    <option>KL32L2382KUNJUMON</option>
-                    <option>KL07BU4184CHADRAN</option>
-                    <option>KL32L0827UMESH</option>
+                    <option>KL32P4201SR</option>
+                    <option>KL32M0528VM</option>
+                    <option>KL32L2382K</option>
+                    <option>KL07BU4184C</option>
+                    <option>KL32L0827U</option>
                     <option>STAFF</option>
                 </select>
                 
@@ -4441,18 +4447,41 @@ function initializeRegistrationMode(type) {
     const regFormTitle = document.getElementById('regFormTitle');
     const classDivGroup = document.getElementById('regClassDivGroup');
     const parentGroup = document.getElementById('regParentGroup');
+    const busGroup = document.getElementById('regBusGroup');
+    const stopsGroup = document.getElementById('regStopsGroup');
+    const statusGroup = document.getElementById('regStatusGroup');
 
     if (type === 'staff') {
         regFormTitle.innerText = "Staff Registration Portal";
-        classDivGroup.classList.add('hidden'); // Staff do not need Class/Div input fields
-        parentGroup.classList.add('hidden'); // Designation optional/ignored
-        document.getElementById('regClass').required = false;
-        document.getElementById('regSchool').value = "TDEMNS-td1"; // Arbitrary placeholder school
+        
+        // Hide all fields except School, StaffName, and Phone
+        classDivGroup.classList.add('hidden'); 
+        parentGroup.classList.add('hidden'); 
+        busGroup.classList.add('hidden');
+        stopsGroup.classList.add('hidden');
+        statusGroup.classList.add('hidden');
+        
+        // Remove strict required validation for hidden inputs
+        document.getElementById('regBus').required = false;
+        document.getElementById('regEntry').required = false;
+        document.getElementById('regExit').required = false;
+        document.getElementById('regStatus').required = false;
+        document.getElementById('regSchool').value = "TDEMNS-td1"; // Default school placeholder (can be changed by staff)
     } else {
         regFormTitle.innerText = "Student Registration Portal";
+        
+        // Show all fields for students
         classDivGroup.classList.remove('hidden');
         parentGroup.classList.remove('hidden');
-        document.getElementById('regClass').required = true;
+        busGroup.classList.remove('hidden');
+        stopsGroup.classList.remove('hidden');
+        statusGroup.classList.remove('hidden');
+        
+        // Set student fields back to required
+        document.getElementById('regBus').required = true;
+        document.getElementById('regEntry').required = true;
+        document.getElementById('regExit').required = true;
+        document.getElementById('regStatus').required = true;
     }
 }
 
@@ -4507,18 +4536,20 @@ async function submitSelfRegistration(e) {
     
     const urlParams = new URLSearchParams(window.location.search);
     const regType = urlParams.get('register');
+    const isStaff = (regType === 'staff');
 
+    // If staff, we hardcode '-' for the hidden fields. Otherwise, read the inputs.
     const payload = {
-        BusId: document.getElementById('regBus').value,
+        BusId: isStaff ? '-' : document.getElementById('regBus').value,
         School: document.getElementById('regSchool').value,
-        Class: regType === 'staff' ? 'STAFF' : document.getElementById('regClass').value,
-        Div: regType === 'staff' ? '-' : document.getElementById('regDiv').value,
+        Class: isStaff ? 'STAFF' : document.getElementById('regClass').value,
+        Div: isStaff ? '-' : document.getElementById('regDiv').value,
         StudentName: document.getElementById('regName').value.trim(),
-        ParentName: regType === 'staff' ? '' : document.getElementById('regParent').value.trim(),
+        ParentName: isStaff ? '-' : document.getElementById('regParent').value.trim(),
         Phone: document.getElementById('regPhone').value.trim(),
-        Entry: document.getElementById('regEntry').value,
-        Exit: document.getElementById('regExit').value,
-        Status: document.getElementById('regStatus').value
+        Entry: isStaff ? '-' : document.getElementById('regEntry').value,
+        Exit: isStaff ? '-' : document.getElementById('regExit').value,
+        Status: isStaff ? '-' : document.getElementById('regStatus').value
     };
 
     showLoad();
@@ -4532,11 +4563,10 @@ async function submitSelfRegistration(e) {
         if (response.success) {
             Swal.fire({
                 title: 'Success!',
-                text: 'Your transport details have been registered.',
+                text: 'Registration completed successfully.',
                 icon: 'success',
                 confirmButtonColor: '#2563eb'
             }).then(() => {
-                // Clear query params and return home
                 window.location.href = window.location.origin + window.location.pathname;
             });
         } else {
@@ -4547,6 +4577,7 @@ async function submitSelfRegistration(e) {
         msg("Connection Fail", "Could not reach registry server. Try again.", "error");
     }
 }
+
 function generateWhatsAppShare(type) {
     // Dynamically resolves current web app hosting url
     const baseUrl = window.location.href.split('?')[0];
