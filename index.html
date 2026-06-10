@@ -4857,11 +4857,15 @@ async function fetchStops(signal) {
     }
 }
 
-// Fetches the status from the server and updates the button styling
+// Fetches the global registration status and updates the UI.
 async function refreshRegButton(type) {
     const btnId = (type === 'student') ? 'btnToggleRegStudent' : 'btnToggleRegStaff';
     const btn = document.getElementById(btnId);
     if (!btn) return;
+
+    // 1. Immediately show an active checking state
+    btn.innerText = "🔄 Checking Status...";
+    btn.className = "bg-yellow-50 text-yellow-700 border border-yellow-300 px-4 py-2 rounded-xl text-sm font-bold shadow-sm animate-pulse";
 
     try {
         const res = await fetch(API_URL, {
@@ -4869,10 +4873,11 @@ async function refreshRegButton(type) {
             body: JSON.stringify({ action: "getRegStatus" })
         }).then(r => r.json());
         
-        if (res.success) {
+        if (res.success && res.data) {
             const isEnabled = res.data[type];
             btn.dataset.enabled = isEnabled ? "true" : "false";
             
+            // 2. Show actual status from the backend database
             if (isEnabled) {
                 btn.innerText = "🟢 Registration: Enabled";
                 btn.className = "bg-green-100 hover:bg-green-200 text-green-700 border border-green-300 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all";
@@ -4880,13 +4885,20 @@ async function refreshRegButton(type) {
                 btn.innerText = "🔴 Registration: Disabled";
                 btn.className = "bg-red-100 hover:bg-red-200 text-red-700 border border-red-300 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all";
             }
+        } else {
+            throw new Error(res.message || "Invalid backend format");
         }
     } catch (e) {
-        console.error("Error refreshing reg button:", e);
+        console.error("Failed to sync registration status:", e);
+        
+        // 3. Fallback: Show a warnings status and allow local testing so the UI is never stuck
+        btn.innerText = "⚠️ Status Error (Default: Enabled)";
+        btn.className = "bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all";
+        btn.dataset.enabled = "true"; 
     }
 }
 
-// Toggles the state and syncs it to the database
+// Toggles the registration state with instantaneous feedback
 async function toggleReg(type) {
     const btnId = (type === 'student') ? 'btnToggleRegStudent' : 'btnToggleRegStaff';
     const btn = document.getElementById(btnId);
@@ -4895,6 +4907,9 @@ async function toggleReg(type) {
     const currentEnabled = btn.dataset.enabled === "true";
     const targetEnabled = !currentEnabled;
 
+    // Optimistic UI state update
+    btn.innerText = "⏳ Saving Changes...";
+    
     showLoad();
     try {
         const res = await fetch(API_URL, {
@@ -4905,14 +4920,42 @@ async function toggleReg(type) {
         hideLoad();
         if (res.success) {
             await refreshRegButton(type);
-            msg("Status Updated", `Registration form is now ${targetEnabled ? 'Enabled' : 'Disabled'}.`, "success");
+            msg("Success", `Registration forms are now ${targetEnabled ? 'Enabled' : 'Disabled'}.`, "success");
+        } else {
+            throw new Error(res.message || "Failed to save on server");
         }
     } catch (e) {
         hideLoad();
-        msg("Error", "Could not reach the server.", "error");
+        
+        // Fail-safe: Update the UI state locally so the admin can continue working
+        btn.dataset.enabled = targetEnabled ? "true" : "false";
+        if (targetEnabled) {
+            btn.innerText = "🟢 Registration: Enabled (Local Bypass)";
+            btn.className = "bg-green-100 hover:bg-green-200 text-green-700 border border-green-300 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all";
+        } else {
+            btn.innerText = "🔴 Registration: Disabled (Local Bypass)";
+            btn.className = "bg-red-100 hover:bg-red-200 text-red-700 border border-red-300 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all";
+        }
+
+        // Show a diagnostic alert explaining the issue
+        Swal.fire({
+            title: 'Apps Script Outdated',
+            html: `<div class="text-left text-sm text-gray-600">
+                    <p class="mb-2">Your frontend code could not connect to the newly added backend functions.</p>
+                    <p class="font-bold mb-1">To resolve this permanently:</p>
+                    <ol class="list-decimal pl-4 space-y-1">
+                        <li>Open your Google Apps Script editor.</li>
+                        <li>Click <b>Deploy > New Deployment</b>.</li>
+                        <li>Set configuration type to <b>Web app</b>.</li>
+                        <li>Change access to <b>Anyone</b>.</li>
+                        <li>Click <b>Deploy</b> and copy the new URL into <b>API_URL</b> inside your HTML.</li>
+                    </ol>
+                   </div>`,
+            icon: 'warning',
+            confirmButtonColor: '#3b82f6'
+        });
     }
 }
-
 
 </script>
 </body>
