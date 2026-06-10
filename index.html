@@ -234,93 +234,109 @@
         </div>
 
         <form id="selfRegForm" onsubmit="submitSelfRegistration(event)" class="space-y-4 text-sm">
-            <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Full Name</label>
-                <input id="regName" required placeholder="Enter full name" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
-            </div>
-
-            <div id="regParentGroup">
-                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Parent Name</label>
-                <input id="regParent" placeholder="Enter Parent Name or Employee Code" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Phone Number</label>
-                <input id="regPhone" required type="tel" placeholder="10-digit mobile number" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">School</label>
-                    <select id="regSchool" required onchange="filterClasses(this.value, 'regClass')" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                        <option value="">Select School</option>
-                        <option value="TDEMNS-td1">TDEMNS-td1</option>
-                        <option value="GTDLPS-34318">GTDLPS-34318</option>
-                        <option value="TDTTI-34347">TDTTI-34347</option>
-                        <option value="TDHS-34028">TDHS-34028</option>
-                    </select>
-                </div>
-                <div id="regClassDivGroup">
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Class & Div</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <select id="regClass" class="p-3 border border-gray-200 rounded-xl bg-white outline-none">
-                            <option value="">Class</option>
-                        </select>
-                        <select id="regDiv" class="p-3 border border-gray-200 rounded-xl bg-white outline-none">
-                            <option value="">Div</option>
-                            <option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-           
-
-<!-- 1. Ensure your Bus select matches this exact layout: -->
-<div id="regBusGroup">
-    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Select Bus</label>
-    <select id="regBus" required onchange="populatePredefinedStops(this.value)" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-        <option value="">Select Bus</option>
-        <option>KL32P4201SR</option>
-        <option>KL32M0528VM</option>
-        <option>KL32L2382K</option>
-        <option>KL07BU4184C</option>
-        <option>KL32L0827U</option>
-    </select>
-</div>
-
-<!-- 2. Ensure your Exit select has the onchange trigger: -->
-<div>
-    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Exit Stop (Strict)</label>
-    <select id="regExit" required onchange="autoFillRegFee(this.value)" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-        <option value="">Select Exit</option>
-    </select>
-</div>
-
-<!-- 3. Dynamic Fee Displays inside the form: -->
-<!-- STUDENT AUTO-CALCULATED FEE BOX -->
-<div id="regFeeGroup" class="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex justify-between items-center mt-3">
     <div>
-        <span class="block text-xs font-bold text-blue-500 uppercase tracking-wider">Estimated Monthly Fee</span>
-        <span class="text-[10px] text-gray-500">Calculated automatically based on Exit Stop</span>
+        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Full Name</label>
+        <input id="regName" required placeholder="Enter full name" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
     </div>
-    <div class="text-right">
-        <span id="regFeeDisplay" class="text-2xl font-black text-blue-700">₹0</span>
-    </div>
-</div>
 
-<!-- STAFF MANUAL FEE INPUT BOX -->
-<div id="regStaffFeeGroup" class="hidden mt-3">
-    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Decided Transport Fee (₹)</label>
-    <input type="number" id="regStaffFeeInput" placeholder="Enter decided fee amount (e.g. 1000)" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-700">
-</div>
-
-            <button type="submit" class="w-full mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-bold hover:shadow-lg transition-all">
-                Submit Registration
-            </button>
-        </form>
+    <div id="regParentGroup">
+        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Parent Name / PEN No</label>
+        <input id="regParent" placeholder="Enter Parent Name or Employee Code" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
     </div>
-</div>
+
+    <div>
+        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Phone Number</label>
+        <input id="regPhone" required type="tel" placeholder="10-digit mobile number" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+        <div>
+            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">School</label>
+            <select id="regSchool" required onchange="filterClasses(this.value, 'regClass')" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="">Select School</option>
+                <option value="TDEMNS-td1">TDEMNS-td1</option>
+                <option value="GTDLPS-34318">GTDLPS-34318</option>
+                <option value="TDTTI-34347">TDTTI-34347</option>
+                <option value="TDHS-34028">TDHS-34028</option>
+            </select>
+        </div>
+        <div id="regClassDivGroup" class="grid grid-cols-2 gap-2">
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Class</label>
+                <select id="regClass" class="w-full p-3 border border-gray-200 rounded-xl bg-white outline-none">
+                    <option value="">Class</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Div</label>
+                <select id="regDiv" class="w-full p-3 border border-gray-200 rounded-xl bg-white outline-none">
+                    <option value="">Div</option>
+                    <option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- BUS GROUP -->
+    <div id="regBusGroup">
+        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Select Bus</label>
+        <select id="regBus" onchange="populatePredefinedStops(this.value)" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="">Select Bus</option>
+            <option>KL32P4201SR</option>
+            <option>KL32M0528VM</option>
+            <option>KL32L2382K</option>
+            <option>KL07BU4184C</option>
+            <option>KL32L0827U</option>
+        </select>
+    </div>
+
+    <!-- STOPS GROUP -->
+    <div id="regStopsGroup" class="grid grid-cols-2 gap-3">
+        <div>
+            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Entry Stop (Strict)</label>
+            <select id="regEntry" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="">Select Entry</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Exit Stop (Strict)</label>
+            <select id="regExit" onchange="autoFillRegFee(this.value)" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="">Select Exit</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- STATUS GROUP -->
+    <div id="regStatusGroup">
+        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Travel Time</label>
+        <select id="regStatus" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+            <option>Both Time</option>
+            <option>Morning Only</option>
+            <option>Evening Only</option>
+        </select>
+    </div>
+
+    <!-- STUDENT AUTO-CALCULATED FEE BOX -->
+    <div id="regFeeGroup" class="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex justify-between items-center mt-3">
+        <div>
+            <span class="block text-xs font-bold text-blue-500 uppercase tracking-wider">Estimated Monthly Fee</span>
+            <span class="text-[10px] text-gray-500">Calculated automatically based on Exit Stop</span>
+        </div>
+        <div class="text-right">
+            <span id="regFeeDisplay" class="text-2xl font-black text-blue-700">₹0</span>
+        </div>
+    </div>
+
+    <!-- STAFF MANUAL FEE INPUT BOX -->
+    <div id="regStaffFeeGroup" class="hidden mt-3">
+        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Decided Transport Fee (₹)</label>
+        <input type="number" id="regStaffFeeInput" placeholder="Enter decided fee amount (e.g. 1000)" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-700">
+    </div>
+
+    <button type="submit" class="w-full mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-bold hover:shadow-lg transition-all">
+        Submit Registration
+    </button>
+</form>
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwGnEpBMUXTYn3BO3i-WYDcbIt-ayWYcb-tQ5KfaBtr4yzP1Vq_NTfXY-qoOcMXj4vk8A/exec";
    
