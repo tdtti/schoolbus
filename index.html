@@ -4486,9 +4486,24 @@ function formatMyDate(dateStr) {
 }
 
 function initializeRegistrationMode(type) {
-    document.getElementById('loginSection').classList.add('hidden');
-    document.getElementById('selfRegisterSection').classList.remove('hidden');
+    // 1. Dynamic Check: Verifies that every single required element exists in your HTML
+    const requiredIds = [
+        'loginSection', 'selfRegisterSection', 'regFormTitle', 'regClassDivGroup', 
+        'regParentGroup', 'regBusGroup', 'regStopsGroup', 'regStatusGroup', 
+        'regFeeGroup', 'regStaffFeeGroup', 'regStaffFeeInput'
+    ];
     
+    for (let i = 0; i < requiredIds.length; i++) {
+        const id = requiredIds[i];
+        const el = document.getElementById(id);
+        if (!el) {
+            // Throws a clear error to the UI Diagnostic screen
+            throw new Error(`The HTML element with ID "${id}" is missing from your page. Please ensure you have added all necessary form fields to your HTML file.`);
+        }
+    }
+
+    const loginSection = document.getElementById('loginSection');
+    const selfRegisterSection = document.getElementById('selfRegisterSection');
     const regFormTitle = document.getElementById('regFormTitle');
     const classDivGroup = document.getElementById('regClassDivGroup');
     const parentGroup = document.getElementById('regParentGroup');
@@ -4500,17 +4515,22 @@ function initializeRegistrationMode(type) {
     const staffFeeGroup = document.getElementById('regStaffFeeGroup');
     const staffFeeInput = document.getElementById('regStaffFeeInput');
 
+    loginSection.classList.add('hidden');
+    selfRegisterSection.classList.remove('hidden');
+
     if (type === 'staff') {
         regFormTitle.innerText = "Staff Registration Portal";
         
+        // Hide student specific fields
         classDivGroup.classList.add('hidden'); 
         parentGroup.classList.add('hidden'); 
         busGroup.classList.add('hidden');
         stopsGroup.classList.add('hidden');
         statusGroup.classList.add('hidden');
-        studentFeeGroup.classList.add('hidden'); // Hide auto calculated fee
+        studentFeeGroup.classList.add('hidden'); 
         
-        staffFeeGroup.classList.remove('hidden'); // Show staff input
+        // Show staff specific fields
+        staffFeeGroup.classList.remove('hidden'); 
         staffFeeInput.required = true; 
         
         document.getElementById('regBus').required = false;
@@ -4521,14 +4541,16 @@ function initializeRegistrationMode(type) {
     } else {
         regFormTitle.innerText = "Student Registration Portal";
         
+        // Show student specific fields
         classDivGroup.classList.remove('hidden');
         parentGroup.classList.remove('hidden');
         busGroup.classList.remove('hidden');
         stopsGroup.classList.remove('hidden');
         statusGroup.classList.remove('hidden');
-        studentFeeGroup.classList.remove('hidden'); // Show auto calculated fee
+        studentFeeGroup.classList.remove('hidden'); 
         
-        staffFeeGroup.classList.add('hidden'); // Hide staff input
+        // Hide staff specific fields
+        staffFeeGroup.classList.add('hidden'); 
         staffFeeInput.required = false;
         staffFeeInput.value = '';
         
