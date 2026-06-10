@@ -300,9 +300,11 @@
     </div>
     <div>
         <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Exit Stop (Strict)</label>
-        <select id="regExit" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-            <option value="">Select Exit</option>
+        <select id="regExit" required onchange="autoFillRegFee(this.value)" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+        <option value="">Select Exit</option>
         </select>
+        <!-- Tiny indicator underneath -->
+        <p id="regFeePreview" class="text-xs text-green-600 font-bold mt-1"></p>
     </div>
 </div>
 
@@ -323,7 +325,7 @@
     </div>
 </div>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycby7To9I24LKjTXZSV9Z9FrH0mNtFNIaYMYHt3bcrpsbB6OU_QZQXY1Qc6As_BNgZAAOjA/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbyS2bbcZ9ERXAK-8Lgq1q1pCxtWpCYRKprxc6OBKyPhMVdr2C-QkgBwX2LUCFDADo13cA/exec";
    
     let users = {}; // Now an empty object, will be filled from Sheet    
     let adminLocInterval = null; 
@@ -357,7 +359,8 @@
     let dataSortCol = 'StudentName';
     let dataSortAsc = true;
     
-    
+    let allStops = [];     // Dynamic flat list format: "STOPNAME-BUSID"
+    let stopsRawDB = [];   // Full database objects with fees
     
     
     const showLoad = () => document.getElementById('loaderOverlay').style.display='flex';
@@ -386,13 +389,16 @@
     });
     
     
-    window.onload = () => {
-    fetchUsers(); 
+    window.onload = async () => {
+    showLoad();
+    await fetchStops(); // Sync stops and fees from Google Sheets first
+    await fetchUsers(); 
+    hideLoad();
+
     resetTimer();
     document.onmousemove = resetTimer; 
     document.onkeypress = resetTimer;
     
-    // Check for parameter mode
     const urlParams = new URLSearchParams(window.location.search);
     const regType = urlParams.get('register');
     
@@ -408,6 +414,24 @@
             document.getElementById('keepLogin').checked = true;
             setTimeout(loginOfficial, 1500); 
         }
+    }
+}
+
+// Fetch stops database function
+async function fetchStops() {
+    try {
+        const res = await fetch(API_URL, {
+            method: 'POST', 
+            body: JSON.stringify({ action: "getStops" })
+        }).then(x => x.json());
+        
+        if (res.success && res.data) {
+            stopsRawDB = res.data;
+            // Map into existing flat format to maintain full compatibility
+            allStops = res.data.map(item => `${item.StopName}-${item.BusId}`);
+        }
+    } catch(e) {
+        console.error("Failed to sync stops:", e);
     }
 }
 
@@ -654,7 +678,8 @@ function cleanupLogoutUI() {
         8:  { name: "Expenses", icon: "💸" },
         9:  { name: "Balance", icon: "⚖️" },
         10: { name: "Live Map", icon: "📍" },
-        12: { name: "Settings", icon: "⚙️" }
+        12: { name: "Settings", icon: "⚙️" },
+        13: { name: "Stops & Fees", icon: "🎟️" }
     };
     
     curUser.access.forEach(id => {
@@ -702,7 +727,7 @@ function cleanupLogoutUI() {
         if(id === 10) renderTab10(c);
         if(id === 11) renderTab11(c);
         if(id === 12) renderTab12(c);
-        
+        if(id === 13) renderTab13(c);
     }
 
     // --- Filters ---
@@ -952,7 +977,7 @@ function downloadStudentPDF() {
                 <input list="entryStops" id="f8" placeholder="Entry Stop" class="p-2 border rounded">
                 <datalist id="entryStops"></datalist>
                 
-                <input list="exitStops" id="f9" required placeholder="Exit Stop" class="p-2 border rounded">
+                <input list="exitStops" id="f9" required placeholder="Exit Stop" onchange="autoFillFee(this.value, 'f11')" class="p-2 border rounded">
                 <datalist id="exitStops"></datalist>
                 
                 <select id="f10" required class="p-2 border rounded"><option>Both Time</option><option>Morning Only</option><option>Evening Only</option><option>SPONSER</option></select>
@@ -1101,33 +1126,9 @@ function downloadStudentPDF() {
         editID = null; await fetchData(); hideLoad(); renderTab1(document.getElementById('tabContent')); msg("Success","Record saved!","success");
     }
     
-    // Global Master List of all stops
-    const allStops =[
-        "ADUVA-KL07BU4184C","ALAYKKAPARAMBHU-KL32P4201SR","AMALGOM-KL32L2382K","AMBEDKAR JN-KL07BU4184C",
-        "AROOR-KL32P4201SR","AZHEEKAL-KL32M0528VM","BHOOTHANILYAM TEMPLE-KL07BU4184C","CHANDIROOR-KL32P4201SR",
-        "CHANGARAM SCHOOL-KL32P4201SR","CHAPPAKADAVU-KL32M0528VM","CHELAPPURAM-KL32M0528VM","CHELLANAM-KL32M0528VM",
-        "CHENNAMANA-KL32P4201SR","CHERUNKAL-KL32L2382K","DAMODARA HOTEL-KL32P4201SR","ENVEES BAR-KL32P4201SR",
-        "ESWAREDATH BANK CHLNM-KL32M0528VM","EZHUPUNNA PANCHAYTH-KL32P4201SR","GAS GODOWN-KL07BU4184C","GREENLAND-KL32P4201SR",
-        "ILLIKAL-KL32M0528VM","JAPAN-KL32P4201SR","KAKKATHURUTH-KL32L2382K","KALABHAVAN MANI-KL32M0528VM",
-        "KALARANGAM-KL07BU4184C","KANAPARAMBU-KL32L0827U","KANNATTU JN-KL32P4201SR","KARALATHODU-KL32M0528VM",
-        "KEERTHI BAR-KL32P4201SR","KELAMKULANGARA-KL32P4201SR","KHAYZ-KL32L2382K","KOCHUVELI KAVALA-KL32P4201SR",
-        "KODAMTHURUTHU-KL32P4201SR","KOLATHUSSERY-KL32L2382K","KONKERY PALAM-KL32P4201SR","KSEB KUTHIYATHODE-KL32P4201SR",
-        "KUMBALANGI FERRY-KL32P4201SR","KURUKANCHANDA KIZHKU-KL07BU4184C","KURUKANCHANDA-KL32P4201SR","MANAKODAM PALLI-KL32M0528VM",
-        "MANAVA SAHAYA SAMITHI-KL07BU4184C","MANNATH TEMPLE-KL07BU4184C","MARIYAPURAM-KL32L0827U","MARIYAPURAM-KL32L2382K",
-        "MENASEERY-KL32M0528VM","MOHAM HOSPITAL-KL32P4201SR","MOOLEKALAM-KL32L0827U","MOORTHINKAL-KL32L0827U",
-        "MUTHUPARAMBU-KL32L2382K","NALIKKAT-KL32L0827U","NALUKULANGARA SOCIETY-KL32L2382K","NALUKULANGARA-KL32L0827U",
-        "NAYILATH COLONY-KL32L2382K","NCC JN HP PUMP-KL32P4201SR","NCC JN-KL32P4201SR","NEW BOYS-KL32M0528VM",
-        "OLATHALA-KL07BU4184C","PALLITHODE-KL32L0827U","PALLITHODE-KL32M0528VM","PARAYIL-KL32M0528VM",
-        "PATTAM PALLI-KL32M0528VM","PATTUKULANGARA-KL32P4201SR","PONNAMVELI PUMP-KL32P4201SR","PONNAMVELI-KL32P4201SR",
-        "PS KAVALA-KL32P4201SR","PURANDESWARAM-KL07BU4184C","PUTHANCHANDA PUMP-KL32P4201SR","PUTHANCHANDA RLY-KL32M0528VM",
-        "PUTHENKAVU-KL32M0528VM","RAILWAY STN-KL32L0827U","RELIANCE PUMP-KL32P4201SR","SANIYA-KL32P4201SR",
-        "SANTHI JN-KL07BU4184C","SANTHI JN-KL32P4201SR","SRAMBHIKAL-KL07BU4184C","SREENARAYANAPURAM-KL32P4201SR",
-        "THAZHUPPU-KL32L2382K","THEVARVATTOM CHIRACKAL-KL07BU4184C","THEVARVATTOM PALLI JN-KL07BU4184C","THURAVOOR TEMPLE-KL32P4201SR",
-        "THURAVOOR-KL32P4201SR","THYCATTUSSERY BRIDGE-KL07BU4184C","UDEESH TAXIHOUSE-KL32M0528VM","VAKKAYIL PALAM-KL32L0827U",
-        "VALAMANAGALAM CHURCH-KL07BU4184C","VALAMANAGALAM SOUTH-KL07BU4184C","VALAMANAGALAM WS-KL07BU4184C","VALANTHARA ROAD-KL32M0528VM",
-        "VALLIYATHODU-KL32P4201SR","VATTAKAL MUKKU-KL32L2382K","VATTAKAL MUKKU-KL32P4201SR","VEEYATHARA-KL32M0528VM",
-        "VISWAS PRINTERS-KL07BU4184C"
-    ];
+    
+    
+   
 
     function filterStops(busId) {
         const entryDatalist = document.getElementById('entryStops');
@@ -3376,7 +3377,7 @@ async function clearAllLogsUI() {
                 <input id="sf7" required placeholder="Phone" class="p-2 border rounded">
                 
                 <input list="entryStops" id="sf8" placeholder="Entry Stop" class="p-2 border rounded">
-                <input list="exitStops" id="sf9" required placeholder="Exit Stop" class="p-2 border rounded">
+                <input list="exitStops" id="sf9" required placeholder="Exit Stop" onchange="autoFillFee(this.value, 'sf11')" class="p-2 border rounded">
                 
                 <select id="sf10" required class="p-2 border rounded"><option>Both Time</option><option>Morning Only</option><option>Evening Only</option></select>
                 <input id="sf11" required placeholder="Fee Amount" type="number" class="p-2 border rounded">
@@ -4549,7 +4550,8 @@ async function submitSelfRegistration(e) {
         Phone: document.getElementById('regPhone').value.trim(),
         Entry: isStaff ? '-' : document.getElementById('regEntry').value,
         Exit: isStaff ? '-' : document.getElementById('regExit').value,
-        Status: isStaff ? '-' : document.getElementById('regStatus').value
+        Status: isStaff ? '-' : document.getElementById('regStatus').value,
+        Fee: isStaff ? 0 : currentRegCalculatedFee // Assign calculated fee to database
     };
 
     showLoad();
@@ -4589,6 +4591,179 @@ function generateWhatsAppShare(type) {
     window.open(waUrl, '_blank');
 }
 
+let editStopRowIndex = null;
+
+async function renderTab13(c) {
+    editStopRowIndex = null;
+    c.innerHTML = `
+        <h2 class="text-2xl font-black mb-4 text-slate-800">Manage Predefined Stops & Fees</h2>
+        
+        <!-- STOP FORM -->
+        <form id="stopForm" onsubmit="savePredefinedStop(event)" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-sm">
+            <select id="stBus" required class="p-2.5 border rounded-xl outline-none bg-white">
+                <option value="">Select Bus</option>
+                <option>KL32P4201SR</option>
+                <option>KL32M0528VM</option>
+                <option>KL32L2382K</option>
+                <option>KL07BU4184C</option>
+                <option>KL32L0827U</option>
+            </select>
+            <input type="text" id="stName" required placeholder="Stop Name (e.g. ADUVA)" class="p-2.5 border rounded-xl outline-none uppercase">
+            <input type="number" id="stFee" required placeholder="Fee Amount (₹)" class="p-2.5 border rounded-xl outline-none font-bold">
+            
+            <div class="flex gap-2">
+                <button type="submit" id="stBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold w-full transition shadow">Save Stop</button>
+                <button type="button" id="stCancelBtn" onclick="cancelStopEdit()" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2.5 rounded-xl hidden transition">Cancel</button>
+            </div>
+        </form>
+
+        <!-- FILTER VIEW -->
+        <div class="mb-4 flex items-center gap-2">
+            <span class="text-sm font-bold text-gray-500 uppercase">Filter Bus View:</span>
+            <select id="stFilterBus" onchange="loadStopsTable(this.value)" class="p-2 border rounded-xl bg-white outline-none font-bold text-blue-700">
+                <option value="">All Buses</option>
+                <option>KL32P4201SR</option>
+                <option>KL32M0528VM</option>
+                <option>KL32L2382K</option>
+                <option>KL07BU4184C</option>
+                <option>KL32L0827U</option>
+            </select>
+        </div>
+
+        <!-- STOPS TABLE (ALPHABETICAL) -->
+        <div class="overflow-x-auto shadow-sm rounded-2xl border border-gray-200 bg-white">
+            <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
+                <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider">
+                    <tr>
+                        <th class="p-3 border">Stop Name ↕ (Alphabetical)</th>
+                        <th class="p-3 border text-center">Bus ID</th>
+                        <th class="p-3 border text-center">Fee (₹)</th>
+                        <th class="p-3 border text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="stopsTblBody"></tbody>
+            </table>
+        </div>
+    `;
+    
+    loadStopsTable('');
+}
+
+function loadStopsTable(selectedBus) {
+    const tbody = document.getElementById('stopsTblBody');
+    if(!tbody) return;
+
+    let data = [...stopsRawDB];
+    if (selectedBus) {
+        data = data.filter(s => s.BusId === selectedBus);
+    }
+
+    // Enforce strict Alphabetical Sorting
+    data.sort((a, b) => String(a.StopName).localeCompare(String(b.StopName)));
+
+    tbody.innerHTML = data.map(s => `
+        <tr class="hover:bg-blue-50/50 transition border-b">
+            <td class="p-3 border-r font-bold text-gray-800">${s.StopName}</td>
+            <td class="p-3 border-r text-center font-medium text-gray-600">${s.BusId}</td>
+            <td class="p-3 border-r text-center font-black text-blue-600">₹${s.Fee || 0}</td>
+            <td class="p-2 text-center flex justify-center gap-2">
+                <button onclick='editStopField(${JSON.stringify(s)})' class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm">Edit</button>
+                <button onclick="deleteStopField(${s._rowIndex})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm">Del</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function savePredefinedStop(e) {
+    e.preventDefault();
+    const payload = {
+        BusId: document.getElementById('stBus').value,
+        StopName: document.getElementById('stName').value.trim().toUpperCase(),
+        Fee: parseFloat(document.getElementById('stFee').value) || 0,
+        _rowIndex: editStopRowIndex
+    };
+
+    showLoad();
+    try {
+        await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "saveStop", data: payload })
+        });
+        await fetchStops(); // Refresh the cache list
+        renderTab13(document.getElementById('tabContent'));
+        msg("Success", "Stop details recorded successfully.", "success");
+    } catch(err) {
+        msg("Error", "Could not complete operation.", "error");
+    }
+    hideLoad();
+}
+
+function editStopField(s) {
+    editStopRowIndex = s._rowIndex;
+    document.getElementById('stBus').value = s.BusId;
+    document.getElementById('stName').value = s.StopName;
+    document.getElementById('stFee').value = s.Fee;
+
+    document.getElementById('stBtn').innerText = "Update Stop";
+    document.getElementById('stBtn').className = "bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-xl font-bold w-full transition shadow";
+    document.getElementById('stCancelBtn').classList.remove('hidden');
+}
+
+function cancelStopEdit() {
+    editStopRowIndex = null;
+    document.getElementById('stBus').value = '';
+    document.getElementById('stName').value = '';
+    document.getElementById('stFee').value = '';
+    document.getElementById('stBtn').innerText = "Save Stop";
+    document.getElementById('stBtn').className = "bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold w-full transition shadow";
+    document.getElementById('stCancelBtn').classList.add('hidden');
+}
+
+async function deleteStopField(rIdx) {
+    if(!confirm("Are you sure you want to delete this stop?")) return;
+    showLoad();
+    try {
+        await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "deleteStop", rowIndex: rIdx })
+        });
+        await fetchStops();
+        renderTab13(document.getElementById('tabContent'));
+        msg("Deleted", "Stop removed from database.", "success");
+    } catch(err) {
+        msg("Error", "Could not execute delete.", "error");
+    }
+    hideLoad();
+}
+
+// Resolves the correct fee from stops database using "STOPNAME-BUSID" string
+function getPredefinedFee(fullStopString) {
+    if (!fullStopString || typeof stopsRawDB === 'undefined') return 0;
+    
+    const parts = fullStopString.split('-');
+    const stopName = parts[0];
+    const busId = parts[1];
+    
+    const match = stopsRawDB.find(s => s.StopName === stopName && s.BusId === busId);
+    return match ? parseFloat(match.Fee) || 0 : 0;
+}
+
+function autoFillFee(stopValue, targetInputId) {
+    const feeInput = document.getElementById(targetInputId);
+    if (feeInput) {
+        feeInput.value = getPredefinedFee(stopValue);
+    }
+}
+
+let currentRegCalculatedFee = 0;
+
+function autoFillRegFee(stopValue) {
+    currentRegCalculatedFee = getPredefinedFee(stopValue);
+    const indicator = document.getElementById('regFeePreview');
+    if (indicator) {
+        indicator.innerText = currentRegCalculatedFee > 0 ? `Calculated Bus Fee: ₹${currentRegCalculatedFee}` : '';
+    }
+}
 </script>
 </body>
 </html>
