@@ -4457,24 +4457,45 @@ function initializeRegistrationMode(type) {
 }
 
 // Strictly populates select elements with values matching the predefined array
+// Strictly populates select elements with values matching the predefined array
 function populatePredefinedStops(busId) {
     const entrySelect = document.getElementById('regEntry');
     const exitSelect = document.getElementById('regExit');
     
+    if (!entrySelect || !exitSelect) {
+        console.error("Entry or Exit select elements not found.");
+        return;
+    }
+    
+    // Reset dropdowns to default state
     entrySelect.innerHTML = '<option value="">Select Entry</option>';
     exitSelect.innerHTML = '<option value="">Select Exit</option>';
     
     if (!busId) return;
 
-    // Filters exclusively from your defined 'allStops' global array
-    const filteredStops = allStops.filter(s => s.includes(busId));
+    // Failsafe check to ensure the master stop list exists
+    if (typeof allStops === 'undefined' || !Array.isArray(allStops)) {
+        console.error("The 'allStops' array is missing or inaccessible.");
+        return;
+    }
 
-    filteredStops.forEach(stop => {
+    // Filter stops that contain the selected Bus ID
+    const filteredStops = allStops.filter(function(stop) {
+        return stop && stop.indexOf(busId) !== -1;
+    });
+
+    // Populate the dropdowns dynamically
+    filteredStops.forEach(function(stop) {
+        // Safely extract the clean stop name before the hyphen (e.g. "ADUVA" from "ADUVA-KL07BU4184C")
+        const cleanName = stop.split('-')[0]; 
+        
         const optEntry = document.createElement('option');
         optEntry.value = stop;
-        optEntry.innerText = stop.replace(`-${busId}`, '');
+        optEntry.text = cleanName;
         
-        const optExit = optEntry.cloneNode(true);
+        const optExit = document.createElement('option');
+        optExit.value = stop;
+        optExit.text = cleanName;
         
         entrySelect.appendChild(optEntry);
         exitSelect.appendChild(optExit);
