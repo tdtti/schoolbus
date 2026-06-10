@@ -318,7 +318,9 @@
     </select>
 </div>
 
-<!-- Add this directly below the Travel Time div group: -->
+
+
+<!-- 1. STUDENT AUTO-CALCULATED FEE BOX (Visible for Students, Hidden for Staff) -->
 <div id="regFeeGroup" class="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex justify-between items-center mt-3">
     <div>
         <span class="block text-xs font-bold text-blue-500 uppercase tracking-wider">Estimated Monthly Fee</span>
@@ -327,6 +329,12 @@
     <div class="text-right">
         <span id="regFeeDisplay" class="text-2xl font-black text-blue-700">₹0</span>
     </div>
+</div>
+
+<!-- 2. STAFF MANUAL FEE INPUT BOX (Visible for Staff, Hidden for Students) -->
+<div id="regStaffFeeGroup" class="hidden mt-3">
+    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Decided Transport Fee (₹)</label>
+    <input type="number" id="regStaffFeeInput" placeholder="Enter decided fee amount (e.g. 1000)" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-700">
 </div>
 
             <button type="submit" class="w-full mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-bold hover:shadow-lg transition-all">
@@ -438,11 +446,13 @@ async function fetchStops() {
         
         if (res.success && res.data) {
             stopsRawDB = res.data;
-            // Map into existing flat format to maintain full compatibility
             allStops = res.data.map(item => `${item.StopName}-${item.BusId}`);
+            console.log("Stops successfully synchronized with Google Sheets.");
+        } else {
+            console.warn("Server responded, but failed to retrieve stops database.");
         }
     } catch(e) {
-        console.error("Failed to sync stops:", e);
+        console.error("Failed to sync stops. Check your script deployment and internet access:", e);
     }
 }
 
@@ -4462,34 +4472,49 @@ function initializeRegistrationMode(type) {
     const busGroup = document.getElementById('regBusGroup');
     const stopsGroup = document.getElementById('regStopsGroup');
     const statusGroup = document.getElementById('regStatusGroup');
+    
+    const studentFeeGroup = document.getElementById('regFeeGroup');
+    const staffFeeGroup = document.getElementById('regStaffFeeGroup');
+    const staffFeeInput = document.getElementById('regStaffFeeInput');
 
     if (type === 'staff') {
         regFormTitle.innerText = "Staff Registration Portal";
         
-        // Hide all fields except School, StaffName, and Phone
+        // Hide all student-specific inputs
         classDivGroup.classList.add('hidden'); 
         parentGroup.classList.add('hidden'); 
         busGroup.classList.add('hidden');
         stopsGroup.classList.add('hidden');
         statusGroup.classList.add('hidden');
+        studentFeeGroup.classList.add('hidden'); // Hide auto-calculated box
         
-        // Remove strict required validation for hidden inputs
+        // Show staff-specific manual fee input
+        staffFeeGroup.classList.remove('hidden'); 
+        staffFeeInput.required = true; // Make manual fee input mandatory for staff
+        
+        // Clear requirements for hidden fields
         document.getElementById('regBus').required = false;
         document.getElementById('regEntry').required = false;
         document.getElementById('regExit').required = false;
         document.getElementById('regStatus').required = false;
-        document.getElementById('regSchool').value = "TDEMNS-td1"; // Default school placeholder (can be changed by staff)
+        document.getElementById('regSchool').value = "TDEMNS-td1"; 
     } else {
         regFormTitle.innerText = "Student Registration Portal";
         
-        // Show all fields for students
+        // Show student inputs
         classDivGroup.classList.remove('hidden');
         parentGroup.classList.remove('hidden');
         busGroup.classList.remove('hidden');
         stopsGroup.classList.remove('hidden');
         statusGroup.classList.remove('hidden');
+        studentFeeGroup.classList.remove('hidden'); // Show auto-calculated box
         
-        // Set student fields back to required
+        // Hide staff manual fee input
+        staffFeeGroup.classList.add('hidden');
+        staffFeeInput.required = false;
+        staffFeeInput.value = '';
+        
+        // Re-enforce requirements for student fields
         document.getElementById('regBus').required = true;
         document.getElementById('regEntry').required = true;
         document.getElementById('regExit').required = true;
@@ -4550,7 +4575,11 @@ async function submitSelfRegistration(e) {
     const regType = urlParams.get('register');
     const isStaff = (regType === 'staff');
 
-    // Assemble the clean registration dataset
+    // 1. Resolve final fee dynamically: read staff input or student resolved stop fee
+    const staffManualFee = parseFloat(document.getElementById('regStaffFeeInput').value) || 0;
+    const resolvedFinalFee = isStaff ? staffManualFee : currentRegCalculatedFee;
+
+    // 2. Assemble the payload
     const payload = {
         BusId: isStaff ? '-' : document.getElementById('regBus').value,
         School: document.getElementById('regSchool').value,
@@ -4562,7 +4591,7 @@ async function submitSelfRegistration(e) {
         Entry: isStaff ? '-' : document.getElementById('regEntry').value,
         Exit: isStaff ? '-' : document.getElementById('regExit').value,
         Status: isStaff ? '-' : document.getElementById('regStatus').value,
-        Fee: isStaff ? 0 : currentRegCalculatedFee // Captures the exact fee populated from your sheet
+        Fee: resolvedFinalFee // This saves the correct value to the "Students" sheet
     };
 
     showLoad();
@@ -4576,7 +4605,7 @@ async function submitSelfRegistration(e) {
         if (response.success) {
             Swal.fire({
                 title: 'Success!',
-                text: 'Registration completed successfully.',
+                text: 'Registration details logged successfully.',
                 icon: 'success',
                 confirmButtonColor: '#2563eb'
             }).then(() => {
