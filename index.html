@@ -338,7 +338,7 @@
     </button>
 </form>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzoOCvzMJZkRNkyOoHU6-whC7UNdxtRucTkm0ePKQrWrbme--JPJdgX4bzserCoUR11Yg/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbwEun6N53Iju9Y9BKhB4SnQzozRbuGc1LczfF7IMwKCaU5edVFXC0x0uPnIQyXel5rcpw/exec";
    
     let users = {}; // Now an empty object, will be filled from Sheet    
     let adminLocInterval = null; 
@@ -4857,15 +4857,14 @@ async function fetchStops(signal) {
     }
 }
 
-// Fetches the global registration status and updates the UI.
+// Fetches status from Google Sheet and displays actual connection diagnostics
 async function refreshRegButton(type) {
     const btnId = (type === 'student') ? 'btnToggleRegStudent' : 'btnToggleRegStaff';
     const btn = document.getElementById(btnId);
     if (!btn) return;
 
-    // 1. Immediately show an active checking state
-    btn.innerText = "🔄 Checking Status...";
-    btn.className = "bg-yellow-50 text-yellow-700 border border-yellow-300 px-4 py-2 rounded-xl text-sm font-bold shadow-sm animate-pulse";
+    btn.innerText = "🔄 Syncing with Google Sheet...";
+    btn.className = "bg-yellow-100 text-yellow-800 border border-yellow-300 px-4 py-2 rounded-xl text-sm font-bold shadow-sm animate-pulse";
 
     try {
         const res = await fetch(API_URL, {
@@ -4877,7 +4876,6 @@ async function refreshRegButton(type) {
             const isEnabled = res.data[type];
             btn.dataset.enabled = isEnabled ? "true" : "false";
             
-            // 2. Show actual status from the backend database
             if (isEnabled) {
                 btn.innerText = "🟢 Registration: Enabled";
                 btn.className = "bg-green-100 hover:bg-green-200 text-green-700 border border-green-300 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all";
@@ -4886,19 +4884,18 @@ async function refreshRegButton(type) {
                 btn.className = "bg-red-100 hover:bg-red-200 text-red-700 border border-red-300 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all";
             }
         } else {
-            throw new Error(res.message || "Invalid backend format");
+            throw new Error(res.message || "Invalid response");
         }
     } catch (e) {
-        console.error("Failed to sync registration status:", e);
-        
-        // 3. Fallback: Show a warnings status and allow local testing so the UI is never stuck
-        btn.innerText = "⚠️ Status Error (Default: Enabled)";
+        console.error("Status Sync Error:", e);
+        // Display diagnostic status directly on button instead of getting stuck
+        btn.innerText = "⚠️ Script Needs Deploy (Click to Bypass)";
         btn.className = "bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all";
         btn.dataset.enabled = "true"; 
     }
 }
 
-// Toggles the registration state with instantaneous feedback
+// Saves toggle updates to Google Sheet and reports API issues
 async function toggleReg(type) {
     const btnId = (type === 'student') ? 'btnToggleRegStudent' : 'btnToggleRegStaff';
     const btn = document.getElementById(btnId);
@@ -4907,8 +4904,7 @@ async function toggleReg(type) {
     const currentEnabled = btn.dataset.enabled === "true";
     const targetEnabled = !currentEnabled;
 
-    // Optimistic UI state update
-    btn.innerText = "⏳ Saving Changes...";
+    btn.innerText = "⏳ Saving to Sheet...";
     
     showLoad();
     try {
@@ -4920,35 +4916,32 @@ async function toggleReg(type) {
         hideLoad();
         if (res.success) {
             await refreshRegButton(type);
-            msg("Success", `Registration forms are now ${targetEnabled ? 'Enabled' : 'Disabled'}.`, "success");
+            msg("Saved", `Status updated in Settings sheet: ${targetEnabled ? 'ENABLED' : 'DISABLED'}`, "success");
         } else {
-            throw new Error(res.message || "Failed to save on server");
+            throw new Error(res.message || "Server rejected save");
         }
     } catch (e) {
         hideLoad();
         
-        // Fail-safe: Update the UI state locally so the admin can continue working
+        // Local state fallback
         btn.dataset.enabled = targetEnabled ? "true" : "false";
         if (targetEnabled) {
-            btn.innerText = "🟢 Registration: Enabled (Local Bypass)";
+            btn.innerText = "🟢 Enabled (Bypass Offline)";
             btn.className = "bg-green-100 hover:bg-green-200 text-green-700 border border-green-300 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all";
         } else {
-            btn.innerText = "🔴 Registration: Disabled (Local Bypass)";
+            btn.innerText = "🔴 Disabled (Bypass Offline)";
             btn.className = "bg-red-100 hover:bg-red-200 text-red-700 border border-red-300 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all";
         }
 
-        // Show a diagnostic alert explaining the issue
         Swal.fire({
-            title: 'Apps Script Outdated',
+            title: 'Action Required: Redeploy',
             html: `<div class="text-left text-sm text-gray-600">
-                    <p class="mb-2">Your frontend code could not connect to the newly added backend functions.</p>
-                    <p class="font-bold mb-1">To resolve this permanently:</p>
+                    <p class="mb-2">Your backend script is not responding to the new <b>getRegStatus</b> action.</p>
+                    <p class="font-bold mb-1">To fix this and activate the sync:</p>
                     <ol class="list-decimal pl-4 space-y-1">
-                        <li>Open your Google Apps Script editor.</li>
-                        <li>Click <b>Deploy > New Deployment</b>.</li>
-                        <li>Set configuration type to <b>Web app</b>.</li>
-                        <li>Change access to <b>Anyone</b>.</li>
-                        <li>Click <b>Deploy</b> and copy the new URL into <b>API_URL</b> inside your HTML.</li>
+                        <li>Go to Apps Script. Click <b>Save</b> (Floppy Disk).</li>
+                        <li>Click <b>Deploy > New Deployment</b> (Web app, Anyone).</li>
+                        <li>Click <b>Deploy</b>, copy the new URL, and update <b>API_URL</b> in your HTML code.</li>
                     </ol>
                    </div>`,
             icon: 'warning',
