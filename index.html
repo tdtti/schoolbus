@@ -277,131 +277,71 @@
             <div>
                 <!-- Update the middle section of your #selfRegForm to match this structure: -->
 
-<!-- STANDALONE SELF-REGISTRATION FORM -->
-<div id="selfRegisterSection" class="hidden min-h-screen flex items-center justify-center p-4 lg:p-8 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 z-10 relative">
-    
-    <!-- 1. FORM CARD -->
-    <div id="regFormCard" class="bg-white/95 backdrop-blur-2xl rounded-[2rem] shadow-xl w-full max-w-lg p-8 border border-white/20">
-        <div class="text-center mb-6">
-            <h2 id="regFormTitle" class="text-2xl font-black text-gray-800 tracking-tight">Self Registration Portal</h2>
-            <p class="text-xs font-bold text-blue-600 uppercase tracking-widest mt-1">Provide transport details</p>
-        </div>
+<!-- BUS GROUP (Added id="regBusGroup") -->
+<!-- Locate this element and update the select tag: -->
+<div id="regBusGroup">
+    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Select Bus</label>
+    <select id="regBus" required onchange="populatePredefinedStops(this.value)" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+        <option value="">Select Bus</option>
+        <option>KL32P4201SR</option>
+        <option>KL32M0528VM</option>
+        <option>KL32L2382K</option>
+        <option>KL07BU4184C</option>
+        <option>KL32L0827U</option>
+    </select>
+</div>
 
-        <form id="selfRegForm" onsubmit="submitSelfRegistration(event)" class="space-y-4 text-sm">
-            <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Full Name</label>
-                <input id="regName" required placeholder="Enter full name" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
-            </div>
+<!-- STOPS GROUP (Added id="regStopsGroup") -->
+<div id="regStopsGroup" class="grid grid-cols-2 gap-3">
+    <div>
+        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Entry Stop (Strict)</label>
+        <select id="regEntry" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="">Select Entry</option>
+        </select>
+    </div>
+    <!-- Locate this select tag inside your stops group and update it: -->
+<div>
+    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Exit Stop (Strict)</label>
+    <select id="regExit" required onchange="autoFillRegFee(this.value)" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+        <option value="">Select Exit</option>
+    </select>
+</div>
+</div>
 
-            <div id="regParentGroup">
-                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Parent Name</label>
-                <input id="regParent" placeholder="Enter Parent Name" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
-            </div>
+<!-- STATUS GROUP (Added id="regStatusGroup") -->
+<div id="regStatusGroup">
+    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Travel Time</label>
+    <select id="regStatus" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+        <option>Both Time</option>
+        <option>Morning Only</option>
+        <option>Evening Only</option>
+    </select>
+</div>
 
-            <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Phone Number</label>
-                <input id="regPhone" required type="tel" placeholder="10-digit mobile number" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
-            </div>
 
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">School</label>
-                    <select id="regSchool" required onchange="filterClasses(this.value, 'regClass')" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                        <option value="">Select School</option>
-                        <option value="TDEMNS-td1">TDEMNS-td1</option>
-                        <option value="GTDLPS-34318">GTDLPS-34318</option>
-                        <option value="TDTTI-34347">TDTTI-34347</option>
-                        <option value="TDHS-34028">TDHS-34028</option>
-                    </select>
-                </div>
-                <div id="regClassDivGroup">
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Class & Div</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <select id="regClass" class="p-3 border border-gray-200 rounded-xl bg-white outline-none">
-                            <option value="">Class</option>
-                        </select>
-                        <select id="regDiv" class="p-3 border border-gray-200 rounded-xl bg-white outline-none">
-                            <option value="">Div</option>
-                            <option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
 
-            <!-- BUS SELECTION GROUP -->
-            <div id="regBusGroup">
-                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Select Bus</label>
-                <select id="regBus" onchange="populatePredefinedStops(this.value)" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option value="">Select Bus</option>
-                    <option>KL32P4201SR</option>
-                    <option>KL32M0528VM</option>
-                    <option>KL32L2382K</option>
-                    <option>KL07BU4184C</option>
-                    <option>KL32L0827U</option>
-                </select>
-            </div>
+<!-- 1. STUDENT AUTO-CALCULATED FEE BOX (Visible for Students, Hidden for Staff) -->
+<div id="regFeeGroup" class="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex justify-between items-center mt-3">
+    <div>
+        <span class="block text-xs font-bold text-blue-500 uppercase tracking-wider">Estimated Monthly Fee</span>
+        <span class="text-[10px] text-gray-500">Calculated automatically based on Exit Stop</span>
+    </div>
+    <div class="text-right">
+        <span id="regFeeDisplay" class="text-2xl font-black text-blue-700">₹0</span>
+    </div>
+</div>
 
-            <!-- ENTRY/EXIT STOPS GROUP -->
-            <div id="regStopsGroup" class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Entry Stop (Strict)</label>
-                    <select id="regEntry" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                        <option value="">Select Entry</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Exit Stop (Strict)</label>
-                    <select id="regExit" onchange="autoFillRegFee(this.value)" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                        <option value="">Select Exit</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- TRAVEL TIME GROUP -->
-            <div id="regStatusGroup">
-                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Travel Time</label>
-                <select id="regStatus" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option>Both Time</option>
-                    <option>Morning Only</option>
-                    <option>Evening Only</option>
-                </select>
-            </div>
-
-            <!-- STUDENT AUTO-CALCULATED FEE BOX -->
-            <div id="regFeeGroup" class="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex justify-between items-center mt-3">
-                <div>
-                    <span class="block text-xs font-bold text-blue-500 uppercase tracking-wider">Estimated Monthly Fee</span>
-                    <span class="text-[10px] text-gray-500">Calculated automatically based on Exit Stop</span>
-                </div>
-                <div class="text-right">
-                    <span id="regFeeDisplay" class="text-2xl font-black text-blue-700">₹0</span>
-                </div>
-            </div>
-
-            <!-- STAFF MANUAL FEE INPUT BOX -->
-            <div id="regStaffFeeGroup" class="hidden mt-3">
-                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Decided Transport Fee (₹)</label>
-                <input type="number" id="regStaffFeeInput" placeholder="Enter decided fee amount (e.g. 1000)" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-700">
-            </div>
+<!-- 2. STAFF MANUAL FEE INPUT BOX (Visible for Staff, Hidden for Students) -->
+<div id="regStaffFeeGroup" class="hidden mt-3">
+    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Decided Transport Fee (₹)</label>
+    <input type="number" id="regStaffFeeInput" placeholder="Enter decided fee amount (e.g. 1000)" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-700">
+</div>
 
             <button type="submit" class="w-full mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-bold hover:shadow-lg transition-all">
                 Submit Registration
             </button>
         </form>
     </div>
-
-    <!-- 2. NETWORK ERROR PANEL (Hidden by Default) -->
-    <div id="regErrorCard" class="hidden bg-white/95 backdrop-blur-2xl rounded-[2rem] shadow-xl w-full max-w-md p-8 border border-white/20 text-center animate-fade-in">
-        <span class="text-5xl block mb-4">🌐</span>
-        <h3 class="text-xl font-black text-red-600 uppercase tracking-wide">Connection Too Slow</h3>
-        <p class="text-sm text-gray-500 mt-2 font-medium leading-relaxed">
-            The transport portal could not load within a safe timeout window. Please verify your internet connection or data speed and reload the page.
-        </p>
-        <button onclick="window.location.reload()" class="w-full mt-6 bg-slate-800 hover:bg-black text-white py-3.5 rounded-xl font-bold transition-all shadow">
-            Try Reconnecting
-        </button>
-    </div>
-
 </div>
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbxEWD4cGaFW1AIvFLPzlzmsnAara1GviOUrxpt1xTB5d10ZOX-Fu1w55ey-34u4MF8Eyg/exec";
@@ -441,8 +381,6 @@
     let allStops = [];     // Dynamic flat list format: "STOPNAME-BUSID"
     let stopsRawDB = [];   // Full database objects with fees
     
-    let currentRegCalculatedFee = 0; // Tracks the resolved registration fee globally
-    
     
     const showLoad = () => document.getElementById('loaderOverlay').style.display='flex';
     const hideLoad = () => document.getElementById('loaderOverlay').style.display='none';
@@ -472,52 +410,29 @@
     
     window.onload = async () => {
     showLoad();
+    await fetchStops(); // Sync stops and fees from Google Sheets first
+    await fetchUsers(); 
+    hideLoad();
 
-    // Setup an AbortController with a strict 4-second timeout for slow connections
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    resetTimer();
+    document.onmousemove = resetTimer; 
+    document.onkeypress = resetTimer;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const regType = urlParams.get('register');
+    
+    if (regType === 'student' || regType === 'staff') {
+        initializeRegistrationMode(regType);
+    } else {
+        const savedU = localStorage.getItem('keepUser'),
+              savedP = localStorage.getItem('keepPass');
 
-    try {
-        // Run database calls in parallel instead of one after the other
-        await Promise.all([
-            fetchStopsOptimized(controller.signal),
-            fetchUsersOptimized(controller.signal)
-        ]);
-
-        clearTimeout(timeoutId);
-        hideLoad();
-
-        resetTimer();
-        document.onmousemove = resetTimer; 
-        document.onkeypress = resetTimer;
-        
-        const urlParams = new URLSearchParams(window.location.search);
-        const regType = urlParams.get('register');
-        
-        if (regType === 'student' || regType === 'staff') {
-            initializeRegistrationMode(regType);
-        } else {
-            const savedU = localStorage.getItem('keepUser'),
-                  savedP = localStorage.getItem('keepPass');
-
-            if(savedU && savedP) {
-                document.getElementById('offUser').value = savedU;
-                document.getElementById('offPass').value = savedP;
-                document.getElementById('keepLogin').checked = true;
-                setTimeout(loginOfficial, 1500); 
-            }
+        if(savedU && savedP) {
+            document.getElementById('offUser').value = savedU;
+            document.getElementById('offPass').value = savedP;
+            document.getElementById('keepLogin').checked = true;
+            setTimeout(loginOfficial, 1500); 
         }
-    } catch (err) {
-        clearTimeout(timeoutId);
-        hideLoad();
-        
-        // Render network error fallback card and suppress page form load
-        document.getElementById('regFormCard').classList.add('hidden');
-        document.getElementById('loginSection').classList.add('hidden');
-        document.getElementById('selfRegisterSection').classList.remove('hidden');
-        document.getElementById('regErrorCard').classList.remove('hidden');
-        
-        console.warn("Network timeout triggered: data transfer speed too low.", err);
     }
 }
 
@@ -4565,19 +4480,19 @@ function initializeRegistrationMode(type) {
     if (type === 'staff') {
         regFormTitle.innerText = "Staff Registration Portal";
         
-        // Hide all student elements
+        // Hide all student-specific inputs
         classDivGroup.classList.add('hidden'); 
         parentGroup.classList.add('hidden'); 
         busGroup.classList.add('hidden');
         stopsGroup.classList.add('hidden');
         statusGroup.classList.add('hidden');
-        studentFeeGroup.classList.add('hidden');
+        studentFeeGroup.classList.add('hidden'); // Hide auto-calculated box
         
-        // Show Staff Manual Input field
+        // Show staff-specific manual fee input
         staffFeeGroup.classList.remove('hidden'); 
-        staffFeeInput.required = true; 
+        staffFeeInput.required = true; // Make manual fee input mandatory for staff
         
-        // Set requirements for staff elements
+        // Clear requirements for hidden fields
         document.getElementById('regBus').required = false;
         document.getElementById('regEntry').required = false;
         document.getElementById('regExit').required = false;
@@ -4586,20 +4501,20 @@ function initializeRegistrationMode(type) {
     } else {
         regFormTitle.innerText = "Student Registration Portal";
         
-        // Show Student Elements
+        // Show student inputs
         classDivGroup.classList.remove('hidden');
         parentGroup.classList.remove('hidden');
         busGroup.classList.remove('hidden');
         stopsGroup.classList.remove('hidden');
         statusGroup.classList.remove('hidden');
-        studentFeeGroup.classList.remove('hidden');
+        studentFeeGroup.classList.remove('hidden'); // Show auto-calculated box
         
-        // Hide Staff Manual Input field
+        // Hide staff manual fee input
         staffFeeGroup.classList.add('hidden');
         staffFeeInput.required = false;
         staffFeeInput.value = '';
         
-        // Set requirements for student elements
+        // Re-enforce requirements for student fields
         document.getElementById('regBus').required = true;
         document.getElementById('regEntry').required = true;
         document.getElementById('regExit').required = true;
@@ -4607,6 +4522,52 @@ function initializeRegistrationMode(type) {
     }
 }
 
+// Strictly populates select elements with values matching the predefined array
+function populatePredefinedStops(busId) {
+    const entrySelect = document.getElementById('regEntry');
+    const exitSelect = document.getElementById('regExit');
+    
+    if (!entrySelect || !exitSelect) {
+        console.error("Entry or Exit select elements not found.");
+        return;
+    }
+    
+    // Reset dropdowns to default state
+    entrySelect.innerHTML = '<option value="">Select Entry</option>';
+    exitSelect.innerHTML = '<option value="">Select Exit</option>';
+    
+    if (!busId) return;
+
+    // Failsafe check to ensure the master stop list exists
+    if (typeof allStops === 'undefined' || !Array.isArray(allStops)) {
+        console.error("The 'allStops' array is missing or inaccessible.");
+        return;
+    }
+
+    // Filter stops that contain the selected Bus ID
+    const filteredStops = allStops.filter(function(stop) {
+        return stop && stop.indexOf(busId) !== -1;
+    });
+
+    // Populate the dropdowns dynamically
+    filteredStops.forEach(function(stop) {
+        // Safely extract the clean stop name before the hyphen (e.g. "ADUVA" from "ADUVA-KL07BU4184C")
+        const cleanName = stop.split('-')[0]; 
+        
+        const optEntry = document.createElement('option');
+        optEntry.value = stop;
+        optEntry.text = cleanName;
+        
+        const optExit = document.createElement('option');
+        optExit.value = stop;
+        optExit.text = cleanName;
+        
+        entrySelect.appendChild(optEntry);
+        exitSelect.appendChild(optExit);
+    });
+}
+
+// Handles form submission with API dispatching and dynamic validation
 async function submitSelfRegistration(e) {
     e.preventDefault();
     
@@ -4614,10 +4575,11 @@ async function submitSelfRegistration(e) {
     const regType = urlParams.get('register');
     const isStaff = (regType === 'staff');
 
-    // Fetch fee value: manual staff input or dynamic student calculations
+    // 1. Resolve final fee dynamically: read staff input or student resolved stop fee
     const staffManualFee = parseFloat(document.getElementById('regStaffFeeInput').value) || 0;
-    const finalFeeValue = isStaff ? staffManualFee : currentRegCalculatedFee;
+    const resolvedFinalFee = isStaff ? staffManualFee : currentRegCalculatedFee;
 
+    // 2. Assemble the payload
     const payload = {
         BusId: isStaff ? '-' : document.getElementById('regBus').value,
         School: document.getElementById('regSchool').value,
@@ -4629,7 +4591,7 @@ async function submitSelfRegistration(e) {
         Entry: isStaff ? '-' : document.getElementById('regEntry').value,
         Exit: isStaff ? '-' : document.getElementById('regExit').value,
         Status: isStaff ? '-' : document.getElementById('regStatus').value,
-        Fee: finalFeeValue // This maps values to the "Students" spreadsheet
+        Fee: resolvedFinalFee // This saves the correct value to the "Students" sheet
     };
 
     showLoad();
@@ -4643,7 +4605,7 @@ async function submitSelfRegistration(e) {
         if (response.success) {
             Swal.fire({
                 title: 'Success!',
-                text: 'Registration completed successfully.',
+                text: 'Registration details logged successfully.',
                 icon: 'success',
                 confirmButtonColor: '#2563eb'
             }).then(() => {
@@ -4814,8 +4776,17 @@ async function deleteStopField(rIdx) {
     hideLoad();
 }
 
-
-
+// Resolves the correct fee from stops database using "STOPNAME-BUSID" string
+function getPredefinedFee(fullStopString) {
+    if (!fullStopString || typeof stopsRawDB === 'undefined') return 0;
+    
+    const parts = fullStopString.split('-');
+    const stopName = parts[0];
+    const busId = parts[1];
+    
+    const match = stopsRawDB.find(s => s.StopName === stopName && s.BusId === busId);
+    return match ? parseFloat(match.Fee) || 0 : 0;
+}
 
 function autoFillFee(stopValue, targetInputId) {
     const feeInput = document.getElementById(targetInputId);
@@ -4824,88 +4795,18 @@ function autoFillFee(stopValue, targetInputId) {
     }
 }
 
-
-
-
-
-async function fetchStopsOptimized(signal) {
-    const res = await fetch(API_URL, {
-        method: 'POST', 
-        body: JSON.stringify({ action: "getStops" }),
-        signal: signal
-    }).then(x => x.json());
-    
-    if (res.success && res.data) {
-        stopsRawDB = res.data;
-        allStops = res.data.map(item => `${item.StopName}-${item.BusId}`);
-    }
-}
-
-async function fetchUsersOptimized(signal) {
-    const res = await fetch(API_URL, {
-        method: 'POST', 
-        body: JSON.stringify({ action: "getUsers" }),
-        signal: signal
-    }).then(x => x.json());
-    
-    if (res.success && res.data) {
-        users = res.data;
-    }
-}
-
-// Resolves preconfigured stop list inside the client dropdown on Bus change
-function populatePredefinedStops(busId) {
-    const entrySelect = document.getElementById('regEntry');
-    const exitSelect = document.getElementById('regExit');
-    
-    if (!entrySelect || !exitSelect) return;
-    
-    entrySelect.innerHTML = '<option value="">Select Entry</option>';
-    exitSelect.innerHTML = '<option value="">Select Exit</option>';
-    
-    if (!busId) return;
-
-    if (typeof allStops === 'undefined' || !Array.isArray(allStops)) return;
-
-    const filteredStops = allStops.filter(function(stop) {
-        return stop && stop.indexOf(busId) !== -1;
-    });
-
-    filteredStops.forEach(function(stop) {
-        const cleanName = stop.split('-')[0]; 
-        
-        const optEntry = document.createElement('option');
-        optEntry.value = stop;
-        optEntry.text = cleanName;
-        
-        const optExit = document.createElement('option');
-        optExit.value = stop;
-        optExit.text = cleanName;
-        
-        entrySelect.appendChild(optEntry);
-        exitSelect.appendChild(optExit);
-    });
-}
-
-
+let currentRegCalculatedFee = 0; // Tracks the resolved registration fee globally
 
 function autoFillRegFee(stopValue) {
+    // Resolve the fee amount matching this stop
     currentRegCalculatedFee = getPredefinedFee(stopValue);
+    
+    // Update the visual card elements
     const displayEl = document.getElementById('regFeeDisplay');
     if (displayEl) {
         displayEl.innerText = "₹" + currentRegCalculatedFee;
     }
 }
-
-function getPredefinedFee(fullStopString) {
-    if (!fullStopString || typeof stopsRawDB === 'undefined') return 0;
-    const parts = fullStopString.split('-');
-    const stopName = parts[0];
-    const busId = parts[1];
-    const match = stopsRawDB.find(s => s.StopName === stopName && s.BusId === busId);
-    return match ? parseFloat(match.Fee) || 0 : 0;
-}
-
 </script>
 </body>
 </html>
