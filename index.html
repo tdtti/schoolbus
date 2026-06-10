@@ -240,7 +240,7 @@
             </div>
 
             <div id="regParentGroup">
-                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Parent Name / PEN No</label>
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Parent Name</label>
                 <input id="regParent" placeholder="Enter Parent Name or Employee Code" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
 
@@ -278,9 +278,10 @@
                 <!-- Update the middle section of your #selfRegForm to match this structure: -->
 
 <!-- BUS GROUP (Added id="regBusGroup") -->
+<!-- Locate this element and update the select tag: -->
 <div id="regBusGroup">
     <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Select Bus</label>
-    <select id="regBus" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+    <select id="regBus" required onchange="populatePredefinedStops(this.value)" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
         <option value="">Select Bus</option>
         <option>KL32P4201SR</option>
         <option>KL32M0528VM</option>
@@ -298,14 +299,13 @@
             <option value="">Select Entry</option>
         </select>
     </div>
-    <div>
-        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Exit Stop (Strict)</label>
-        <select id="regExit" required onchange="autoFillRegFee(this.value)" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+    <!-- Locate this select tag inside your stops group and update it: -->
+<div>
+    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Exit Stop (Strict)</label>
+    <select id="regExit" required onchange="autoFillRegFee(this.value)" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
         <option value="">Select Exit</option>
-        </select>
-        <!-- Tiny indicator underneath -->
-        <p id="regFeePreview" class="text-xs text-green-600 font-bold mt-1"></p>
-    </div>
+    </select>
+</div>
 </div>
 
 <!-- STATUS GROUP (Added id="regStatusGroup") -->
@@ -316,6 +316,17 @@
         <option>Morning Only</option>
         <option>Evening Only</option>
     </select>
+</div>
+
+<!-- Add this directly below the Travel Time div group: -->
+<div id="regFeeGroup" class="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex justify-between items-center mt-3">
+    <div>
+        <span class="block text-xs font-bold text-blue-500 uppercase tracking-wider">Estimated Monthly Fee</span>
+        <span class="text-[10px] text-gray-500">Calculated automatically based on Exit Stop</span>
+    </div>
+    <div class="text-right">
+        <span id="regFeeDisplay" class="text-2xl font-black text-blue-700">₹0</span>
+    </div>
 </div>
 
             <button type="submit" class="w-full mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-bold hover:shadow-lg transition-all">
@@ -971,7 +982,7 @@ function downloadStudentPDF() {
                 
                 <select id="f4" required class="p-2 border rounded"><option value="">Div</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>STAFF</option></select>
                 <input id="f5" required placeholder="Student Name" class="p-2 border rounded md:col-span-2">
-                <input id="f6" required placeholder="Parent Name/PEN" class="p-2 border rounded">
+                <input id="f6" required placeholder="Parent Name" class="p-2 border rounded">
                 <input id="f7" required placeholder="Phone" class="p-2 border rounded">
                 
                 <input list="entryStops" id="f8" placeholder="Entry Stop" class="p-2 border rounded">
@@ -4539,7 +4550,7 @@ async function submitSelfRegistration(e) {
     const regType = urlParams.get('register');
     const isStaff = (regType === 'staff');
 
-    // If staff, we hardcode '-' for the hidden fields. Otherwise, read the inputs.
+    // Assemble the clean registration dataset
     const payload = {
         BusId: isStaff ? '-' : document.getElementById('regBus').value,
         School: document.getElementById('regSchool').value,
@@ -4551,7 +4562,7 @@ async function submitSelfRegistration(e) {
         Entry: isStaff ? '-' : document.getElementById('regEntry').value,
         Exit: isStaff ? '-' : document.getElementById('regExit').value,
         Status: isStaff ? '-' : document.getElementById('regStatus').value,
-        Fee: isStaff ? 0 : currentRegCalculatedFee // Assign calculated fee to database
+        Fee: isStaff ? 0 : currentRegCalculatedFee // Captures the exact fee populated from your sheet
     };
 
     showLoad();
@@ -4755,13 +4766,16 @@ function autoFillFee(stopValue, targetInputId) {
     }
 }
 
-let currentRegCalculatedFee = 0;
+let currentRegCalculatedFee = 0; // Tracks the resolved registration fee globally
 
 function autoFillRegFee(stopValue) {
+    // Resolve the fee amount matching this stop
     currentRegCalculatedFee = getPredefinedFee(stopValue);
-    const indicator = document.getElementById('regFeePreview');
-    if (indicator) {
-        indicator.innerText = currentRegCalculatedFee > 0 ? `Calculated Bus Fee: ₹${currentRegCalculatedFee}` : '';
+    
+    // Update the visual card elements
+    const displayEl = document.getElementById('regFeeDisplay');
+    if (displayEl) {
+        displayEl.innerText = "₹" + currentRegCalculatedFee;
     }
 }
 </script>
