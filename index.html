@@ -225,7 +225,97 @@
         <div id="tabs" class="flex flex-wrap gap-2 mb-4 border-b pb-2"></div>
         <div id="tabContent" class="bg-white p-4 rounded-lg shadow min-h-[60vh]"></div>
     </div>
+<!-- STANDALONE SELF-REGISTRATION FORM -->
+<div id="selfRegisterSection" class="hidden min-h-screen flex items-center justify-center p-4 lg:p-8 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 z-10 relative">
+    <div class="bg-white/95 backdrop-blur-2xl rounded-[2rem] shadow-xl w-full max-w-lg p-8 border border-white/20">
+        <div class="text-center mb-6">
+            <h2 id="regFormTitle" class="text-2xl font-black text-gray-800 tracking-tight">Self Registration Portal</h2>
+            <p class="text-xs font-bold text-blue-600 uppercase tracking-widest mt-1">Provide transport details</p>
+        </div>
 
+        <form id="selfRegForm" onsubmit="submitSelfRegistration(event)" class="space-y-4 text-sm">
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Full Name</label>
+                <input id="regName" required placeholder="Enter full name" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+
+            <div id="regParentGroup">
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Parent Name / PEN No</label>
+                <input id="regParent" placeholder="Enter Parent Name or Employee Code" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Phone Number</label>
+                <input id="regPhone" required type="tel" placeholder="10-digit mobile number" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">School</label>
+                    <select id="regSchool" required onchange="filterClasses(this.value, 'regClass')" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="">Select School</option>
+                        <option value="TDEMNS-td1">TDEMNS-td1</option>
+                        <option value="GTDLPS-34318">GTDLPS-34318</option>
+                        <option value="TDTTI-34347">TDTTI-34347</option>
+                        <option value="TDHS-34028">TDHS-34028</option>
+                    </select>
+                </div>
+                <div id="regClassDivGroup">
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Class & Div</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <select id="regClass" class="p-3 border border-gray-200 rounded-xl bg-white outline-none">
+                            <option value="">Class</option>
+                        </select>
+                        <select id="regDiv" class="p-3 border border-gray-200 rounded-xl bg-white outline-none">
+                            <option value="">Div</option>
+                            <option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Select Bus</label>
+                <select id="regBus" required onchange="populatePredefinedStops(this.value)" class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="">Select Bus</option>
+                    <option>KL32P4201SR</option>
+                    <option>KL32M0528VM</option>
+                    <option>KL32L2382K</option>
+                    <option>KL07BU4184C</option>
+                    <option>KL32L0827U</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Entry Stop (Strict)</label>
+                    <select id="regEntry" required class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="">Select Entry</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Exit Stop (Strict)</label>
+                    <select id="regExit" required class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="">Select Exit</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Travel Time</label>
+                <select id="regStatus" required class="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option>Both Time</option>
+                    <option>Morning Only</option>
+                    <option>Evening Only</option>
+                </select>
+            </div>
+
+            <button type="submit" class="w-full mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-bold hover:shadow-lg transition-all">
+                Submit Registration
+            </button>
+        </form>
+    </div>
+</div>
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbxKhMNPqxHTcQtOtb2Q2JPCwaUU9rFpYske9AzZsw4ZRZEiJm0U2OOqkHhvy5mM3onl5g/exec";
    
@@ -291,20 +381,27 @@
     
     
     window.onload = () => {
-    fetchUsers(); // Start loading users as soon as the page opens
+    fetchUsers(); 
     resetTimer();
     document.onmousemove = resetTimer; 
     document.onkeypress = resetTimer;
     
-    const savedU = localStorage.getItem('keepUser'),
-          savedP = localStorage.getItem('keepPass');
+    // Check for parameter mode
+    const urlParams = new URLSearchParams(window.location.search);
+    const regType = urlParams.get('register');
+    
+    if (regType === 'student' || regType === 'staff') {
+        initializeRegistrationMode(regType);
+    } else {
+        const savedU = localStorage.getItem('keepUser'),
+              savedP = localStorage.getItem('keepPass');
 
-    if(savedU && savedP) {
-        document.getElementById('offUser').value = savedU;
-        document.getElementById('offPass').value = savedP;
-        document.getElementById('keepLogin').checked = true;
-        // Small delay to ensure fetchUsers finishes before auto-login
-        setTimeout(loginOfficial, 1500); 
+        if(savedU && savedP) {
+            document.getElementById('offUser').value = savedU;
+            document.getElementById('offPass').value = savedP;
+            document.getElementById('keepLogin').checked = true;
+            setTimeout(loginOfficial, 1500); 
+        }
     }
 }
 
@@ -815,14 +912,17 @@ function downloadStudentPDF() {
 
         c.innerHTML = `
             <h2 class="text-2xl font-bold mb-4">Manage Students</h2>
+            <button type="button" onclick="generateWhatsAppShare('student')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md">
+    📢 Share Student Reg Link (WhatsApp)
+</button> <br><br><br>
             <form id="sForm" onsubmit="saveS(event)" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 bg-gray-50 p-4 rounded border text-sm">
                 <select id="f1" onchange="filterStops(this.value)" required class="p-2 border rounded">
                     <option value="">Bus</option>
-                    <option>KL32P4201SR</option>
-                    <option>KL32M0528VM</option>
-                    <option>KL32L2382K</option>
-                    <option>KL07BU4184C</option>
-                    <option>KL32L0827U</option>
+                    <option>KL32P4201SAJI-REVATHI</option>
+                    <option>KL32M0528VENU-RAJI</option>
+                    <option>KL32L2382KUNJUMON</option>
+                    <option>KL07BU4184CHADRAN</option>
+                    <option>KL32L0827UMESH</option>
                     <option>STAFF</option>
                 </select>
                 
@@ -3244,6 +3344,9 @@ async function clearAllLogsUI() {
 
         c.innerHTML = `
             <h2 class="text-2xl font-bold mb-4">Manage Staff</h2>
+            <button type="button" onclick="generateWhatsAppShare('staff')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md">
+    📢 Share Staff Reg Link (WhatsApp)
+</button><br><br><br>
             <form id="staffForm" onsubmit="saveStaff(event)" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 bg-gray-50 p-4 rounded border text-sm">
                 <select id="sf1" onchange="filterStops(this.value)" required class="p-2 border rounded">
                     <option value="">Bus</option>
@@ -4330,8 +4433,110 @@ function formatMyDate(dateStr) {
     }
 }
 
+// Switches UI layout specifically for direct registration access
+function initializeRegistrationMode(type) {
+    document.getElementById('loginSection').classList.add('hidden');
+    document.getElementById('selfRegisterSection').classList.remove('hidden');
+    
+    const regFormTitle = document.getElementById('regFormTitle');
+    const classDivGroup = document.getElementById('regClassDivGroup');
+    const parentGroup = document.getElementById('regParentGroup');
 
+    if (type === 'staff') {
+        regFormTitle.innerText = "Staff Registration Portal";
+        classDivGroup.classList.add('hidden'); // Staff do not need Class/Div input fields
+        parentGroup.classList.add('hidden'); // Designation optional/ignored
+        document.getElementById('regClass').required = false;
+        document.getElementById('regSchool').value = "TDEMNS-td1"; // Arbitrary placeholder school
+    } else {
+        regFormTitle.innerText = "Student Registration Portal";
+        classDivGroup.classList.remove('hidden');
+        parentGroup.classList.remove('hidden');
+        document.getElementById('regClass').required = true;
+    }
+}
 
+// Strictly populates select elements with values matching the predefined array
+function populatePredefinedStops(busId) {
+    const entrySelect = document.getElementById('regEntry');
+    const exitSelect = document.getElementById('regExit');
+    
+    entrySelect.innerHTML = '<option value="">Select Entry</option>';
+    exitSelect.innerHTML = '<option value="">Select Exit</option>';
+    
+    if (!busId) return;
+
+    // Filters exclusively from your defined 'allStops' global array
+    const filteredStops = allStops.filter(s => s.includes(busId));
+
+    filteredStops.forEach(stop => {
+        const optEntry = document.createElement('option');
+        optEntry.value = stop;
+        optEntry.innerText = stop.replace(`-${busId}`, '');
+        
+        const optExit = optEntry.cloneNode(true);
+        
+        entrySelect.appendChild(optEntry);
+        exitSelect.appendChild(optExit);
+    });
+}
+
+// Handles form submission with API dispatching and dynamic validation
+async function submitSelfRegistration(e) {
+    e.preventDefault();
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const regType = urlParams.get('register');
+
+    const payload = {
+        BusId: document.getElementById('regBus').value,
+        School: document.getElementById('regSchool').value,
+        Class: regType === 'staff' ? 'STAFF' : document.getElementById('regClass').value,
+        Div: regType === 'staff' ? '-' : document.getElementById('regDiv').value,
+        StudentName: document.getElementById('regName').value.trim(),
+        ParentName: regType === 'staff' ? '' : document.getElementById('regParent').value.trim(),
+        Phone: document.getElementById('regPhone').value.trim(),
+        Entry: document.getElementById('regEntry').value,
+        Exit: document.getElementById('regExit').value,
+        Status: document.getElementById('regStatus').value
+    };
+
+    showLoad();
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "registerSelf", data: payload })
+        }).then(res => res.json());
+
+        hideLoad();
+        if (response.success) {
+            Swal.fire({
+                title: 'Success!',
+                text: 'Your transport details have been registered.',
+                icon: 'success',
+                confirmButtonColor: '#2563eb'
+            }).then(() => {
+                // Clear query params and return home
+                window.location.href = window.location.origin + window.location.pathname;
+            });
+        } else {
+            msg("Duplicate Entry Found", response.message || "Failed to complete registration.", "error");
+        }
+    } catch (err) {
+        hideLoad();
+        msg("Connection Fail", "Could not reach registry server. Try again.", "error");
+    }
+}
+function generateWhatsAppShare(type) {
+    // Dynamically resolves current web app hosting url
+    const baseUrl = window.location.href.split('?')[0];
+    const registrationUrl = `${baseUrl}?register=${type}`;
+    
+    const message = `Hello! Please click the link below to submit your school transport details directly to the portal:\n\n🔗 ${registrationUrl}\n\nNote: Only one registration is allowed per phone number. Please choose your stops carefully from the dropdown menu options.`;
+    
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, '_blank');
+}
 
 </script>
 </body>
