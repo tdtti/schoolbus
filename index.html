@@ -396,16 +396,15 @@
 
     showLoad();
 
-    // 1. Set up a 4-second network timeout for slow connections
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000); 
+    // OPTIMIZATION: Increased timeout to 12 seconds to safely allow for Google cold starts
+    const timeoutId = setTimeout(() => controller.abort(), 12000); 
 
     try {
-        // 2. Fetch the predefined stops with the timeout controller attached
         await fetchStops(controller.signal);
         clearTimeout(timeoutId);
 
-        // 3. SPEED OPTIMIZATION: Only fetch users if NOT in public registration mode
+        // Skip fetching users if in public registration mode to save bandwidth/speed
         if (!isPublicRegistration) {
             await fetchUsers(); 
         }
@@ -421,15 +420,31 @@
         clearTimeout(timeoutId);
         hideLoad();
         
-        // 4. Low Data Speed handling: Prevent broken page rendering, show diagnostic overlay
-        document.body.innerHTML = `
-            <div class="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-6 text-center">
-                <span class="text-5xl mb-4">📶</span>
-                <h2 class="text-xl font-bold mb-2">Weak Connection Detected</h2>
-                <p class="text-sm text-slate-400 max-w-md">Your internet connection is too slow to retrieve the transport database safely. Please move to a stronger coverage area and try again.</p>
-                <button onclick="window.location.reload()" class="mt-6 bg-blue-600 hover:bg-blue-700 px-6 py-2.5 rounded-xl font-bold text-sm transition">Retry Loading</button>
-            </div>
-        `;
+        // Check if the error is a genuine timeout abort
+        if (error.name === 'AbortError') {
+            document.body.innerHTML = `
+                <div class="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-6 text-center">
+                    <span class="text-5xl mb-4">📶</span>
+                    <h2 class="text-xl font-bold mb-2">Weak Connection Detected</h2>
+                    <p class="text-sm text-slate-400 max-w-md">Your internet connection is too slow to retrieve the transport database safely. Please move to a stronger coverage area and try again.</p>
+                    <button onclick="window.location.reload()" class="mt-6 bg-blue-600 hover:bg-blue-700 px-6 py-2.5 rounded-xl font-bold text-sm transition">Retry Loading</button>
+                </div>
+            `;
+        } else {
+            // Diagnostic screen: Shows you the EXACT script or API error that is failing
+            console.error("System Initialization Failure:", error);
+            document.body.innerHTML = `
+                <div class="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-gray-800 p-6 text-center">
+                    <span class="text-5xl mb-4">⚠️</span>
+                    <h2 class="text-xl font-bold text-red-600 mb-2">System Configuration Error</h2>
+                    <p class="text-sm text-gray-600 max-w-lg mb-4">The application failed to load due to a system configuration error. This is usually caused by an incorrect Web App URL, missing database sheet, or incorrect deployment settings.</p>
+                    <div class="bg-gray-200 text-left font-mono text-xs p-4 rounded-xl border border-gray-300 max-w-lg overflow-x-auto w-full mb-4">
+                        <strong>Details:</strong> ${error.message || error.toString()}
+                    </div>
+                    <button onclick="window.location.reload()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition">Retry Loading</button>
+                </div>
+            `;
+        }
     }
 };
 
