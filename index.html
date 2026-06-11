@@ -789,16 +789,28 @@ function cleanupLogoutUI() {
         if(id === 13) renderTab13(c);
     }
 
-    // --- Filters ---
-    function getFilteredDB() {
-        return db.filter(s => {
-            if(curUser.role==="Admin") return true;
-            if(curUser.role==="School") return s.School === curUser.tSchool;
-            if(curUser.role==="Teacher") return s.Class === curUser.tClass && s.Div === curUser.tDiv;
-            if(curUser.role==="Bus") return s.BusId === curUser.filter;
-            return false;
-        });
-    }
+    // Handles user filtering correctly by resolving case-sensitive parameters safely
+function getFilteredDB() {
+    return db.filter(s => {
+        if(curUser.role==="Admin") return true;
+        
+        if(curUser.role==="School") {
+            // Safe fallback check for case-mismatches (tschool vs tSchool)
+            const schoolCode = curUser.tschool || curUser.tSchool;
+            return s.School === schoolCode;
+        }
+        
+        if(curUser.role==="Teacher") {
+            // Safe fallback checks for case-mismatches
+            const targetClass = curUser.tclass || curUser.tClass;
+            const targetDiv = curUser.tdiv || curUser.tDiv;
+            return s.Class === targetClass && s.Div === targetDiv;
+        }
+        
+        if(curUser.role==="Bus") return s.BusId === curUser.filter;
+        return false;
+    });
+}
 
     // --- Student Dashboard (Login 1) ---
     function renderStudentDash(c) {
@@ -992,33 +1004,36 @@ function downloadStudentPDF() {
   
     // --- Tab 1: Students Record ---
     function renderTab1(c) {
-        // 1. Get filtered data and apply initial Alphabetical Sorting by StudentName
-        currentTab1DB = getFilteredDB();
-        currentTab1DB.sort((a, b) => String(a.StudentName).toLowerCase().localeCompare(String(b.StudentName).toLowerCase()));
-        
-        // Reset sort trackers
-        tab1SortCol = 'StudentName';
-        tab1SortAsc = true;
+    // 1. Get filtered data and apply initial Alphabetical Sorting
+    currentTab1DB = getFilteredDB();
+    currentTab1DB.sort((a, b) => String(a.StudentName).toLowerCase().localeCompare(String(b.StudentName).toLowerCase()));
+    
+    // Reset sort trackers (remains identical...)
+    tab1SortCol = 'StudentName';
+    tab1SortAsc = true;
 
-        c.innerHTML = `
-            <h2 class="text-2xl font-bold mb-4">Manage Students</h2>
-            <div class="flex flex-wrap items-center gap-4 mb-4 bg-gray-50 p-3 rounded-2xl border border-gray-200 shadow-sm">
-    <!-- Share Button -->
-    <button type="button" onclick="generateWhatsAppShare('student')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-colors">
-        📢 Share Student Reg Link
-    </button>
-    
-    <!-- Present Status Indicator -->
-    <div class="flex items-center gap-2 border-l border-gray-300 pl-4">
-        <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Status:</span>
-        <span id="txtRegStatusStudent" class="px-3 py-1.5 rounded-xl text-xs font-black uppercase bg-yellow-100 text-yellow-800 animate-pulse">Checking...</span>
-    </div>
-    
-    <!-- Action Button -->
-    <button id="btnToggleRegStudent" onclick="toggleReg('student')" class="px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed" disabled>
-        Please wait...
-    </button>
-</div><br><br><br>
+    // Conditionally render Registration controls ONLY for Admin role
+    let regControlsHtml = '';
+    if (curUser && curUser.role === "Admin") {
+        regControlsHtml = `
+        <div class="flex flex-wrap items-center gap-4 mb-4 bg-gray-50 p-3 rounded-2xl border border-gray-200 shadow-sm">
+            <button type="button" onclick="generateWhatsAppShare('student')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-colors">
+                📢 Share Student Reg Link
+            </button>
+            <div class="flex items-center gap-2 border-l border-gray-300 pl-4">
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Status:</span>
+                <span id="txtRegStatusStudent" class="px-3 py-1.5 rounded-xl text-xs font-black uppercase bg-yellow-100 text-yellow-800 animate-pulse">Checking...</span>
+            </div>
+            <button id="btnToggleRegStudent" onclick="toggleReg('student')" class="px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed" disabled>
+                Please wait...
+            </button>
+        </div>`;
+    }
+
+    c.innerHTML = `
+        <h2 class="text-2xl font-bold mb-4">Manage Students</h2>
+        <!-- Insert Admin Registration Controls if applicable -->
+        ${regControlsHtml}
             <form id="sForm" onsubmit="saveS(event)" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 bg-gray-50 p-4 rounded border text-sm">
                 <select id="f1" onchange="filterStops(this.value)" required class="p-2 border rounded">
                     <option value="">Bus</option>
@@ -1086,10 +1101,46 @@ function downloadStudentPDF() {
             <div id="studentProfileCard" class="hidden mt-8"></div>
         `;
         
-        filterStops('');
-        filterClasses('');
-        refreshRegButton('student'); // Calls status immediately upon loading Tab 1
+        // Run default dropdown populations
+    filterStops('');
+    filterClasses('');
+    
+    // --- ADD THE LOCKING LOGIC HERE ---
+    const uSchool = getUserSchool();
+    const uClass = curUser.tclass || curUser.tClass;
+    const uDiv = curUser.tdiv || curUser.tDiv;
+
+    if (curUser.role === "School") {
+        const f2 = document.getElementById('f2'); // School Dropdown
+        if (f2) {
+            f2.value = uSchool;
+            f2.disabled = true;
+            filterClasses(uSchool, 'f3'); // Auto-load only this school's classes
+        }
+    } 
+    else if (curUser.role === "Teacher") {
+        const f2 = document.getElementById('f2'); // School Dropdown
+        const f3 = document.getElementById('f3'); // Class Dropdown
+        const f4 = document.getElementById('f4'); // Division Dropdown
+        
+        if (f2 && f3 && f4) {
+            f2.value = uSchool;
+            f2.disabled = true;
+            
+            filterClasses(uSchool, 'f3'); // Load school classes first
+            f3.value = uClass;
+            f3.disabled = true;
+            
+            f4.value = uDiv;
+            f4.disabled = true;
+        }
     }
+    
+    // Fetch status check for Admin only
+    if (curUser && curUser.role === "Admin") {
+        refreshRegButton('student');
+    }
+}
 
     // Generates the table HTML dynamically
     function generateTab1Rows(data) {
@@ -3416,12 +3467,12 @@ async function clearAllLogsUI() {
     
 // --- Tab 7: Staff Records ---
     function renderTab7(c) {
-        // Filter ONLY staff members
-        currentTab7DB = getFilteredDB().filter(s => s.Class === 'STAFF');
-        currentTab7DB.sort((a, b) => String(a.StudentName).toLowerCase().localeCompare(String(b.StudentName).toLowerCase()));
-        
-        tab7SortCol = 'StudentName';
-        tab7SortAsc = true;
+    // Filter ONLY staff members (remains identical...)
+    currentTab7DB = getFilteredDB().filter(s => s.Class === 'STAFF');
+    currentTab7DB.sort((a, b) => String(a.StudentName).toLowerCase().localeCompare(String(b.StudentName).toLowerCase()));
+    
+    tab7SortCol = 'StudentName';
+    tab7SortAsc = true;
 
         c.innerHTML = `
             <h2 class="text-2xl font-bold mb-4">Manage Staff</h2>
@@ -3500,9 +3551,20 @@ async function clearAllLogsUI() {
         `;
         
         filterStops('');
-        refreshRegButton('staff'); // Calls status immediately upon loading Tab 7
+    
+    // --- ADD THE LOCKING LOGIC HERE ---
+    if (curUser.role === "School" || curUser.role === "Teacher") {
+        const sf2 = document.getElementById('sf2'); // Staff School Dropdown
+        if (sf2) {
+            sf2.value = getUserSchool();
+            sf2.disabled = true;
+        }
     }
 
+    if (curUser && curUser.role === "Admin") {
+        refreshRegButton('staff');
+    }
+}
     function generateTab7Rows(data) {
         if (!data || data.length === 0) return '<tr><td colspan="5" class="p-6 text-center text-gray-400 italic">No staff records found.</td></tr>';
         
@@ -4230,14 +4292,18 @@ function renderTab11(c) {
 
     // Teacher & School Restricted Initialization
     if(curUser.role === "School") {
-        document.getElementById('pSch').value = curUser.tSchool;
+        const uSchool = curUser.tschool || curUser.tSchool;
+        document.getElementById('pSch').value = uSchool;
         document.getElementById('pSch').disabled = true;
-        filterClasses(curUser.tSchool, 'pCls');
+        filterClasses(uSchool, 'pCls');
     } 
     else if(curUser.role === "Teacher") {
+        const uClass = curUser.tclass || curUser.tClass;
+        const uDiv = curUser.tdiv || curUser.tDiv;
+        
         // Find matching school by checking the class suffix (e.g., 34347)
         const schoolOptions = ["TDEMNS-td1", "GTDLPS-34318", "TDTTI-34347", "TDHS-34028"];
-        const mySchool = schoolOptions.find(s => curUser.tClass.includes(s.split('-')[1]));
+        const mySchool = schoolOptions.find(s => uClass.includes(s.split('-')[1]));
         
         const schD = document.getElementById('pSch');
         const clsD = document.getElementById('pCls');
@@ -4248,8 +4314,8 @@ function renderTab11(c) {
             filterClasses(mySchool, 'pCls');
         }
         
-        clsD.value = curUser.tClass;
-        divD.value = curUser.tDiv;
+        clsD.value = uClass;
+        divD.value = uDiv;
 
         // Lock fields for teachers
         schD.disabled = true;
@@ -4284,15 +4350,17 @@ async function fetchPending() {
 
         // 2. Role Based Access
         if (curUser.role === "Teacher") {
-            // Teacher must match EXACT Class AND Division
-            return String(s.Class) === String(curUser.tClass) && String(s.Div) === String(curUser.tDiv);
+            const uClass = curUser.tclass || curUser.tClass;
+            const uDiv = curUser.tdiv || curUser.tDiv;
+            return String(s.Class) === String(uClass) && String(s.Div) === String(uDiv);
         }
         
         if (curUser.role === "School") {
-            return s.School === curUser.tSchool;
+            const uSchool = curUser.tschool || curUser.tSchool;
+            return s.School === uSchool;
         }
 
-        // 3. Admin / General Filters
+        // 3. Admin / General Filters (remains identical...)
         const matchSch = !sch || s.School === sch;
         const matchCls = !cls || s.Class === cls;
         const matchDiv = !div || s.Div === div;
@@ -5008,6 +5076,21 @@ async function toggleReg(type) {
             confirmButtonColor: '#3b82f6'
         });
     }
+}
+
+// Resolves the school ID for both School and Teacher logins safely
+function getUserSchool() {
+    if (curUser.tschool || curUser.tSchool) return curUser.tschool || curUser.tSchool;
+    
+    // Fallback: Resolve school suffix from the teacher's tclass (e.g. "V-34347" matches "TDTTI-34347")
+    const uClass = curUser.tclass || curUser.tClass || "";
+    const suffix = uClass.split('-')[1];
+    if (suffix) {
+        const schoolOptions = ["TDEMNS-td1", "GTDLPS-34318", "TDTTI-34347", "TDHS-34028"];
+        const found = schoolOptions.find(s => s.includes(suffix));
+        if (found) return found;
+    }
+    return "";
 }
 
 </script>
