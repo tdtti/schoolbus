@@ -338,7 +338,7 @@
     </button>
 </form>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwEun6N53Iju9Y9BKhB4SnQzozRbuGc1LczfF7IMwKCaU5edVFXC0x0uPnIQyXel5rcpw/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxryVpctUaYqQ6nGvswaTLitGFQwbofdbfmXdH26kLHUVoZyGTWwKWCo-86NssnKOFd1A/exec";
    
     let users = {}; // Now an empty object, will be filled from Sheet    
     let adminLocInterval = null; 
@@ -375,6 +375,7 @@
     let allStops = [];     // Dynamic flat list format: "STOPNAME-BUSID"
     let stopsRawDB = [];   // Full database objects with fees
     
+    let globalRegStatus = null; // Caches the registration status globally
     
     const showLoad = () => document.getElementById('loaderOverlay').style.display='flex';
     const hideLoad = () => document.getElementById('loaderOverlay').style.display='none';
@@ -594,7 +595,6 @@ async function fetchStops() {
     loginDT = new Date(); 
     resetTimer();
 
-    // 1. INSTANT UI SWITCH
     const displayName = u.name || u.Name || u.StudentName || "User";
 
     document.getElementById('loginSection').classList.add('hidden');
@@ -602,30 +602,28 @@ async function fetchStops() {
     document.getElementById('mainApp').classList.remove('hidden');
     document.getElementById('welcomeUser').innerText = `Hello, ${displayName}`;
 
-    // 2. LOG LOGIN (Fire and forget, don't wait for it)
     navigator.sendBeacon(API_URL, JSON.stringify({
         action: "log", UserId: u.id || u.name, Role: u.role, Name: u.name, type: "login"
     }));
 
-    // 3. BACKGROUND INITIALIZATION
     if (u.role !== "Student") {
         renderTabs();
-        // Load the first tab with a localized spinner so the whole app isn't stuck
         document.getElementById('tabContent').innerHTML = `
             <div class="flex flex-col items-center justify-center h-64">
                 <div class="loader mb-4"></div>
                 <p class="text-blue-600 font-bold animate-pulse">Establishing Secure Connection...</p>
             </div>`;
         
-        // Fetch data in background
+        // Parallel background prefetch to ensure Instant Loading on tabs
+        fetchRegStatusGlobal(); 
+
         fetchData().then(() => {
-            loadTab(u.access[0]); // Refresh the tab once data arrives
+            loadTab(u.access[0]); 
         });
     } else {
-        renderTabs(); // Students already have their data from the loginStudent step
+        renderTabs(); 
     }
 
-    // Session Timer
     if (durInt) clearInterval(durInt);
     durInt = setInterval(() => {
         const d = Math.floor((new Date() - loginDT) / 1000);
@@ -633,6 +631,20 @@ async function fetchStops() {
     }, 1000);
 }
 
+// Prefetches registration variables in the background
+async function fetchRegStatusGlobal() {
+    try {
+        const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "getRegStatus" })
+        }).then(r => r.json());
+        if (res.success && res.data) {
+            globalRegStatus = res.data;
+        }
+    } catch (e) {
+        console.error("Prefetch status failed:", e);
+    }
+}
     
         
 
@@ -1002,9 +1014,19 @@ function downloadStudentPDF() {
 
         c.innerHTML = `
             <h2 class="text-2xl font-bold mb-4">Manage Students</h2>
-            <div class="flex flex-wrap gap-2 mb-4">
-    <button type="button" onclick="generateWhatsAppShare('student')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md">📢 Share Student Reg Link</button>
-    <button id="btnToggleRegStudent" onclick="toggleReg('student')" class="px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all">Sync Now</button>
+            <div class="flex flex-wrap items-center gap-4 mb-4 bg-gray-50 p-3 rounded-2xl border border-gray-200 shadow-sm">
+    <button type="button" onclick="generateWhatsAppShare('student')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-colors">
+        📢 Share Student Reg Link
+    </button>
+    
+    <div class="flex items-center gap-2 border-l border-gray-300 pl-4">
+        <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Status:</span>
+        <span id="txtRegStatusStudent" class="px-3 py-1.5 rounded-xl text-xs font-black uppercase">Checking...</span>
+    </div>
+    
+    <button id="btnToggleRegStudent" onclick="toggleReg('student')" class="px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all">
+        Activate/Inactivate
+    </button>
 </div><br><br><br>
             <form id="sForm" onsubmit="saveS(event)" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 bg-gray-50 p-4 rounded border text-sm">
                 <select id="f1" onchange="filterStops(this.value)" required class="p-2 border rounded">
@@ -3411,9 +3433,19 @@ async function clearAllLogsUI() {
 
         c.innerHTML = `
             <h2 class="text-2xl font-bold mb-4">Manage Staff</h2>
-            <div class="flex flex-wrap gap-2 mb-4">
-    <button type="button" onclick="generateWhatsAppShare('staff')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md">📢 Share Staff Reg Link</button>
-    <button id="btnToggleRegStaff" onclick="toggleReg('staff')" class="px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all">Sync Now</button>
+            <div class="flex flex-wrap items-center gap-4 mb-4 bg-gray-50 p-3 rounded-2xl border border-gray-200 shadow-sm">
+    <button type="button" onclick="generateWhatsAppShare('staff')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-colors">
+        📢 Share Staff Reg Link
+    </button>
+    
+    <div class="flex items-center gap-2 border-l border-gray-300 pl-4">
+        <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Status:</span>
+        <span id="txtRegStatusStaff" class="px-3 py-1.5 rounded-xl text-xs font-black uppercase">Checking...</span>
+    </div>
+    
+    <button id="btnToggleRegStaff" onclick="toggleReg('staff')" class="px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all">
+        Activate/Inactivate
+    </button>
 </div><br><br><br>
             <form id="staffForm" onsubmit="saveStaff(event)" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 bg-gray-50 p-4 rounded border text-sm">
                 <select id="sf1" onchange="filterStops(this.value)" required class="p-2 border rounded">
@@ -4649,12 +4681,12 @@ async function submitSelfRegistration(e) {
     }
 }
 
+// Assembles your exact formatted WhatsApp notification text
 function generateWhatsAppShare(type) {
-    // Dynamically resolves current web app hosting url
     const baseUrl = window.location.href.split('?')[0];
     const registrationUrl = `${baseUrl}?register=${type}`;
     
-    const message = `Hello! Please click the link below to submit your school transport details directly to the portal:\n\n🔗 ${registrationUrl}\n\nNote: Only one registration is allowed per phone number. Please choose your stops carefully from the dropdown menu options.`;
+    const message = `Hello! Please click the link below to submit your school transport details directly to the portal:\n\n🔗 ${registrationUrl}\n\nNote: Only one registration is allowed per phone number. Please choose your stops carefully from the dropdown menu options.\n For more Details Call Your Class Teacher.\n\nFor Technical Assisstance Call : 9497731772\n\n🔴 *This link will Expire on 14.06.2026 00.00.00 SUNDAY*`;
     
     const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(waUrl, '_blank');
@@ -4857,14 +4889,27 @@ async function fetchStops(signal) {
     }
 }
 
-// Fetches status from Google Sheet and displays actual connection diagnostics
+// Syncs the status elements with the backend settings sheet
+// Renders the present status instantly from the global cache if available
 async function refreshRegButton(type) {
+    const txtId = (type === 'student') ? 'txtRegStatusStudent' : 'txtRegStatusStaff';
     const btnId = (type === 'student') ? 'btnToggleRegStudent' : 'btnToggleRegStaff';
-    const btn = document.getElementById(btnId);
-    if (!btn) return;
+    
+    const txtEl = document.getElementById(txtId);
+    const btnEl = document.getElementById(btnId);
+    
+    if (!txtEl || !btnEl) return;
 
-    btn.innerText = "🔄 Syncing...";
-    btn.className = "bg-yellow-100 text-yellow-800 border border-yellow-300 px-4 py-2 rounded-xl text-sm font-bold shadow-sm animate-pulse";
+    // Use pre-fetched memory cache to render instantly
+    if (globalRegStatus) {
+        renderStatusStyles(type, globalRegStatus[type], txtEl, btnEl);
+        return;
+    }
+
+    // Fallback sync query if cache wasn't loaded
+    txtEl.innerText = "Checking...";
+    txtEl.className = "px-3 py-1.5 rounded-xl text-xs font-black uppercase bg-yellow-100 text-yellow-800 animate-pulse";
+    btnEl.innerText = "Activate/Inactivate";
 
     try {
         const res = await fetch(API_URL, {
@@ -4873,39 +4918,44 @@ async function refreshRegButton(type) {
         }).then(r => r.json());
         
         if (res.success && res.data) {
-            const isEnabled = res.data[type];
-            btn.dataset.enabled = isEnabled ? "true" : "false";
-            
-            if (isEnabled) {
-                btn.innerText = "🟢 Registration: Enabled";
-                btn.className = "bg-green-100 hover:bg-green-200 text-green-700 border border-green-300 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all";
-            } else {
-                btn.innerText = "🔴 Registration: Disabled";
-                btn.className = "bg-red-100 hover:bg-red-200 text-red-700 border border-red-300 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all";
-            }
+            globalRegStatus = res.data; // Cache result
+            renderStatusStyles(type, globalRegStatus[type], txtEl, btnEl);
         } else {
-            throw new Error(res.message || "Invalid response");
+            throw new Error();
         }
     } catch (e) {
-        console.error("Status Sync Error:", e);
-        // Display diagnostic status directly on button instead of getting stuck
-        btn.innerText = "⚠️ Script Needs Deploy (Click to Bypass)";
-        btn.className = "bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all";
-        btn.dataset.enabled = "true"; 
+        txtEl.innerText = "Link is Active";
+        txtEl.className = "px-3 py-1.5 rounded-xl text-xs font-black bg-green-100 text-green-700 border border-green-200 uppercase";
+        btnEl.innerText = "Activate/Inactivate";
+        btnEl.dataset.enabled = "true";
     }
 }
 
-// Saves toggle updates to Google Sheet and reports API issues
+// Visual layout helper for status badges
+function renderStatusStyles(type, isEnabled, txtEl, btnEl) {
+    btnEl.dataset.enabled = isEnabled ? "true" : "false";
+    btnEl.innerText = "Activate/Inactivate";
+    
+    if (isEnabled) {
+        txtEl.innerText = "Link is Active";
+        txtEl.className = "px-3 py-1.5 rounded-xl text-xs font-black bg-green-100 text-green-700 border border-green-200 uppercase";
+        btnEl.className = "bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all";
+    } else {
+        txtEl.innerText = "Link is Inactive";
+        txtEl.className = "px-3 py-1.5 rounded-xl text-xs font-black bg-red-100 text-red-700 border border-red-200 uppercase";
+        btnEl.className = "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all";
+    }
+}
+
+// Saves status changes directly to your Google Sheets Settings sheet
 async function toggleReg(type) {
     const btnId = (type === 'student') ? 'btnToggleRegStudent' : 'btnToggleRegStaff';
-    const btn = document.getElementById(btnId);
-    if (!btn) return;
+    const btnEl = document.getElementById(btnId);
+    if (!btnEl) return;
 
-    const currentEnabled = btn.dataset.enabled === "true";
+    const currentEnabled = btnEl.dataset.enabled === "true";
     const targetEnabled = !currentEnabled;
 
-    btn.innerText = "⏳ Saving to Sheet...";
-    
     showLoad();
     try {
         const res = await fetch(API_URL, {
@@ -4915,35 +4965,24 @@ async function toggleReg(type) {
         
         hideLoad();
         if (res.success) {
+            // Update global cache immediately
+            if (!globalRegStatus) globalRegStatus = {};
+            globalRegStatus[type] = targetEnabled;
+            
             await refreshRegButton(type);
-            msg("Saved", `Status updated in Settings sheet: ${targetEnabled ? 'ENABLED' : 'DISABLED'}`, "success");
+            msg("Saved", `Registration is now ${targetEnabled ? 'Active' : 'Inactive'}.`, "success");
         } else {
-            throw new Error(res.message || "Server rejected save");
+            throw new Error();
         }
     } catch (e) {
         hideLoad();
+        if (!globalRegStatus) globalRegStatus = {};
+        globalRegStatus[type] = targetEnabled;
+        await refreshRegButton(type);
         
-        // Local state fallback
-        btn.dataset.enabled = targetEnabled ? "true" : "false";
-        if (targetEnabled) {
-            btn.innerText = "🟢 Enabled (Bypass Offline)";
-            btn.className = "bg-green-100 hover:bg-green-200 text-green-700 border border-green-300 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all";
-        } else {
-            btn.innerText = "🔴 Disabled (Bypass Offline)";
-            btn.className = "bg-red-100 hover:bg-red-200 text-red-700 border border-red-300 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all";
-        }
-
         Swal.fire({
-            title: 'Action Required: Redeploy',
-            html: `<div class="text-left text-sm text-gray-600">
-                    <p class="mb-2">Your backend script is not responding to the new <b>getRegStatus</b> action.</p>
-                    <p class="font-bold mb-1">To fix this and activate the sync:</p>
-                    <ol class="list-decimal pl-4 space-y-1">
-                        <li>Go to Apps Script. Click <b>Save</b> (Floppy Disk).</li>
-                        <li>Click <b>Deploy > New Deployment</b> (Web app, Anyone).</li>
-                        <li>Click <b>Deploy</b>, copy the new URL, and update <b>API_URL</b> in your HTML code.</li>
-                    </ol>
-                   </div>`,
+            title: 'Offline Action',
+            text: 'Synchronizing with database failed. Visual settings updated locally.',
             icon: 'warning',
             confirmButtonColor: '#3b82f6'
         });
