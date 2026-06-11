@@ -18,7 +18,22 @@
         border: 1px solid #000; padding: 10px;
     }
 }
+body {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    /* Discourage mobile reader engines */
+    -webkit-text-size-adjust: none;
+}
 
+/* Re-enable selection specifically for form inputs so typing works */
+input, select, textarea, [contenteditable="true"] {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
 /* Profile Modern UI */
 .profile-card {
     background: white;
@@ -213,7 +228,7 @@
 
                     <div class="mt-10 pt-6 border-t border-white/20 flex items-center justify-between">
                         <p class="text-xs text-blue-200 font-medium">Support:</p>
-                        <a href="tel:9497731772" class="text-sm font-black text-white bg-white/20 px-3 py-1 rounded-lg hover:bg-white/30 transition-colors cursor-pointer text-decoration-none"> 📞 CALL </a>
+                        <a href="tel:9747849634" class="text-sm font-black text-white bg-white/20 px-3 py-1 rounded-lg hover:bg-white/30 transition-colors cursor-pointer text-decoration-none"> 📞 CALL </a>
                     </div>
                 </div>
             </div>
@@ -339,7 +354,37 @@
 </form>
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbxIvFpiydf_Z1jzkY2duIdPejExqc_YjGqNz89ZxxOzmiFyKnBiM7vDUP_euRkv7wogLA/exec";
-   
+
+    // Disable context menu (Right-Click)
+document.addEventListener('contextmenu', event => event.preventDefault());
+
+// Disable copy event
+document.addEventListener('copy', event => event.preventDefault());
+
+// Block developer tools keyboard shortcuts
+document.addEventListener('keydown', event => {
+    // F12 key
+    if (event.keyCode === 123) {
+        event.preventDefault();
+        return false;
+    }
+    // Ctrl+Shift+I (Inspect), Ctrl+Shift+J (Console), Ctrl+Shift+C (Element Selector)
+    if (event.ctrlKey && event.shiftKey && (event.keyCode === 73 || event.keyCode === 74 || event.keyCode === 67)) {
+        event.preventDefault();
+        return false;
+    }
+    // Ctrl+U (View Source)
+    if (event.ctrlKey && event.keyCode === 85) {
+        event.preventDefault();
+        return false;
+    }
+    // Ctrl+S (Save Page)
+    if (event.ctrlKey && event.keyCode === 83) {
+        event.preventDefault();
+        return false;
+    }
+});
+
     let users = {}; // Now an empty object, will be filled from Sheet    
     let adminLocInterval = null; 
     let adminTickInterval = null; 
@@ -509,14 +554,63 @@ async function fetchStops() {
     }
 }
 
-    async function fetchData() {
-        showLoad();
-        try {
-            const r = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getStudents"})}).then(x=>x.json());
-            if(r.success) db = r.data;
-        } catch(e) { msg("Error", "Network Fail", "error"); }
-        hideLoad();
+    // High-speed, network-resilient database loader
+async function fetchData(forceFetch = false) {
+    const cachedData = sessionStorage.getItem('student_db');
+    
+    // 1. INSTANT LOAD: If cache exists, parse and use it immediately for zero-lag rendering
+    if (cachedData) {
+        db = JSON.parse(cachedData);
+        // If we are already inside the dashboard, update current view instantly
+        if (curUser && curUser.role !== "Student" && document.getElementById('tabs').firstChild) {
+            const activeTab = document.querySelector('#tabs .ring-2');
+            if (!activeTab && curUser.access) {
+                loadTab(curUser.access[0]);
+            }
+        }
     }
+
+    // If no cache exists, show the loader. Otherwise, fetch quietly in the background.
+    if (!cachedData || forceFetch) {
+        showLoad();
+    }
+
+    try {
+        // 2. NETWORK PROTECTION: Abort request after 12 seconds on slow networks instead of hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000); 
+
+        const r = await fetch(API_URL, {
+            method: 'POST', 
+            body: JSON.stringify({ action: "getStudents" }),
+            signal: controller.signal
+        }).then(x => x.json());
+        
+        clearTimeout(timeoutId);
+        
+        if (r.success) {
+            db = r.data;
+            // Update browser session cache
+            sessionStorage.setItem('student_db', JSON.stringify(db));
+            
+            // Quietly redraw current active tab with fresh sheet data if changed
+            if (curUser && curUser.role !== "Student") {
+                const activeTab = document.querySelector('#tabs .ring-2');
+                if (activeTab) {
+                    // Retain current tab view seamlessly
+                    const activeTabId = curUser.access[Array.from(activeTab.parentNode.children).indexOf(activeTab)];
+                    if (activeTabId) loadTab(activeTabId);
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("Low speed network detected. Operating in safe local database mode.");
+        if (!cachedData) {
+            msg("Network Slow", "Connecting is taking longer than expected. Retrying...", "warning");
+        }
+    }
+    hideLoad();
+}
 
     async function loginStudent() {
     const q = document.getElementById('stuSearch').value.trim();
@@ -620,6 +714,7 @@ async function fetchStops() {
         // Fetch data in background
         fetchData().then(() => {
             loadTab(u.access[0]); // Refresh the tab once data arrives
+            
         });
     } else {
         renderTabs(); // Students already have their data from the loginStudent step
@@ -705,6 +800,7 @@ function cleanupLogoutUI() {
     document.getElementById('mainApp').classList.add('hidden');
     ['stuSearch','offUser','offPass'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('keepLogin').checked = false;
+    sessionStorage.removeItem('student_db'); // Clears cache on logout
 }
 
 
@@ -812,11 +908,14 @@ function getFilteredDB() {
     });
 }
 
-    // --- Student Dashboard (Login 1) ---
     function renderStudentDash(c) {
     const d = curUser.data;
-    const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
     
+    // Check if the loaded profile belongs to a Staff member
+    const isStaff = (d.Class === "STAFF");
+    
+    const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+    // (Your existing monthly row mapping logic remains identical...)
     // Format rows: Extracting only Date from the Sheet's DateTime string
     let trs = months.map(m => {
         const paid = d[m] && parseFloat(d[m]) > 0;
@@ -863,7 +962,7 @@ function getFilteredDB() {
 
 
     <!-- DYNAMIC LIVE TRACKING MAP - Hidden on Print -->
-<div id="studentLiveTrackContainer" class="mt-8 mb-8 no-print"></div>
+        ${isStaff ? '' : '<div id="studentLiveTrackContainer" class="mt-8 mb-8 no-print"></div>'}
     
 
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -882,9 +981,9 @@ function getFilteredDB() {
                     <h4 class="font-bold text-blue-900 text-sm">For More Details Contact:</h4>
                     <p class="text-blue-700 text-lg font-black">G Mahesh Kumar</p>
                 </div>
-                <a href="tel:9497731772" class="contact-chip shadow-sm">
+                <a href="tel:9747849634" class="contact-chip shadow-sm">
                     <span class="mr-2">📞</span> 
-                    <span class="font-black text-lg">9497731772</span>
+                    <span class="font-black text-lg">9747849634</span>
                 </a>
             </div>
         </div>
@@ -1304,7 +1403,7 @@ function downloadStudentPDF() {
         if(!confirm("Delete forever?")) return;
         showLoad(); 
         await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"deleteStudent", rowIndex:r})});
-        await fetchData(); 
+        await fetchData(true); // Forces a bypass of cache to pull fresh edits
         hideLoad(); 
         
         // Return to the correct tab after deleting
@@ -2197,7 +2296,7 @@ Paid Months: ${paidMonths || 'None'}
 
 _This is a system generated message._
 
-Contact: G Mahesh Kumar - 9497731772
+Contact: N VINOD - 9747849634
 `.trim();
 
   const phoneRaw = phone.toString().replace(/[^0-9]/g, '');
@@ -2746,7 +2845,7 @@ ${feeLines || 'No payments recorded.'}
 *Balance:* ₹${curFeeS.Balance || 0}
 
 _Electronically generated fee statement._  
-For queries contact: G Mahesh Kumar - 9497731772
+For queries contact: G Mahesh Kumar - 9747849634
 `.trim();
 
     // Normalize phone without spaces or symbols and add country code '91' if missing
@@ -2953,7 +3052,7 @@ function shareFeeStatus(phone) {
                  `--------------------------\n` +
                  `*Paid Months:* ${paidMonths || 'None'}\n\n` +
                  `_For digital receipts, please login to the student portal._\n` +
-                 `*Contact:* G Mahesh Kumar - 9497731772`;
+                 `*Contact:* N VINOD - 9747849634`;
 
     const encodedText = encodeURIComponent(text);
     const waUrl = `https://wa.me/91${s.Phone}?text=${encodedText}`;
