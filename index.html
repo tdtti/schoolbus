@@ -4849,7 +4849,7 @@ function generateWhatsAppShare(type) {
     const baseUrl = window.location.href.split('?')[0];
     const registrationUrl = `${baseUrl}?register=${type}`;
     
-    const message = `Hello! Please click the link below to submit your school transport details directly to the portal:\n\n🔗 ${registrationUrl}\n\nNote: Only one registration is allowed per phone number. Please choose your stops carefully from the dropdown menu options.\n For more Details Call Your Class Teacher.\n\nFor Technical Assisstance Call : 9497731772\n\n 🔴 This link will Expire on 14.06.2026 00.00.00 SUNDAY`;
+    const message = `Hello! Please click the link below to submit your school transport details directly to the portal:\n\n🔗 ${registrationUrl}\n\nNote: Only one registration is allowed per phone number. Please choose your stops carefully from the dropdown menu options.\n For more Details Call Your Class Teacher.\n\nFor Technical Assisstance Call : 9497731772\n\n 🔴 This link will Expire on 14.06.2026 00.00.00 SUNDAY\n\n BUS AND DRIVERS NAME :\nKL32P4201SR -SAJI AND REVATHI\nKL32M0528VM - VENU AND RAJI\nKL32L2382K  - KUNJUMON\nKL07BU4184C - CHANDRAN\nKL32L0827U  - UMESH`;
     
     const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(waUrl, '_blank');
