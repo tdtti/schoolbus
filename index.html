@@ -1111,7 +1111,7 @@ function downloadStudentPDF() {
     tab1SortCol = 'StudentName';
     tab1SortAsc = true;
 
-    // Conditionally render Registration controls ONLY for Admin role
+    // (Your existing conditional registration controls render block remains identical...)
     let regControlsHtml = '';
     if (curUser && curUser.role === "Admin") {
         regControlsHtml = `
@@ -1128,11 +1128,54 @@ function downloadStudentPDF() {
             </button>
         </div>`;
     }
+  // --- GENERATE MATRIX SUMMARY SEGMENT ---
+    const summaryData = generateStudentSummaryHtml(currentTab1DB);
+    const summaryHtml = `
+    <div class="mb-6 bg-white p-6 rounded-3xl border border-gray-200 shadow-sm animate-fade-in">
+        <h3 class="text-sm font-black text-gray-700 uppercase tracking-wider mb-4 flex justify-between items-center">
+            <span class="flex items-center gap-1.5">📊 Registered Portal Summary</span>
+        </h3>
+        
+        <!-- Table displaying School as Subheads and Divisions A to G -->
+        <div class="overflow-x-auto rounded-xl border border-gray-200 max-h-96 overflow-y-auto">
+            <table class="w-full text-left text-xs border-collapse bg-white whitespace-nowrap">
+                <thead class="bg-gray-800 text-white uppercase text-[9px] font-bold tracking-wider sticky top-0 border-b z-10">
+                    <tr>
+                        <th class="p-3">Class ID</th>
+                        <th class="p-3 text-center">Div A</th>
+                        <th class="p-3 text-center">Div B</th>
+                        <th class="p-3 text-center">Div C</th>
+                        <th class="p-3 text-center">Div D</th>
+                        <th class="p-3 text-center">Div E</th>
+                        <th class="p-3 text-center">Div F</th>
+                        <th class="p-3 text-center">Div G</th>
+                        <th class="p-3 text-center bg-gray-900">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${summaryData.tableHtml}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- GRAND TOTAL OF ALL SCHOOL BELOW SEPARATELY (BIG FONT SIZE) -->
+        <div class="mt-5 flex flex-col md:flex-row justify-between items-center bg-gradient-to-br from-blue-900 to-indigo-950 text-white p-6 rounded-2xl border border-blue-800 shadow-md">
+            <div>
+                <p class="text-[10px] text-blue-200 uppercase font-bold tracking-widest">Active System Sum</p>
+                <h4 class="text-lg font-black tracking-tight">Portal-Wide Student Registration</h4>
+            </div>
+            <div class="text-center md:text-right mt-3 md:mt-0 bg-blue-950/40 px-6 py-2.5 rounded-2xl border border-white/10 shadow-inner">
+                <span class="text-4xl font-black text-yellow-300 block tracking-tighter leading-none">${summaryData.grandTotal}</span>
+                <span class="text-[9px] text-blue-300 uppercase font-black tracking-widest mt-1 block">Registered Students</span>
+            </div>
+        </div>
+    </div>`;
 
     c.innerHTML = `
         <h2 class="text-2xl font-bold mb-4">Manage Students</h2>
         <!-- Insert Admin Registration Controls if applicable -->
         ${regControlsHtml}
+         ${summaryHtml}
             <form id="sForm" onsubmit="saveS(event)" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 bg-gray-50 p-4 rounded border text-sm">
                 <select id="f1" onchange="filterStops(this.value)" required class="p-2 border rounded">
                     <option value="">Bus</option>
@@ -5190,6 +5233,111 @@ function getUserSchool() {
         if (found) return found;
     }
     return "";
+}
+
+// Generates a clean summary table of student counts grouped by School, Class, and Division
+// Generates a matrix-style summary of student counts by School, Class, and Division (A to G)
+function generateStudentSummaryHtml(data) {
+    const divisions = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+    
+    // Resolve all active schools in the current view/access scope
+    const visibleSchools = [...new Set(data.map(s => s.School))].filter(Boolean);
+    
+    if (visibleSchools.length === 0) {
+        return {
+            tableHtml: '<tr><td colspan="9" class="p-10 text-center text-gray-400 italic font-bold">No registered student records in view scope.</td></tr>',
+            grandTotal: 0
+        };
+    }
+
+    let globalGrandTotal = 0;
+    // Track division-wise totals globally across all schools
+    let globalDivTotals = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, G: 0, Total: 0 };
+    let schoolBlocksHtml = '';
+
+    visibleSchools.forEach(school => {
+        // Retrieve predefined classes for this school from your global classMapping
+        let classes = (typeof classMapping !== 'undefined' && classMapping[school]) ? [...classMapping[school]] : [];
+        
+        // Fallback: capture any dynamically added classes in the sheet that are not predefined
+        data.forEach(s => {
+            if (s.School === school && s.Class !== 'STAFF' && !classes.includes(s.Class)) {
+                classes.push(s.Class);
+            }
+        });
+
+        // Initialize empty matrix for this school's classes
+        const matrix = {};
+        classes.forEach(cls => {
+            matrix[cls] = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, G: 0, Total: 0 };
+        });
+
+        // Populate counts from active data
+        data.forEach(s => {
+            if (s.School === school && s.Class !== 'STAFF' && matrix[s.Class]) {
+                const div = String(s.Div).trim().toUpperCase();
+                if (divisions.includes(div)) {
+                    matrix[s.Class][div]++;
+                    matrix[s.Class].Total++;
+                }
+            }
+        });
+
+        // Calculate individual School Grand Totals
+        const schoolTotals = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, G: 0, Total: 0 };
+        classes.forEach(cls => {
+            divisions.forEach(div => {
+                schoolTotals[div] += matrix[cls][div];
+                globalDivTotals[div] += matrix[cls][div];
+            });
+            schoolTotals.Total += matrix[cls].Total;
+            globalDivTotals.Total += matrix[cls].Total;
+        });
+
+        globalGrandTotal += schoolTotals.Total;
+
+        // 1. Generate School Subhead Row (spanning all 9 columns)
+        schoolBlocksHtml += `
+            <tr class="bg-blue-50/70 border-y border-blue-200">
+                <td colspan="9" class="p-3 font-black text-blue-900 text-sm tracking-wide uppercase">${school}</td>
+            </tr>
+        `;
+
+        // 2. Generate Class-wise Rows (showing all division columns)
+        classes.forEach(cls => {
+            const row = matrix[cls];
+            schoolBlocksHtml += `
+                <tr class="hover:bg-gray-50 border-b">
+                    <td class="p-3 font-bold text-gray-700 text-xs">${cls}</td>
+                    ${divisions.map(div => `<td class="p-3 text-center text-gray-600 font-medium text-xs">${row[div]}</td>`).join('')}
+                    <td class="p-3 text-center font-black text-gray-800 bg-gray-50 text-xs">${row.Total}</td>
+                </tr>
+            `;
+        });
+
+        // 3. Generate School Total Row (At the bottom of this school's block)
+        schoolBlocksHtml += `
+            <tr class="bg-gray-100 border-b-2 border-gray-300 font-extrabold text-xs">
+                <td class="p-3 font-extrabold text-gray-900 uppercase tracking-tight">Total</td>
+                ${divisions.map(div => `<td class="p-3 text-center font-extrabold text-gray-900">${schoolTotals[div]}</td>`).join('')}
+                <td class="p-3 text-center font-black text-blue-800 bg-blue-50">${schoolTotals.Total}</td>
+            </tr>
+        `;
+    });
+
+    // 4. Generate Grand Total Bottom Row of the overall summary table
+    schoolBlocksHtml += `
+        <tr class="bg-blue-900 text-white font-black text-xs">
+            <td class="p-3 uppercase tracking-wider">Grand Total (All Schools)</td>
+            ${divisions.map(div => `<td class="p-3 text-center font-black">${globalDivTotals[div]}</td>`).join('')}
+            <td class="p-3 text-center font-black bg-blue-950 text-yellow-300 text-sm">${globalDivTotals.Total}</td>
+        </tr>
+    `;
+
+    return {
+        tableHtml: schoolBlocksHtml,
+        grandTotal: globalGrandTotal
+    };
 }
 
 </script>
