@@ -1221,23 +1221,31 @@ function downloadStudentPDF() {
             <input type="text" id="sSearchT1" onkeyup="searchT1()" placeholder="Search Name, Phone, Bus..." class="w-full p-2 border-2 border-gray-300 rounded mb-4 focus:outline-none focus:border-blue-500">
             
             <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
-                <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
-                    <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
-                        <tr>
-                            <!-- Rearranged and made Sortable -->
-                            <th onclick="sortTab1Table('StudentName')" class="p-3 border cursor-pointer hover:bg-gray-700">Name ↕</th>
-                            <th onclick="sortTab1Table('BusId')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Bus ↕</th>
-                            <th onclick="sortTab1Table('Class')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Class ↕</th>
-                            <th onclick="sortTab1Table('Phone')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Phone ↕</th>
-                            <th onclick="sortTab1Table('Fee')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Fee ↕</th>
-                            <th class="p-3 border text-center cursor-default">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="t1Body">
-                        ${generateTab1Rows(currentTab1DB)}
-                    </tbody>
-                </table>
-            </div>
+    <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
+        <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
+            <tr>
+                <th onclick="sortTab1Table('StudentName')" class="p-3 border cursor-pointer hover:bg-gray-700">Name ↕</th>
+                <th onclick="sortTab1Table('BusId')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Bus ↕</th>
+                <th onclick="sortTab1Table('Class')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Class ↕</th>
+                <th onclick="sortTab1Table('Phone')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Phone ↕</th>
+                <th onclick="sortTab1Table('Fee')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Fee ↕</th>
+                <th class="p-3 border text-center cursor-default">Action</th>
+            </tr>
+        </thead>
+        <tbody id="t1Body">
+            ${generateTab1Rows(currentTab1DB)}
+        </tbody>
+        
+        <!-- ADDED: Compulsory Grand Total Footer -->
+        <tfoot class="bg-gray-100 border-t-2 border-gray-300 font-extrabold text-xs">
+            <tr id="t1TotalsRow">
+                <td colspan="4" class="p-3 text-right uppercase tracking-wider font-extrabold text-gray-700">Grand Total Fee:</td>
+                <td id="t1GrandTotalVal" class="p-3 text-center font-black text-blue-700 text-sm bg-blue-50/50">₹0</td>
+                <td class="p-3"></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
 
             <!-- THE UI CARD CONTAINER -->
             <div id="studentProfileCard" class="hidden mt-8"></div>
@@ -1246,7 +1254,8 @@ function downloadStudentPDF() {
         // Run default dropdown populations
     filterStops('');
     filterClasses('');
-    
+    updateTab1Totals();
+
     // --- ADD THE LOCKING LOGIC HERE ---
     const uSchool = getUserSchool();
     const uClass = curUser.tclass || curUser.tClass;
@@ -1339,22 +1348,16 @@ function downloadStudentPDF() {
         });
 
         // Re-render table body
-        document.getElementById('t1Body').innerHTML = generateTab1Rows(currentTab1DB);
-        
-        // Ensure search filter is maintained if user sorts while searching
-        searchT1();
+            document.getElementById('t1Body').innerHTML = generateTab1Rows(currentTab1DB);
+    
+        // Recalculate the totals row
+            updateTab1Totals();
+    
+        // Re-apply search filter
+            searchT1();
     }
 
-    // Update Search Function to work with new DOM structure seamlessly
-    function searchT1() { 
-        const searchInput = document.getElementById('sSearchT1');
-        if (!searchInput) return;
-        
-        const q = searchInput.value.toLowerCase(); 
-        Array.from(document.getElementById('t1Body').rows).forEach(r => {
-            r.style.display = r.innerText.toLowerCase().includes(q) ? '' : 'none';
-        }); 
-    }
+    
     
     const classMapping = {
         "TDEMNS-td1":["PREKG-td1", "LKG-td1", "UKG-td1","TEACHER-PPTTC-td1"],
@@ -1454,7 +1457,70 @@ function downloadStudentPDF() {
         else renderTab1(document.getElementById('tabContent'));
     }
     
-    function searchT1(q) { Array.from(document.getElementById('t1Body').rows).forEach(r=> r.style.display = r.innerText.toLowerCase().includes(q.toLowerCase())?'':'none'); }
+    // Performs dynamic multi-column filtering and updates grand totals instantly
+function searchT1() {
+    const searchInput = document.getElementById('sSearchT1');
+    if (!searchInput) return;
+    
+    const q = searchInput.value.trim().toLowerCase();
+    const rows = Array.from(document.getElementById('t1Body').rows);
+    
+    let visibleFeeSum = 0;
+
+    rows.forEach(r => {
+        // Safe check to avoid index boundary crashes
+        if (r.cells.length < 6) return;
+        
+        const name = r.cells[0].innerText.toLowerCase();
+        const bus = r.cells[1].innerText.toLowerCase();
+        const classDiv = r.cells[2].innerText.toLowerCase();
+        const phone = r.cells[3].innerText.toLowerCase();
+        
+        // Strip the currency symbol (₹) for direct number matching
+        const feeText = r.cells[4].innerText.replace(/[^\d.]/g, ''); 
+        const feeVal = parseFloat(feeText) || 0;
+
+        const match = name.includes(q) || 
+                      bus.includes(q) || 
+                      classDiv.includes(q) || 
+                      phone.includes(q) || 
+                      feeText.includes(q);
+
+        if (match) {
+            r.style.display = '';
+            visibleFeeSum += feeVal;
+        } else {
+            r.style.display = 'none';
+        }
+    });
+
+    // Update the grand total element instantly
+    const totalValEl = document.getElementById('t1GrandTotalVal');
+    if (totalValEl) {
+        totalValEl.innerText = '₹' + visibleFeeSum.toLocaleString('en-IN');
+    }
+}
+
+// Calculates and renders the grand total for all rows currently populated in Tab 1
+function updateTab1Totals() {
+    const tbody = document.getElementById('t1Body');
+    if (!tbody) return;
+    
+    const rows = Array.from(tbody.rows);
+    let sum = 0;
+    
+    rows.forEach(r => {
+        if (r.cells.length >= 6) {
+            const feeText = r.cells[4].innerText.replace(/[^\d.]/g, '');
+            sum += (parseFloat(feeText) || 0);
+        }
+    });
+    
+    const totalValEl = document.getElementById('t1GrandTotalVal');
+    if (totalValEl) {
+        totalValEl.innerText = '₹' + sum.toLocaleString('en-IN');
+    }
+}
 
 
 let curViewStudent = null; // Stores the currently viewed student for printing/sharing
