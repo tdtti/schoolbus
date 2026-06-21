@@ -1134,11 +1134,9 @@ function downloadStudentPDF() {
     currentTab1DB = getFilteredDB();
     currentTab1DB.sort((a, b) => String(a.StudentName).toLowerCase().localeCompare(String(b.StudentName).toLowerCase()));
     
-    // Reset sort trackers (remains identical...)
     tab1SortCol = 'StudentName';
     tab1SortAsc = true;
 
-    // (Your existing conditional registration controls render block remains identical...)
     let regControlsHtml = '';
     if (curUser && curUser.role === "Admin") {
         regControlsHtml = `
@@ -1155,175 +1153,167 @@ function downloadStudentPDF() {
             </button>
         </div>`;
     }
-  // --- GENERATE MATRIX SUMMARY SEGMENT ---
-    const summaryData = generateStudentSummaryHtml(currentTab1DB);
-    const summaryHtml = `
-    <div class="mb-6 bg-white p-6 rounded-3xl border border-gray-200 shadow-sm animate-fade-in">
-        <h3 class="text-sm font-black text-gray-700 uppercase tracking-wider mb-4 flex justify-between items-center">
-            <span class="flex items-center gap-1.5">📊 Registered Portal Summary</span>
-        </h3>
-        
-        <!-- Table displaying School as Subheads and Divisions A to G -->
-        <div class="overflow-x-auto rounded-xl border border-gray-200 max-h-96 overflow-y-auto">
-            <table class="w-full text-left text-xs border-collapse bg-white whitespace-nowrap">
-                <thead class="bg-gray-800 text-white uppercase text-[9px] font-bold tracking-wider sticky top-0 border-b z-10">
-                    <tr>
-                        <th class="p-3">Class ID</th>
-                        <th class="p-3 text-center">Div A</th>
-                        <th class="p-3 text-center">Div B</th>
-                        <th class="p-3 text-center">Div C</th>
-                        <th class="p-3 text-center">Div D</th>
-                        <th class="p-3 text-center">Div E</th>
-                        <th class="p-3 text-center">Div F</th>
-                        <th class="p-3 text-center">Div G</th>
-                        <th class="p-3 text-center bg-gray-900">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${summaryData.tableHtml}
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- GRAND TOTAL OF ALL SCHOOL BELOW SEPARATELY (BIG FONT SIZE) -->
-        <div class="mt-5 flex flex-col md:flex-row justify-between items-center bg-gradient-to-br from-blue-900 to-indigo-950 text-white p-6 rounded-2xl border border-blue-800 shadow-md">
-            <div>
-                <p class="text-[10px] text-blue-200 uppercase font-bold tracking-widest">Active System Sum</p>
-                <h4 class="text-lg font-black tracking-tight">Portal-Wide Student Registration</h4>
+
+    // --- GENERATE MATRIX SUMMARY SEGMENT (HIDDEN FOR TEACHER ROLE) ---
+    let summaryHtml = '';
+    if (curUser && curUser.role !== "Teacher") {
+        const summaryData = generateStudentSummaryHtml(currentTab1DB);
+        summaryHtml = `
+        <div class="mb-6 bg-white p-6 rounded-3xl border border-gray-200 shadow-sm animate-fade-in">
+            <h3 class="text-sm font-black text-gray-700 uppercase tracking-wider mb-4 flex justify-between items-center">
+                <span class="flex items-center gap-1.5">📊 Registered Portal Summary</span>
+            </h3>
+            
+            <div class="overflow-x-auto rounded-xl border border-gray-200 max-h-96 overflow-y-auto">
+                <table class="w-full text-left text-xs border-collapse bg-white whitespace-nowrap">
+                    <thead class="bg-gray-800 text-white uppercase text-[9px] font-bold tracking-wider sticky top-0 border-b z-10">
+                        <tr>
+                            <th class="p-3">Class ID</th>
+                            <th class="p-3 text-center">Div A</th>
+                            <th class="p-3 text-center">Div B</th>
+                            <th class="p-3 text-center">Div C</th>
+                            <th class="p-3 text-center">Div D</th>
+                            <th class="p-3 text-center">Div E</th>
+                            <th class="p-3 text-center">Div F</th>
+                            <th class="p-3 text-center">Div G</th>
+                            <th class="p-3 text-center bg-gray-900">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${summaryData.tableHtml}
+                    </tbody>
+                </table>
             </div>
-            <div class="text-center md:text-right mt-3 md:mt-0 bg-blue-950/40 px-6 py-2.5 rounded-2xl border border-white/10 shadow-inner">
-                <span class="text-4xl font-black text-yellow-300 block tracking-tighter leading-none">${summaryData.grandTotal}</span>
-                <span class="text-[9px] text-blue-300 uppercase font-black tracking-widest mt-1 block">Registered Students</span>
+            
+            <div class="mt-5 flex flex-col md:flex-row justify-between items-center bg-gradient-to-br from-blue-900 to-indigo-950 text-white p-6 rounded-2xl border border-blue-800 shadow-md">
+                <div>
+                    <p class="text-[10px] text-blue-200 uppercase font-bold tracking-widest">Active System Sum</p>
+                    <h4 class="text-lg font-black tracking-tight">Portal-Wide Student Registration</h4>
+                </div>
+                <div class="text-center md:text-right mt-3 md:mt-0 bg-blue-950/40 px-6 py-2.5 rounded-2xl border border-white/10 shadow-inner">
+                    <span class="text-4xl font-black text-yellow-300 block tracking-tighter leading-none">${summaryData.grandTotal}</span>
+                    <span class="text-[9px] text-blue-300 uppercase font-black tracking-widest mt-1 block">Registered Students</span>
+                </div>
             </div>
-        </div>
-    </div>`;
+        </div>`;
+    }
 
     c.innerHTML = `
         <h2 class="text-2xl font-bold mb-4">Manage Students</h2>
-        <!-- Insert Admin Registration Controls if applicable -->
         ${regControlsHtml}
-         ${summaryHtml}
-            <form id="sForm" onsubmit="saveS(event)" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 bg-gray-50 p-4 rounded border text-sm">
-                <select id="f1" onchange="filterStops(this.value)" required class="p-2 border rounded">
-                    <option value="">Bus</option>
-                    <option>KL32P4201SR</option>
-                    <option>KL32M0528VM</option>
-                    <option>KL32L2382K</option>
-                    <option>KL07BU4184C</option>
-                    <option>KL32L0827U</option>
-                    <option>STAFF</option>
-                </select>
-                
-                <select id="f2" onchange="filterClasses(this.value); autoFetchFee();" required class="p-2 border rounded">
-                    <option value="">School</option>
-                    <option>TDEMNS-td1</option>
-                    <option>GTDLPS-34318</option>
-                    <option>TDTTI-34347</option>
-                    <option>TDHS-34028</option>
-                </select>                
-                
-                <select id="f3" onchange="autoFetchFee();" required class="p-2 border rounded">
-                    <option value="">Class</option>
-                </select> 
-                
-                <select id="f4" required class="p-2 border rounded"><option value="">Div</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>STAFF</option></select>
-                <!-- Input enforces auto-uppercase -->
-                <input id="f5" required placeholder="Student Name" oninput="this.value = this.value.toUpperCase()" class="p-2 border rounded md:col-span-2 uppercase">
-                <!-- ADDED: Selectable Gender dropdown -->
-                <select id="fGender" required class="p-2 border rounded bg-white">
+        ${summaryHtml}
+        <form id="sForm" onsubmit="saveS(event)" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 bg-gray-50 p-4 rounded border text-sm">
+            <select id="f1" onchange="filterStops(this.value)" required class="p-2 border rounded">
+                <option value="">Bus</option>
+                <option>KL32P4201SR</option>
+                <option>KL32M0528VM</option>
+                <option>KL32L2382K</option>
+                <option>KL07BU4184C</option>
+                <option>KL32L0827U</option>
+                <option>STAFF</option>
+            </select>
+            
+            <select id="f2" onchange="filterClasses(this.value); autoFetchFee();" required class="p-2 border rounded">
+                <option value="">School</option>
+                <option>TDEMNS-td1</option>
+                <option>GTDLPS-34318</option>
+                <option>TDTTI-34347</option>
+                <option>TDHS-34028</option>
+            </select>                
+            
+            <select id="f3" onchange="autoFetchFee();" required class="p-2 border rounded">
+                <option value="">Class</option>
+            </select> 
+            
+            <select id="f4" required class="p-2 border rounded"><option value="">Div</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>STAFF</option></select>
+            <input id="f5" required placeholder="Student Name" oninput="this.value = this.value.toUpperCase()" class="p-2 border rounded md:col-span-2 uppercase">
+            <select id="fGender" required class="p-2 border rounded bg-white">
                 <option value="">Select Gender</option>
                 <option>M</option>
                 <option>F</option>
-                </select>
-                <input id="f6" required placeholder="Parent Name" oninput="this.value = this.value.toUpperCase()" class="p-2 border rounded uppercase">
-                <input id="f7" required type="tel" placeholder="Phone" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)" class="p-2 border rounded">
-                
-                <input list="entryStops" id="f8" placeholder="Entry Stop" class="p-2 border rounded">
-                <datalist id="entryStops"></datalist>
-                
-                <input list="exitStops" id="f9" required placeholder="Exit Stop" onchange="autoFillFee(this.value, 'f11')" class="p-2 border rounded">
-                <datalist id="exitStops"></datalist>
-                
-                <select id="f10" onchange="applyFeeReduction()" required class="p-2 border rounded">
-    <option>Both Time</option>
-    <option>Morning Only</option>
-    <option>Evening Only</option>
-    <option>SPONSER</option>
-</select>
-                <input id="f11" required placeholder="Fee Amount" type="number" oninput="this.dataset.baseFee = this.value; applyFeeReduction();" class="p-2 border rounded">
-                <div class="col-span-2 md:col-span-4 flex gap-2">
-                    <button type="submit" id="sBtn" class="bg-blue-600 text-white px-6 py-2 rounded font-bold">Save</button>
-                    <button type="button" onclick="renderTab1(document.getElementById('tabContent'))" class="bg-gray-400 text-white px-4 py-2 rounded hidden" id="cBtn">Cancel</button>
-                </div>
-            </form>
+            </select>
+            <input id="f6" required placeholder="Parent Name" oninput="this.value = this.value.toUpperCase()" class="p-2 border rounded uppercase">
+            <input id="f7" required type="tel" placeholder="Phone" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)" class="p-2 border rounded">
             
-            <div class="flex flex-wrap gap-2 mb-4">
-    <input type="text" id="sSearchT1" onkeyup="searchT1()" placeholder="Search Name, Phone, Bus, Class, Division..." class="flex-grow p-2 border-2 border-gray-300 rounded focus:outline-none focus:border-blue-500">
-    <button type="button" onclick="printLandscapeRoster()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all">
-        🖨️ Print </button>
-</div>
+            <input list="entryStops" id="f8" placeholder="Entry Stop" class="p-2 border rounded">
+            <datalist id="entryStops"></datalist>
             
-            <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
-    <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
-        <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
-            <tr>
-                <th onclick="sortTab1Table('StudentName')" class="p-3 border cursor-pointer hover:bg-gray-700">Name ↕</th>
-                <th onclick="sortTab1Table('BusId')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Bus ↕</th>
-                <th onclick="sortTab1Table('Class')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Class ↕</th>
-                <th onclick="sortTab1Table('Phone')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Phone ↕</th>
-                <th onclick="sortTab1Table('Fee')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Fee ↕</th>
-                <th class="p-3 border text-center cursor-default">Action</th>
-            </tr>
-        </thead>
-        <tbody id="t1Body">
-            ${generateTab1Rows(currentTab1DB)}
-        </tbody>
+            <input list="exitStops" id="f9" required placeholder="Exit Stop" onchange="autoFillFee(this.value, 'f11')" class="p-2 border rounded">
+            <datalist id="exitStops"></datalist>
+            
+            <select id="f10" onchange="applyFeeReduction()" required class="p-2 border rounded">
+                <option>Both Time</option>
+                <option>Morning Only</option>
+                <option>Evening Only</option>
+                <option>SPONSER</option>
+            </select>
+            <input id="f11" required placeholder="Fee Amount" type="number" oninput="this.dataset.baseFee = this.value; applyFeeReduction();" class="p-2 border rounded">
+            <div class="col-span-2 md:col-span-4 flex gap-2">
+                <button type="submit" id="sBtn" class="bg-blue-600 text-white px-6 py-2 rounded font-bold">Save</button>
+                <button type="button" onclick="renderTab1(document.getElementById('tabContent'))" class="bg-gray-400 text-white px-4 py-2 rounded hidden" id="cBtn">Cancel</button>
+            </div>
+        </form>
         
-        <!-- ADDED: Compulsory Grand Total Footer -->
-        <tfoot class="bg-gray-100 border-t-2 border-gray-300 font-extrabold text-xs">
-            <tr id="t1TotalsRow">
-                <td colspan="4" class="p-3 text-right uppercase tracking-wider font-extrabold text-gray-700">Grand Total Fee:</td>
-                <td id="t1GrandTotalVal" class="p-3 text-center font-black text-blue-700 text-sm bg-blue-50/50">₹0</td>
-                <td class="p-3"></td>
-            </tr>
-        </tfoot>
-    </table>
-</div>
-
-            <!-- THE UI CARD CONTAINER -->
-            <div id="studentProfileCard" class="hidden mt-8"></div>
-        `;
+        <div class="flex flex-wrap gap-2 mb-4">
+            <input type="text" id="sSearchT1" onkeyup="searchT1()" placeholder="Search Name, Phone, Bus, Class, Division..." class="flex-grow p-2 border-2 border-gray-300 rounded focus:outline-none focus:border-blue-500">
+            <button type="button" onclick="printLandscapeRoster()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all">
+                🖨️ Print
+            </button>
+        </div>
         
-       // (Existing setup calls inside renderTab1...)
+        <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
+            <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
+                <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
+                    <tr>
+                        <th onclick="sortTab1Table('StudentName')" class="p-3 border cursor-pointer hover:bg-gray-700">Name ↕</th>
+                        <th onclick="sortTab1Table('BusId')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Bus ↕</th>
+                        <th onclick="sortTab1Table('Class')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Class ↕</th>
+                        <th onclick="sortTab1Table('Phone')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Phone ↕</th>
+                        <th onclick="sortTab1Table('Fee')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Fee ↕</th>
+                        <th class="p-3 border text-center cursor-default">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="t1Body">
+                    ${generateTab1Rows(currentTab1DB)}
+                </tbody>
+                <tfoot class="bg-gray-100 border-t-2 border-gray-300 font-extrabold text-xs">
+                    <tr id="t1TotalsRow">
+                        <td colspan="4" class="p-3 text-right uppercase tracking-wider font-extrabold text-gray-700">Grand Total Fee:</td>
+                        <td id="t1GrandTotalVal" class="p-3 text-center font-black text-blue-700 text-sm bg-blue-50/50">₹0</td>
+                        <td class="p-3"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div id="studentProfileCard" class="hidden mt-8"></div>
+    `;
+        
     filterStops('');
     filterClasses('');
-    
-    // Call the totalizer to calculate values upon load
     updateTab1Totals();
     
-    // --- ADD THE LOCKING LOGIC HERE ---
     const uSchool = getUserSchool();
     const uClass = curUser.tclass || curUser.tClass;
     const uDiv = curUser.tdiv || curUser.tDiv;
 
     if (curUser.role === "School") {
-        const f2 = document.getElementById('f2'); // School Dropdown
+        const f2 = document.getElementById('f2');
         if (f2) {
             f2.value = uSchool;
             f2.disabled = true;
-            filterClasses(uSchool, 'f3'); // Auto-load only this school's classes
+            filterClasses(uSchool, 'f3');
         }
     } 
     else if (curUser.role === "Teacher") {
-        const f2 = document.getElementById('f2'); // School Dropdown
-        const f3 = document.getElementById('f3'); // Class Dropdown
-        const f4 = document.getElementById('f4'); // Division Dropdown
+        const f2 = document.getElementById('f2');
+        const f3 = document.getElementById('f3');
+        const f4 = document.getElementById('f4');
         
         if (f2 && f3 && f4) {
             f2.value = uSchool;
             f2.disabled = true;
             
-            filterClasses(uSchool, 'f3'); // Load school classes first
+            filterClasses(uSchool, 'f3');
             f3.value = uClass;
             f3.disabled = true;
             
@@ -1332,7 +1322,6 @@ function downloadStudentPDF() {
         }
     }
     
-    // Fetch status check for Admin only
     if (curUser && curUser.role === "Admin") {
         refreshRegButton('student');
     }
@@ -2448,24 +2437,61 @@ setTimeout(() => updateDataTotals(currentDataDB), 100);
     updateDataTotals(filteredResults);
 }
     
-    function sendReminderWA(phone) {
+  function sendReminderWA(phone) {
   const s = db.find(x => String(x.Phone) === String(phone));
   if (!s) return alert("Student data not found.");
 
+  const baseFee = parseFloat(s.Fee) || 0;
   const months = ["Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
-  let paidMonths = months.filter(m => s[m] && parseFloat(s[m]) > 0).join(", ");
+  
+  // Map standard calendar indices to our academic month indices (0 to 9)
+  const curMonthIdx = new Date().getMonth(); // 0 = Jan, ..., 11 = Dec
+  const acadIndexMap = {
+    5: 0,  // Jun
+    6: 1,  // Jul
+    7: 2,  // Aug
+    8: 3,  // Sep
+    9: 4,  // Oct
+    10: 5, // Nov
+    11: 6, // Dec
+    0: 7,  // Jan
+    1: 8,  // Feb
+    2: 9,  // Mar
+    3: 9,  // Apr (cap at Mar)
+    4: 9   // May (cap at Mar)
+  };
+  
+  const maxIndex = acadIndexMap[curMonthIdx] !== undefined ? acadIndexMap[curMonthIdx] : 9;
+  const monthsUpToCurrent = months.slice(0, maxIndex + 1);
+  const currentMonthName = months[maxIndex];
 
-  // Build reminder message with the requested notice plus fee data
+  let paidMonthsList = [];
+  let pendingMonthsList = [];
+  let totalPendingUpToCurrent = 0;
+
+  // Process payment status specifically for months accrued up to the current month
+  monthsUpToCurrent.forEach(m => {
+    const amtPaid = parseFloat(s[m]) || 0;
+    if (amtPaid > 0) {
+      paidMonthsList.push(`${m} (₹${amtPaid})`);
+    } else {
+      pendingMonthsList.push(m);
+      totalPendingUpToCurrent += baseFee;
+    }
+  });
+
+  const paidStr = paidMonthsList.length > 0 ? paidMonthsList.join(", ") : "None";
+  const pendingStr = pendingMonthsList.length > 0 ? pendingMonthsList.join(", ") : "None";
+  const outstandingText = totalPendingUpToCurrent > 0 
+    ? `₹${totalPendingUpToCurrent}` 
+    : `₹0 (Up to date for ${currentMonthName})`;
+
   const message = `
 Dear Parent/Guardian,
 
-Kindly note that the school bus fee for your ward, *${s.StudentName}* (${s.Class}-${s.Div}), is currently pending.
+Kindly note that the school bus fee for your ward, *${s.StudentName}* (${s.Class}-${s.Div}), is pending.
 
-We request you to clear the outstanding amount of ₹${s.Balance || 0} at the earliest and update the payment up to date.
-
-Your prompt attention to this matter will help ensure the smooth continuation of the transportation service.
-
-Thank you for your cooperation.
+We request you to clear the outstanding pending amount of *${outstandingText}* up to the current month (*${currentMonthName}*) at the earliest.
 
 ----------------------------
 
@@ -2476,10 +2502,14 @@ Entry Stop: ${s.Entry || '-'}
 Exit Stop: ${s.Exit || '-'}
 
 *Fee Details:*  
-Monthly Fee: ₹${s.Fee}  
-Total Paid: ₹${s.Total || 0}  
-Pending Balance: ₹${s.Balance || 0}  
-Paid Months: ${paidMonths || 'None'}
+Monthly Fee: ₹${baseFee}  
+*Paid Months (Up to ${currentMonthName}):* ${paidStr}  
+*Pending Months (Up to ${currentMonthName}):* ${pendingStr}  
+*Pending Balance (Up to ${currentMonthName}):* ₹${totalPendingUpToCurrent}
+
+Your prompt attention to this matter will help ensure the smooth continuation of the transportation service.
+
+Thank you for your cooperation.
 
 _This is a system generated message._
 
