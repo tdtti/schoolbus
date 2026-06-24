@@ -127,7 +127,7 @@ input, select, textarea, [contenteditable="true"] {
 <header id="appHeader" class="hidden sticky top-0 z-50 bg-white border-b border-slate-200 text-slate-800 px-4 py-3 shadow-sm flex justify-between items-center gap-3 backdrop-blur-md bg-opacity-95">
     <!-- Left: Logo & Title (Logo background remains white) -->
     <div class="flex items-center gap-2.5 shrink-0">
-        <div class="w-9 h-9 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow-inner p-1 border border-slate-100">
+        <div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow-inner p-1 border border-slate-100">
             <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLs9jyTEZv_qb7Sl-eWiCONiB_n-Jjv4icm2S3lPnmoqXnCQedYEs_cA3dwEleMx_hl9ByCEFyLE2nH6wyatT_dKjQNScu5jwkMJngSC3q9RNdZmUaa12r1jmURQM8VnhQKugi1wCklnSYOWiG7uP2E1gNmCA29pXFrrMvw0yMoAhWhZA/s1600/Logo2.png" alt="School Logo" class="w-full h-full object-contain">
         </div>
         <div class="hidden sm:block leading-none">
@@ -2734,51 +2734,47 @@ Contact Your Class Teacher !!!
     const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
 
     c.innerHTML = `
-    <!-- Top Search Header -->
-    <div id="feeMgmtHeader" class="relative">
-        <h2 class="text-2xl font-bold mb-4">Fee Management</h2>
-        <div class="flex gap-2 mb-6 relative">
-            <div class="relative w-full md:w-1/2">
-                <input type="text" id="fSearch" oninput="instantFeeSearch(this.value)" placeholder="Type Phone or Name to search instantly..." class="p-2 border-2 border-gray-300 rounded w-full focus:outline-none focus:border-blue-500">
-                <div id="feeSuggestions" class="absolute z-50 w-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg hidden max-h-60 overflow-y-auto"></div>
+        <div id="feeMgmtHeader" class="relative">
+            <h2 class="text-2xl font-bold mb-4">Fee Management</h2>
+            <div class="flex gap-2 mb-6 relative">
+                <div class="relative w-full md:w-1/2">
+                    <input type="text" id="fSearch" oninput="instantFeeSearch(this.value)" placeholder="Type Phone or Name to search instantly..." class="p-2 border-2 border-gray-300 rounded w-full focus:outline-none focus:border-blue-500">
+                    <div id="feeSuggestions" class="absolute z-50 w-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg hidden max-h-60 overflow-y-auto"></div>
+                </div>
             </div>
         </div>
-    </div>
-    
-    <!-- Individual Payment Area (Hidden by Default) -->
-    <div id="feeArea" class="hidden mb-10 pb-8 border-b-2 border-gray-200">
-        <div class="flex justify-between items-center mb-2">
-            <h3 class="font-bold text-lg text-gray-800">Processing Payment</h3>
-            <button onclick="document.getElementById('feeArea').classList.add('hidden')" class="text-sm font-bold text-red-500 hover:bg-red-50 px-3 py-1 rounded">Close</button>
-        </div>
         
-        <div class="bg-blue-50 p-4 rounded mb-4 shadow-sm border border-blue-200" id="feeDetails"></div>
-        
-        <!-- UPDATED RESPONSIVE CONTAINER BELOW -->
-        <div id="feeAddSection" class="flex flex-col md:flex-row gap-3 mb-4 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm items-stretch md:items-center">
-            <select id="feeMon" class="w-full md:w-auto p-2.5 border rounded-xl outline-none focus:border-blue-500 font-bold text-sm bg-white"></select>
-            <input type="number" id="feeAmt" placeholder="Amount (₹)" class="w-full md:w-auto p-2.5 border rounded-xl outline-none focus:border-blue-500 font-bold text-sm flex-grow">
-            <button onclick="payFee()" class="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white px-8 py-2.5 rounded-xl font-black shadow-md transition-all active:scale-95">ADD</button>
-        </div>
+        <div id="feeArea" class="hidden mb-10 pb-8 border-b-2 border-gray-200">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="font-bold text-lg text-gray-800">Processing Payment</h3>
+                <button onclick="document.getElementById('feeArea').classList.add('hidden')" class="text-sm font-bold text-red-500 hover:bg-red-50 px-3 py-1 rounded">Close</button>
+            </div>
+            <div class="bg-blue-50 p-4 rounded mb-4 shadow-sm border border-blue-200" id="feeDetails"></div>
+            
+            <div id="feeAddSection" class="flex flex-col md:flex-row gap-3 mb-4 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm items-stretch md:items-center">
+                <select id="feeMon" class="w-full md:w-auto p-2.5 border rounded-xl outline-none focus:border-blue-500 font-bold text-sm bg-white"></select>
+                <input type="number" id="feeAmt" placeholder="Amount (₹)" class="w-full md:w-auto p-2.5 border rounded-xl outline-none focus:border-blue-500 font-bold text-sm flex-grow">
+                <button onclick="payFee()" class="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white px-8 py-2.5 rounded-xl font-black shadow-md transition-all active:scale-95">ADD</button>
+            </div>
 
-        <div class="overflow-x-auto mb-6">
-            <table class="w-full text-left text-sm border bg-white shadow-sm rounded-lg overflow-hidden">
-                <tr class="bg-gray-800 text-white">
-                    <th class="p-3">Month</th><th class="p-3">Amount Paid</th><th class="p-3">Receipt</th><th class="p-3">Date/Time</th>
-                </tr>
-                <tbody id="feeTable"></tbody>
-            </table>
-        </div>
+            <div class="overflow-x-auto mb-6">
+                <table class="w-full text-left text-sm border bg-white shadow-sm rounded-lg overflow-hidden">
+                    <tr class="bg-gray-800 text-white">
+                        <th class="p-3">Month</th><th class="p-3">Amount Paid</th><th class="p-3">Receipt</th><th class="p-3">Date/Time</th>
+                    </tr>
+                    <tbody id="feeTable"></tbody>
+                </table>
+            </div>
 
-        <div class="flex gap-3">
-            <button onclick="shareReport()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 no-print">
-                Share / Print Profile
-            </button>
-            <button onclick="shareFeeWA()" title="Share via WhatsApp" class="bg-green-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-green-700 transition shadow-lg shadow-green-100 no-print">
-                WhatsApp Report
-            </button>
+            <div class="flex gap-3">
+                <button onclick="shareReport()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 no-print">
+                    Share / Print Profile
+                </button>
+                <button onclick="shareFeeWA()" title="Share via WhatsApp" class="bg-green-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-green-700 transition shadow-lg shadow-green-100 no-print">
+                    WhatsApp Report
+                </button>
+            </div>
         </div>
-    </div>
         
         <div id="defaultFeeTableSection">
             <h3 class="text-xl font-black mb-4 text-gray-800 flex items-center gap-2">
@@ -2788,10 +2784,12 @@ Contact Your Class Teacher !!!
             </h3>
             
             <div class="w-full overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
-    <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
+                <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
                     <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
                         <tr>
-                            <th onclick="sortFeeTable('StudentName')" class="cursor-pointer hover:bg-gray-700 p-4 border sticky left-0 z-10 bg-gray-900 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Name & Details ↕</th>
+                            <th class="p-3 border text-center w-16">Sl No</th>
+                            <!-- Sticky classes removed from Name column header -->
+                            <th onclick="sortFeeTable('StudentName')" class="cursor-pointer hover:bg-gray-700 p-4 border">Name & Details ↕</th>
                             <th onclick="sortFeeTable('Fee')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center text-[10px] text-gray-300">Fee Base ↕</th>
                             ${months.map(m => `<th onclick="sortFeeTable('${m}')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center text-[11px] min-w-[100px]">${m} ↕</th>`).join('')}
                             <th onclick="sortFeeTable('Total')" class="cursor-pointer hover:bg-green-800 p-3 border text-center bg-green-900 min-w-[100px]">Total Paid ↕</th>
@@ -2808,6 +2806,158 @@ Contact Your Class Teacher !!!
         </div>
     `;
     setTimeout(() => updateFeeTotals(currentFeeDB), 100);
+}
+
+function generateFeeTableRows(dbData) {
+    const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+    if (!dbData || dbData.length === 0) {
+        return '<tr><td colspan="16" class="p-6 text-center text-gray-400 italic">No students found.</td></tr>';
+    }
+
+    return dbData.map((s, idx) => {
+        let monthCells = months.map(m => {
+            const amt = parseFloat(s[m]);
+            if (amt > 0) {
+                return `<td class="p-2 border text-[10px] text-center align-top min-w-[100px]">
+                            <div class="font-bold text-green-600 text-xs mb-1">₹${s[m]}</div>
+                            <div class="text-gray-500 whitespace-nowrap bg-gray-50 rounded px-1 mb-0.5" title="Receipt No">${s[m+'Receipt']||'-'}</div>
+                            <div class="text-gray-400 whitespace-nowrap" title="Date Paid">${formatMyDate(s[m+'DateTime'])||'-'}</div>
+                        </td>`;
+            } else {
+                return `<td class="p-2 border text-[10px] text-center align-middle min-w-[100px]">
+                            <span class="bg-red-50 text-red-600 font-bold px-2 py-1.5 rounded border border-red-100">Pending</span>
+                        </td>`;
+            }
+        }).join('');
+
+        const reminderBtn = `<button onclick="sendReminderWA('${s.Phone}')" class="flex items-center gap-1 bg-green-600 text-white px-3 py-1.5 rounded text-[10px] font-bold hover:bg-green-700 transition mx-auto shadow-sm" title="Send Fee Reminder">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.52 3.48A11.91 11.91 0 0012 0C5.37 0 0 5.37 0 12a11.7 11.7 0 001.95 6L0 24l6-1.95a11.86 11.86 0 005.94 1.7c6.63 0 12-5.37 12-12a11.89 11.89 0 00-3.42-8.27zM12 21a9.25 9.25 0 01-4.77-1.35l-.34-.22-3.57 1.16 1.11-3.48-.22-.36A9.25 9.25 0 012.75 12 9.25 9.25 0 0112 2.75 9.25 9.25 0 0121.25 12 9.25 9.25 0 0112 21zm5.37-6.31l-1.5-.43a.51.51 0 00-.47.14l-.98 1.07a7.38 7.38 0 01-3.46-3.44l1.07-.98a.53.53 0 00.15-.46l-.43-1.51a.54.54 0 00-.66-.37l-2.22.56a.51.51 0 00-.41.64A7 7 0 0014 16a7 7 0 002.37-1.17.5.5 0 00.13-.69z"/></svg>WA
+        </button>`;
+
+        return `
+        <tr class="hover:bg-blue-50 bg-white group transition" data-gender="${s.Gender || ''}">
+            <td class="p-3 border-r text-center text-gray-500 font-bold">${idx + 1}</td>
+            <!-- Sticky styling removed from Name cell -->
+            <td class="p-3 border font-bold text-xs bg-white group-hover:bg-blue-50">
+                <div class="whitespace-nowrap text-gray-800 text-sm">${s.StudentName}</div>
+                <div class="text-[10px] font-bold text-blue-600 mt-1 uppercase">${s.Class}-${s.Div}</div>
+                <div class="text-[10px] font-medium text-gray-500">${s.Phone}</div>
+            </td>
+            <td class="p-2 border font-bold text-xs text-center align-middle text-gray-600 bg-gray-50">₹${s.Fee || 0}</td>
+            ${monthCells}
+            <td class="p-2 border font-black text-green-700 text-sm text-center align-middle bg-green-50">₹${s.Total || 0}</td>
+            <td class="p-2 border font-black text-red-600 text-sm text-center align-middle bg-red-50">₹${s.Balance || 0}</td>
+            <td class="p-2 border text-center align-middle">${reminderBtn}</td>
+        </tr>`;
+    }).join('');
+}
+
+function updateFeeTotals(data) {
+    if (!data) return;
+    const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+    let totals = { fee: 0, total: 0, balance: 0 };
+    months.forEach(m => totals[m] = 0);
+
+    let visibleCount = 0;
+    let visibleM = 0;
+    let visibleF = 0;
+
+    data.forEach(s => {
+        totals.fee += parseFloat(s.Fee) || 0;
+        totals.total += parseFloat(s.Total) || 0;
+        totals.balance += parseFloat(s.Balance) || 0;
+        months.forEach(m => {
+            totals[m] += parseFloat(s[m]) || 0;
+        });
+
+        visibleCount++;
+        if (s.Gender === "M") visibleM++;
+        else if (s.Gender === "F") visibleF++;
+    });
+
+    const footer = document.getElementById('feeOverviewFooter');
+    if (!footer) return;
+
+    footer.innerHTML = `
+        <tr class="text-[11px] uppercase bg-gray-200">
+            <!-- Sticky layout styling removed from footer summary cell -->
+            <td colspan="2" class="p-3 border bg-gray-300 font-black">
+                <span id="t4CountVal" class="mr-6 normal-case text-gray-500 font-medium">M: ${visibleM} | F: ${visibleF} | Total: ${visibleCount}</span>
+                Grand Total
+            </td>
+            <td class="p-2 border text-center font-black bg-gray-100">₹${totals.fee.toLocaleString('en-IN')}</td>
+            ${months.map(m => `
+                <td class="p-2 border text-center font-black ${totals[m] > 0 ? 'text-green-700' : 'text-gray-400'}">
+                    ₹${totals[m].toLocaleString('en-IN')}
+                </td>
+            `).join('')}
+            <td class="p-2 border text-center font-black text-green-800 bg-green-100">₹${totals.total.toLocaleString('en-IN')}</td>
+            <td class="p-2 border text-center font-black text-red-700 bg-red-100">₹${totals.balance.toLocaleString('en-IN')}</td>
+            <td class="p-2 border"></td>
+        </tr>
+    `;
+}
+
+function searchFeeOverview(q) {
+    const query = q.toLowerCase();
+    const rows = Array.from(document.getElementById('defaultFeeTableBody').rows);
+    const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+    
+    let totals = { fee: 0, total: 0, balance: 0 };
+    months.forEach(m => totals[m] = 0);
+
+    let visibleCount = 0;
+    let visibleM = 0;
+    let visibleF = 0;
+
+    rows.forEach(r => {
+        if (r.cells.length < 16) return;
+        
+        const details = r.cells[1].innerText.toLowerCase();
+        const match = details.includes(query);
+
+        if (match) {
+            r.style.display = '';
+            visibleCount++;
+            r.cells[0].innerText = visibleCount; // Re-index visible Sl No
+
+            totals.fee += parseFloat(r.cells[2].innerText.replace(/[^\d.]/g, '')) || 0;
+            months.forEach((m, idx) => {
+                const monthCellVal = r.cells[3 + idx].innerText.replace(/[^\d.]/g, '');
+                totals[m] += parseFloat(monthCellVal) || 0;
+            });
+            totals.total += parseFloat(r.cells[13].innerText.replace(/[^\d.]/g, '')) || 0;
+            totals.balance += parseFloat(r.cells[14].innerText.replace(/[^\d.]/g, '')) || 0;
+
+            const gender = r.dataset.gender || "";
+            if (gender === "M") visibleM++;
+            else if (gender === "F") visibleF++;
+        } else {
+            r.style.display = 'none';
+        }
+    });
+
+    const footer = document.getElementById('feeOverviewFooter');
+    if (footer) {
+        footer.innerHTML = `
+            <tr class="text-[11px] uppercase bg-gray-200">
+                <!-- Sticky layout styling removed from footer search summary cell -->
+                <td colspan="2" class="p-3 border bg-gray-300 font-black">
+                    <span id="t4CountVal" class="mr-6 normal-case text-gray-500 font-medium">M: ${visibleM} | F: ${visibleF} | Total: ${visibleCount}</span>
+                    Grand Total
+                </td>
+                <td class="p-2 border text-center font-black bg-gray-100">₹${totals.fee.toLocaleString('en-IN')}</td>
+                ${months.map(m => `
+                    <td class="p-2 border text-center font-black ${totals[m] > 0 ? 'text-green-700' : 'text-gray-400'}">
+                        ₹${totals[m].toLocaleString('en-IN')}
+                    </td>
+                `).join('')}
+                <td class="p-2 border text-center font-black text-green-800 bg-green-100">₹${totals.total.toLocaleString('en-IN')}</td>
+                <td class="p-2 border text-center font-black text-red-700 bg-red-100">₹${totals.balance.toLocaleString('en-IN')}</td>
+                <td class="p-2 border"></td>
+            </tr>
+        `;
+    }
 }
 
 function instantFeeSearch(q) {
@@ -2844,95 +2994,10 @@ function selectFeeStudent(name) {
     findFeeStu();
 }
 
-function updateFeeTotals(data) {
-    if (!data) return;
-    const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
-    let totals = { fee: 0, total: 0, balance: 0 };
-    months.forEach(m => totals[m] = 0);
-
-    let visibleCount = 0;
-    let visibleM = 0;
-    let visibleF = 0;
-
-    data.forEach(s => {
-        totals.fee += parseFloat(s.Fee) || 0;
-        totals.total += parseFloat(s.Total) || 0;
-        totals.balance += parseFloat(s.Balance) || 0;
-        months.forEach(m => {
-            totals[m] += parseFloat(s[m]) || 0;
-        });
-
-        visibleCount++;
-        if (s.Gender === "M") visibleM++;
-        else if (s.Gender === "F") visibleF++;
-    });
-
-    const footer = document.getElementById('feeOverviewFooter');
-    if (!footer) return;
-
-    footer.innerHTML = `
-        <tr class="text-[11px] uppercase bg-gray-200">
-            <td colspan="2" class="p-3 border sticky left-0 z-10 bg-gray-300 font-black shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
-                <span id="t4CountVal" class="mr-6 normal-case text-gray-500 font-medium">M: ${visibleM} | F: ${visibleF} | Total: ${visibleCount}</span>
-                Grand Total
-            </td>
-            <td class="p-2 border text-center font-black bg-gray-100">₹${totals.fee.toLocaleString('en-IN')}</td>
-            ${months.map(m => `
-                <td class="p-2 border text-center font-black ${totals[m] > 0 ? 'text-green-700' : 'text-gray-400'}">
-                    ₹${totals[m].toLocaleString('en-IN')}
-                </td>
-            `).join('')}
-            <td class="p-2 border text-center font-black text-green-800 bg-green-100">₹${totals.total.toLocaleString('en-IN')}</td>
-            <td class="p-2 border text-center font-black text-red-700 bg-red-100">₹${totals.balance.toLocaleString('en-IN')}</td>
-            <td class="p-2 border"></td>
-        </tr>
-    `;
-}
 
 
-// Generates the table HTML dynamically so we can re-render it instantly when sorted
-function generateFeeTableRows(dbData) {
-    const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
-    if (!dbData || dbData.length === 0) {
-        return '<tr><td colspan="16" class="p-6 text-center text-gray-400 italic">No students found.</td></tr>';
-    }
 
-    return dbData.map((s, idx) => {
-        let monthCells = months.map(m => {
-            const amt = parseFloat(s[m]);
-            if (amt > 0) {
-                return `<td class="p-2 border text-[10px] text-center align-top min-w-[100px]">
-                            <div class="font-bold text-green-600 text-xs mb-1">₹${s[m]}</div>
-                            <div class="text-gray-500 whitespace-nowrap bg-gray-50 rounded px-1 mb-0.5" title="Receipt No">${s[m+'Receipt']||'-'}</div>
-                            <div class="text-gray-400 whitespace-nowrap" title="Date Paid">${formatMyDate(s[m+'DateTime'])||'-'}</div>
-                        </td>`;
-            } else {
-                return `<td class="p-2 border text-[10px] text-center align-middle min-w-[100px]">
-                            <span class="bg-red-50 text-red-600 font-bold px-2 py-1.5 rounded border border-red-100">Pending</span>
-                        </td>`;
-            }
-        }).join('');
 
-        const reminderBtn = `<button onclick="sendReminderWA('${s.Phone}')" class="flex items-center gap-1 bg-green-600 text-white px-3 py-1.5 rounded text-[10px] font-bold hover:bg-green-700 transition mx-auto shadow-sm" title="Send Fee Reminder">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.52 3.48A11.91 11.91 0 0012 0C5.37 0 0 5.37 0 12a11.7 11.7 0 001.95 6L0 24l6-1.95a11.86 11.86 0 005.94 1.7c6.63 0 12-5.37 12-12a11.89 11.89 0 00-3.42-8.27zM12 21a9.25 9.25 0 01-4.77-1.35l-.34-.22-3.57 1.16 1.11-3.48-.22-.36A9.25 9.25 0 012.75 12 9.25 9.25 0 0112 2.75 9.25 9.25 0 0121.25 12 9.25 9.25 0 0112 21zm5.37-6.31l-1.5-.43a.51.51 0 00-.47.14l-.98 1.07a7.38 7.38 0 01-3.46-3.44l1.07-.98a.53.53 0 00.15-.46l-.43-1.51a.54.54 0 00-.66-.37l-2.22.56a.51.51 0 00-.41.64A7 7 0 0014 16a7 7 0 002.37-1.17.5.5 0 00.13-.69z"/></svg>WA
-        </button>`;
-
-        return `
-        <tr class="hover:bg-blue-50 bg-white group transition" data-gender="${s.Gender || ''}">
-            <td class="p-3 border-r text-center text-gray-500 font-bold">${idx + 1}</td>
-            <td class="p-3 border font-bold text-xs sticky left-0 z-10 bg-white group-hover:bg-blue-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                <div class="whitespace-nowrap text-gray-800 text-sm">${s.StudentName}</div>
-                <div class="text-[10px] font-bold text-blue-600 mt-1 uppercase">${s.Class}-${s.Div}</div>
-                <div class="text-[10px] font-medium text-gray-500">${s.Phone}</div>
-            </td>
-            <td class="p-2 border font-bold text-xs text-center align-middle text-gray-600 bg-gray-50">₹${s.Fee || 0}</td>
-            ${monthCells}
-            <td class="p-2 border font-black text-green-700 text-sm text-center align-middle bg-green-50">₹${s.Total || 0}</td>
-            <td class="p-2 border font-black text-red-600 text-sm text-center align-middle bg-red-50">₹${s.Balance || 0}</td>
-            <td class="p-2 border text-center align-middle">${reminderBtn}</td>
-        </tr>`;
-    }).join('');
-}
 
 
 // Sorting logic handles text (Name) and numbers (Amounts/Balances) automatically
@@ -2970,66 +3035,7 @@ function sortFeeTable(col) {
     updateFeeTotals(currentFeeDB);
 }
 
-function searchFeeOverview(q) {
-    const query = q.toLowerCase();
-    const rows = Array.from(document.getElementById('defaultFeeTableBody').rows);
-    const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
-    
-    let totals = { fee: 0, total: 0, balance: 0 };
-    months.forEach(m => totals[m] = 0);
 
-    let visibleCount = 0;
-    let visibleM = 0;
-    let visibleF = 0;
-
-    rows.forEach(r => {
-        if (r.cells.length < 16) return;
-        
-        const details = r.cells[1].innerText.toLowerCase();
-        const match = details.includes(query);
-
-        if (match) {
-            r.style.display = '';
-            visibleCount++;
-            r.cells[0].innerText = visibleCount; // Re-index Sl No
-
-            totals.fee += parseFloat(r.cells[2].innerText.replace(/[^\d.]/g, '')) || 0;
-            months.forEach((m, idx) => {
-                const monthCellVal = r.cells[3 + idx].innerText.replace(/[^\d.]/g, '');
-                totals[m] += parseFloat(monthCellVal) || 0;
-            });
-            totals.total += parseFloat(r.cells[13].innerText.replace(/[^\d.]/g, '')) || 0;
-            totals.balance += parseFloat(r.cells[14].innerText.replace(/[^\d.]/g, '')) || 0;
-
-            const gender = r.dataset.gender || "";
-            if (gender === "M") visibleM++;
-            else if (gender === "F") visibleF++;
-        } else {
-            r.style.display = 'none';
-        }
-    });
-
-    const footer = document.getElementById('feeOverviewFooter');
-    if (footer) {
-        footer.innerHTML = `
-            <tr class="text-[11px] uppercase bg-gray-200">
-                <td colspan="2" class="p-3 border sticky left-0 z-10 bg-gray-300 font-black shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
-                    <span id="t4CountVal" class="mr-6 normal-case text-gray-500 font-medium">M: ${visibleM} | F: ${visibleF} | Total: ${visibleCount}</span>
-                    Grand Total
-                </td>
-                <td class="p-2 border text-center font-black bg-gray-100">₹${totals.fee.toLocaleString('en-IN')}</td>
-                ${months.map(m => `
-                    <td class="p-2 border text-center font-black ${totals[m] > 0 ? 'text-green-700' : 'text-gray-400'}">
-                        ₹${totals[m].toLocaleString('en-IN')}
-                    </td>
-                `).join('')}
-                <td class="p-2 border text-center font-black text-green-800 bg-green-100">₹${totals.total.toLocaleString('en-IN')}</td>
-                <td class="p-2 border text-center font-black text-red-700 bg-red-100">₹${totals.balance.toLocaleString('en-IN')}</td>
-                <td class="p-2 border"></td>
-            </tr>
-        `;
-    }
-}
 
 
     
@@ -4568,7 +4574,7 @@ async function fetchExp() {
     }
 }
 
-async function renderTab9(c) {
+function renderTab9(c) {
     const year = "2026-2027";
     c.innerHTML = `
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
@@ -4578,14 +4584,14 @@ async function renderTab9(c) {
             </button>
         </div>
 
-        <!-- 4-COLUMN SUMMARY TABLE -->
-        <div id="balanceSheetWrapper" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-8">
-            <table class="w-full text-sm border-collapse">
+        <!-- Scrollable Summary Table -->
+        <div id="balanceSheetWrapper" class="w-full overflow-x-auto bg-white rounded-2xl border border-slate-200 shadow-sm mb-8">
+            <table class="w-full text-sm border-collapse whitespace-nowrap">
                 <thead>
                     <tr class="bg-slate-600 text-white uppercase text-[11px] tracking-widest">
-                        <th class="p-4 border-r border-slate-700 w-1/4">Income </th>
+                        <th class="p-4 border-r border-slate-700 w-1/4">Income</th>
                         <th class="p-4 border-r border-slate-700 w-1/4 text-right">Amount (₹)</th>
-                        <th class="p-4 border-r border-slate-700 w-1/4">Expense </th>
+                        <th class="p-4 border-r border-slate-700 w-1/4">Expense</th>
                         <th class="p-4 w-1/4 text-right">Amount (₹)</th>
                     </tr>
                 </thead>
@@ -4603,11 +4609,11 @@ async function renderTab9(c) {
                 <summary class="flex justify-between items-center p-5 cursor-pointer bg-green-50 hover:bg-green-100 transition list-none">
                     <span class="font-bold text-green-800 flex items-center gap-2">📊 1. INCOME (IN DETAIL)</span>
                     <div class="flex items-center gap-4">
-                        <button onclick="event.preventDefault(); printFinancialReport('income')" class="text-xs bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg font-bold transition shadow-sm">Export Detailed PDF</button>
+                        <button onclick="event.preventDefault(); printFinancialReport('income')" class="bg-white hover:bg-slate-100 text-slate-800 border px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm">Print</button>
                         <span class="transition group-open:rotate-180">▼</span>
                     </div>
                 </summary>
-                <div class="p-4 overflow-x-auto">
+                <div class="p-4 overflow-x-auto w-full">
                     <table class="w-full text-[11px] border whitespace-nowrap">
                         <thead class="bg-slate-100 uppercase">
                             <tr><th class="p-2 border">Date</th><th class="p-2 border">Receipt No</th><th class="p-2 border">Name</th><th class="p-2 border">School</th><th class="p-2 border">Class</th><th class="p-2 border">Div</th><th class="p-2 border">Month</th><th class="p-2 border text-right">Amount</th><th class="p-2 border">Generated By</th></tr>
@@ -4622,11 +4628,11 @@ async function renderTab9(c) {
                 <summary class="flex justify-between items-center p-5 cursor-pointer bg-red-50 hover:bg-red-100 transition list-none">
                     <span class="font-bold text-red-800 flex items-center gap-2">📉 2. EXPENSES (IN DETAIL)</span>
                     <div class="flex items-center gap-4">
-                        <button onclick="event.preventDefault(); printFinancialReport('expense')" class="text-xs bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-lg font-bold transition shadow-sm">Export Detailed PDF</button>
+                        <button onclick="event.preventDefault(); printFinancialReport('expense')" class="bg-white hover:bg-slate-100 text-slate-800 border px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm">Print</button>
                         <span class="transition group-open:rotate-180">▼</span>
                     </div>
                 </summary>
-                <div class="p-4 overflow-x-auto">
+                <div class="p-4 overflow-x-auto w-full">
                     <table class="w-full text-[11px] border whitespace-nowrap">
                         <thead class="bg-slate-100 uppercase">
                             <tr><th class="p-2 border">Date & Time</th><th class="p-2 border">Bus ID</th><th class="p-2 border">Voucher No</th><th class="p-2 border">Title</th><th class="p-2 border">Remarks</th><th class="p-2 border text-right">Amount</th><th class="p-2 border">Authorised By</th></tr>
