@@ -93,6 +93,15 @@ input, select, textarea, [contenteditable="true"] {
     padding: 10px;
 }
 
+/* Hide scrollbar tracks for smooth horizontal swipes on mobile screens */
+.scrollbar-none::-webkit-scrollbar { 
+    display: none; 
+}
+.scrollbar-none { 
+    -ms-overflow-style: none; 
+    scrollbar-width: none; 
+}
+
 /* Modern Background & Transitions */
         @keyframes blob {
             0% { transform: translate(0px, 0px) scale(1); }
@@ -114,30 +123,34 @@ input, select, textarea, [contenteditable="true"] {
 <body class="bg-gray-100 text-gray-800 font-sans">
     <div id="loaderOverlay"><div class="loader mb-2"></div><p class="font-bold text-blue-600">Processing...</p></div>
 
-    <header id="appHeader" class="hidden sticky top-0 z-[100] bg-gradient-to-r from-blue-700 to-indigo-800 text-white px-4 py-3 shadow-lg flex flex-col sm:flex-row justify-between items-center gap-3 border-b border-blue-600/50 backdrop-blur-md bg-opacity-95">
-    <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-        <div class="flex items-center gap-2">
-            <!-- School Logo -->
-            <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow-inner border border-white/20 p-1">
-                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLs9jyTEZv_qb7Sl-eWiCONiB_n-Jjv4icm2S3lPnmoqXnCQedYEs_cA3dwEleMx_hl9ByCEFyLE2nH6wyatT_dKjQNScu5jwkMJngSC3q9RNdZmUaa12r1jmURQM8VnhQKugi1wCklnSYOWiG7uP2E1gNmCA29pXFrrMvw0yMoAhWhZA/s1600/Logo2.png" alt="School Logo" class="w-full h-full object-contain">
-            </div>
-            <div>
-                <h1 class="text-base font-black tracking-tight leading-none">TD Schools</h1>
-                <span class="text-[9px] text-blue-200 font-bold uppercase tracking-widest">Bus Management Portal</span>
-            </div>
+   <!-- Light-Theme Sticky Header (Optimized for maximum contrast and readability) -->
+<header id="appHeader" class="hidden sticky top-0 z-50 bg-white border-b border-slate-200 text-slate-800 px-4 py-3 shadow-sm flex justify-between items-center gap-3 backdrop-blur-md bg-opacity-95">
+    <!-- Left: Logo & Title (Logo background remains white) -->
+    <div class="flex items-center gap-2.5 shrink-0">
+        <div class="w-9 h-9 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow-inner p-1 border border-slate-100">
+            <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLs9jyTEZv_qb7Sl-eWiCONiB_n-Jjv4icm2S3lPnmoqXnCQedYEs_cA3dwEleMx_hl9ByCEFyLE2nH6wyatT_dKjQNScu5jwkMJngSC3q9RNdZmUaa12r1jmURQM8VnhQKugi1wCklnSYOWiG7uP2E1gNmCA29pXFrrMvw0yMoAhWhZA/s1600/Logo2.png" alt="School Logo" class="w-full h-full object-contain">
         </div>
-        <button onclick="logout()" class="sm:hidden bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-xl text-xs font-black shadow-md active:scale-95 transition-all">Logout</button>
+        <div class="hidden sm:block leading-none">
+            <h1 class="text-sm font-black tracking-tight text-slate-800 leading-none">TD Schools</h1>
+            <span class="text-[8px] text-slate-500 font-bold uppercase tracking-widest mt-0.5 block">Bus Portal</span>
+        </div>
     </div>
-    
-    <div class="flex flex-row items-center gap-4 w-full sm:w-auto justify-between sm:justify-end bg-blue-900/30 sm:bg-transparent p-2.5 sm:p-0 rounded-2xl border border-blue-500/20 sm:border-none">
-        <div class="text-left sm:text-right">
-            <div class="flex items-center gap-1.5 justify-start sm:justify-end">
-                <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                <p id="welcomeUser" class="text-xs sm:text-sm font-black text-white"></p>
-            </div>
-            <p id="sessionTime" class="text-[10px] sm:text-xs text-blue-200 font-mono font-semibold mt-0.5"></p>
+
+    <!-- Center: Combined Welcome & Session Status Pill (Light Theme) -->
+    <div class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200/80 shadow-inner">
+        <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shrink-0"></span>
+        <div class="flex flex-col sm:flex-row sm:items-center gap-0 sm:gap-2 leading-none">
+            <p id="welcomeUser" class="text-[11px] sm:text-xs font-black text-slate-700 truncate max-w-[180px] sm:max-w-none"></p>
+            <span class="hidden sm:inline text-slate-300 font-normal">|</span>
+            <p id="sessionTime" class="text-[9px] sm:text-xs text-blue-600 font-mono font-bold mt-0.5 sm:mt-0"></p>
         </div>
-        <button onclick="logout()" class="hidden sm:block bg-red-500 hover:bg-red-600 px-5 py-2 rounded-xl text-xs font-black shadow-md hover:shadow-red-500/20 active:scale-95 transition-all">Logout</button>
+    </div>
+
+    <!-- Right: Logout Button -->
+    <div class="shrink-0">
+        <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl text-xs font-black shadow-md hover:shadow-red-500/20 active:scale-95 transition-all">
+            Logout
+        </button>
     </div>
 </header>
 
@@ -253,8 +266,8 @@ input, select, textarea, [contenteditable="true"] {
     <!-- Main App Container: Stacks vertically on mobile, switches to a side-by-side layout on large screens -->
 <!-- Updated mainApp container with min-w-0 added to tabContent -->
 <div id="mainApp" class="hidden flex flex-col lg:flex-row gap-6 p-4 max-w-[1600px] mx-auto items-start">
-    <!-- Left Sticky Sidebar -->
-    <div id="tabs" class="flex flex-row lg:flex-col lg:w-64 w-full overflow-x-auto lg:overflow-x-visible lg:overflow-y-auto gap-2 pb-4 lg:pb-0 lg:sticky lg:top-24 z-40 shrink-0"></div>
+<!-- Floating Light-Theme Navigation (Transparent on mobile, bordered card on desktop) -->
+<div id="tabs" class="flex flex-col lg:w-64 w-full lg:sticky lg:top-24 z-40 shrink-0 select-none lg:bg-white lg:p-4 lg:rounded-3xl lg:border lg:border-slate-200/80 lg:shadow-sm"></div>
     
     <!-- Workspace Panel (min-w-0 applied to enforce internal horizontal scrollbars) -->
     <div id="tabContent" class="flex-grow w-full min-w-0 bg-white p-6 rounded-3xl shadow-sm border border-gray-100 min-h-[70vh]"></div>
@@ -490,26 +503,35 @@ window.addEventListener('beforeunload', function() {
 });
     
     
-    window.onload = async () => {
+    window.onload = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const regType = urlParams.get('register');
     const isPublicRegistration = (regType === 'student' || regType === 'staff');
 
-    showLoad();
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); 
-
-    try {
-        // SINGLE UNIFIED BOOTSTRAP NETWORK REQUEST
-        const res = await fetch(API_URL, {
-            method: 'POST', 
-            body: JSON.stringify({ action: "getBootstrapData" }),
-            signal: controller.signal
-        }).then(x => x.json());
+    // HIDE GLOBAL LOADER INSTANTLY FOR STANDARD PORTAL ENTRANCE
+    if (isPublicRegistration) {
+        initializeRegistrationMode(regType);
+    } else {
+        hideLoad(); // Instantly removes the processing spinner (0 seconds delay)
+        document.getElementById('loginSection').classList.remove('hidden');
+        handleAutoLogin();
         
-        clearTimeout(timeoutId);
-        
+        // Quietly fetch configurations in the background while typing
+        prefetchBootstrapData();
+    }
+};
+
+let prefetchPromise = null;
+
+async function prefetchBootstrapData() {
+    if (prefetchPromise) return prefetchPromise;
+    
+    prefetchPromise = fetch(API_URL, {
+        method: 'POST', 
+        body: JSON.stringify({ action: "getBootstrapData" })
+    })
+    .then(x => x.json())
+    .then(res => {
         if (res.success && res.data) {
             const boot = res.data;
             stopsRawDB = boot.stops || [];
@@ -517,49 +539,193 @@ window.addEventListener('beforeunload', function() {
             users = boot.users || {};
             db = boot.students || [];
             todayAtt = boot.todayAttendance || [];
-            
             sessionStorage.setItem('student_db', JSON.stringify(db));
-            console.log("Bootstrap synchronization completed successfully.");
+            return boot;
         } else {
             throw new Error("Bootstrap payload invalid");
         }
+    })
+    .catch(e => {
+        console.warn("Silent background pre-fetch failed. Retrying on demand.", e);
+        prefetchPromise = null; // Clear cache on failure to allow retry
+    });
+    
+    return prefetchPromise;
+}
 
-        hideLoad();
+async function loginOfficial() {
+    const u = document.getElementById('offUser').value.trim();
+    const p = document.getElementById('offPass').value.trim();
+    const keep = document.getElementById('keepLogin').checked;
 
-        if (isPublicRegistration) {
-            initializeRegistrationMode(regType);
-        } else {
-            handleAutoLogin();
-        }
-    } catch (error) {
-        clearTimeout(timeoutId);
+    // Failsafe: if background pre-fetch is still running, complete it first
+    if (Object.keys(users).length === 0) {
+        showLoad();
+        await prefetchBootstrapData();
         hideLoad();
-        
-        if (error.name === 'AbortError') {
-            document.body.innerHTML = `
-                <div class="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-6 text-center">
-                    <span class="text-5xl mb-4">📶</span>
-                    <h2 class="text-xl font-bold mb-2">Weak Connection Detected</h2>
-                    <p class="text-sm text-slate-400 max-w-md">Your internet connection is taking too long to respond. Please try reloading in a better coverage area.</p>
-                    <button onclick="window.location.reload()" class="mt-6 bg-blue-600 hover:bg-blue-700 px-6 py-2.5 rounded-xl font-bold text-sm transition">Retry Loading</button>
-                </div>
-            `;
-        } else {
-            console.error("System Initialization Failure:", error);
-            document.body.innerHTML = `
-                <div class="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-gray-800 p-6 text-center">
-                    <span class="text-5xl mb-4">⚠️</span>
-                    <h2 class="text-xl font-bold text-red-600 mb-2">System Configuration Error</h2>
-                    <p class="text-sm text-gray-600 max-w-lg mb-4">The application failed to initialize. Please check your Web App deployment settings.</p>
-                    <div class="bg-gray-200 text-left font-mono text-xs p-4 rounded-xl border border-gray-300 max-w-lg overflow-x-auto w-full mb-4">
-                        <strong>Details:</strong> ${error.message || error.toString()}
-                    </div>
-                    <button onclick="window.location.reload()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition">Retry Loading</button>
-                </div>
-            `;
-        }
     }
-};
+
+    if (users[u] && String(users[u].pass) === String(p)) {
+        startSession(users[u]);
+        if (keep) {
+            localStorage.setItem('keepUser', u);
+            localStorage.setItem('keepPass', p);
+        } else {
+            localStorage.removeItem('keepUser');
+            localStorage.removeItem('keepPass');
+        }
+    } else {
+        msg("Error", "Invalid Official ID or Password", "error");
+    }
+}
+
+
+
+
+function renderTabs() {
+    const t = document.getElementById('tabs'); 
+    t.innerHTML = '';
+    
+    if(!curUser) return;
+    if(curUser.role === "Student") { loadTab(0); return; }
+    
+    if(!curUser.access || !Array.isArray(curUser.access)) {
+        t.innerHTML = '<p class="text-red-500 text-xs font-bold text-center">Error: Access denied.</p>';
+        return;
+    }
+
+    const tabConfig = {
+        1:  { name: "Students", icon: "🎓" },
+        2:  { name: "Attendance", icon: "✅" },
+        3:  { name: "Database", icon: "📊" },
+        11: { name: "Pending", icon: "⏳" },
+        4:  { name: "Fee Pay", icon: "💰" },
+        5:  { name: "Receipts", icon: "🧾" },
+        6:  { name: "Logs", icon: "📜" },
+        7:  { name: "Staff", icon: "👔" },
+        8:  { name: "Expenses", icon: "💸" },
+        9:  { name: "Balance", icon: "⚖️" },
+        10: { name: "Live Map", icon: "📍" },
+        13: { name: "Stops & Fees", icon: "🎟️" },
+        12: { name: "Settings", icon: "⚙️" },
+        14: { name: "Cash Book", icon: "📓" }
+    };
+
+    const categories = {
+        "Transit & Ops": [1, 2, 11, 10],
+        "Financials": [4, 5, 8, 9, 14],
+        "Administration": [3, 7, 13],
+        "System": [6, 12]
+    };
+
+    let firstBtnToClick = null;
+
+    // --- 1. MOBILE STRUCTURE: Group all categories into a single horizontal swipe menu ---
+    const mobileGroup = document.createElement('div');
+    mobileGroup.className = "flex lg:hidden flex-row gap-2 overflow-x-auto pb-3 w-full scrollbar-none shrink-0";
+
+    // --- 2. DESKTOP STRUCTURE: Group categories as vertical blocks ---
+    const desktopSectionsContainer = document.createElement('div');
+    desktopHeaderClasses = "text-[10px] font-black tracking-widest text-slate-400 uppercase px-4 mb-2 select-none";
+    desktopSectionsContainer.className = "hidden lg:flex flex-col gap-4 w-full";
+
+    // Retrieve flat sequential list of all authorized tabs
+    const authorizedIds = Object.values(categories).flat().filter(id => curUser.access.includes(id));
+
+    // Populate Mobile Ribbon (Single Row)
+    authorizedIds.forEach(id => {
+        const btn = document.createElement('button');
+        btn.className = "mobile-tab-btn flex flex-row items-center gap-2 px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl hover:bg-blue-50/50 hover:border-blue-300 transition-all duration-150 active:scale-95 text-slate-600 font-bold shrink-0 focus:outline-none";
+        
+        btn.innerHTML = `
+            <span class="text-base">${tabConfig[id].icon}</span>
+            <span class="text-xs uppercase tracking-wide truncate leading-none">${tabConfig[id].name}</span>
+        `;
+        
+        btn.onclick = () => {
+            // Reset Mobile Button Styles
+            document.querySelectorAll('.mobile-tab-btn').forEach(c => {
+                c.className = "mobile-tab-btn flex flex-row items-center gap-2 px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl hover:bg-blue-50/50 hover:border-blue-300 transition-all duration-150 active:scale-95 text-slate-600 font-bold shrink-0 focus:outline-none";
+            });
+            // Apply Active Highlight (Vibrant Blue)
+            btn.className = "mobile-tab-btn flex flex-row items-center gap-2 px-3.5 py-2.5 bg-blue-600 text-white border border-blue-600 rounded-xl transition-all duration-150 active:scale-95 font-bold shrink-0 focus:outline-none shadow-md shadow-blue-500/10";
+            
+            loadTab(id);
+            
+            // Auto-scroll the tapped item into the horizontal center of the mobile screen
+            btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+
+            // Sync with Desktop Sidebar Button if scaled
+            const deskBtn = document.querySelector(`.desktop-tab-btn[data-id="${id}"]`);
+            if (deskBtn) syncDesktopActive(deskBtn, id);
+        };
+        
+        mobileGroup.appendChild(btn);
+        if (!firstBtnToClick) firstBtnToClick = btn;
+    });
+
+    // Populate Desktop Category-Grouped Sidebar
+    Object.entries(categories).forEach(([catName, ids]) => {
+        const accessibleIds = ids.filter(id => curUser.access.includes(id));
+        if (accessibleIds.length === 0) return;
+
+        const catSection = document.createElement('div');
+        catSection.className = "flex flex-col gap-1.5 w-full shrink-0";
+
+        const catHeader = document.createElement('h4');
+        catHeader.className = "text-[9px] font-black tracking-widest text-slate-400 uppercase px-4 mb-1 select-none";
+        catHeader.innerText = catName;
+        catSection.appendChild(catHeader);
+
+        accessibleIds.forEach(id => {
+            const btn = document.createElement('button');
+            btn.className = "desktop-tab-btn flex flex-row items-center gap-3 px-4 py-2.5 w-full bg-slate-50 border border-slate-200/60 hover:bg-blue-50/50 hover:border-blue-300 rounded-xl transition-all duration-150 active:scale-95 group focus:outline-none text-left shrink-0 text-slate-600 font-bold border-l-4 border-l-transparent";
+            btn.dataset.id = id;
+            btn.innerHTML = `
+                <span class="text-base filter drop-shadow-sm group-hover:scale-105 transition-transform">${tabConfig[id].icon}</span>
+                <span class="text-xs font-black uppercase tracking-wider text-slate-500 leading-none truncate">${tabConfig[id].name}</span>
+            `;
+            
+            btn.onclick = () => {
+                syncDesktopActive(btn, id);
+                loadTab(id);
+                
+                // Sync with Mobile Ribbon
+                const mobBtns = document.querySelectorAll('.mobile-tab-btn');
+                const idx = authorizedIds.indexOf(id);
+                if (mobBtns[idx]) {
+                    mobBtns.forEach(c => {
+                        c.className = "mobile-tab-btn flex flex-row items-center gap-2 px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl hover:bg-blue-50/50 hover:border-blue-300 transition-all duration-150 active:scale-95 text-slate-600 font-bold shrink-0 focus:outline-none";
+                    });
+                    mobBtns[idx].className = "mobile-tab-btn flex flex-row items-center gap-2 px-3.5 py-2.5 bg-blue-600 text-white border border-blue-600 rounded-xl transition-all duration-150 active:scale-95 font-bold shrink-0 focus:outline-none shadow-md shadow-blue-500/10";
+                    mobBtns[idx].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                }
+            };
+            
+            catSection.appendChild(btn);
+        });
+
+        desktopSectionsContainer.appendChild(catSection);
+    });
+
+    t.appendChild(mobileGroup);
+    t.appendChild(desktopSectionsContainer);
+
+    // Helper to refresh and synchronize desktop sidebar styling
+    function syncDesktopActive(activeBtn, id) {
+        document.querySelectorAll('.desktop-tab-btn').forEach(c => {
+            c.className = "desktop-tab-btn flex flex-row items-center gap-3 px-4 py-2.5 w-full bg-slate-50 border border-slate-200/60 hover:bg-blue-50/50 hover:border-blue-300 rounded-xl transition-all duration-150 active:scale-95 group focus:outline-none text-left shrink-0 text-slate-600 font-bold border-l-4 border-l-transparent";
+            const label = c.querySelector('span:nth-child(2)');
+            if (label) label.className = "text-xs font-black uppercase tracking-wider text-slate-500 leading-none truncate";
+        });
+        activeBtn.className = "desktop-tab-btn flex flex-row items-center gap-3 px-4 py-2.5 w-full bg-blue-600 text-white border border-blue-600 border-l-4 border-l-blue-800 rounded-xl transition-all duration-150 active:scale-95 group focus:outline-none text-left shrink-0 shadow-md shadow-blue-500/10";
+        const label = activeBtn.querySelector('span:nth-child(2)');
+        if (label) label.className = "text-xs font-black uppercase tracking-wider text-white leading-none truncate";
+    }
+
+    // Trigger initial tab loading
+    if (firstBtnToClick) firstBtnToClick.click();
+}
 
 async function fetchData(forceFetch = false) {
     const cachedData = sessionStorage.getItem('student_db');
@@ -673,31 +839,7 @@ async function fetchStops() {
     hideLoad();
 }
 
-    async function loginOfficial() {
-    const u = document.getElementById('offUser').value.trim();
-    const p = document.getElementById('offPass').value.trim();
-    const keep = document.getElementById('keepLogin').checked;
-
-    // Failsafe: if users aren't loaded yet, try to fetch them now
-    if (Object.keys(users).length === 0) {
-        showLoad();
-        await fetchUsers();
-        hideLoad();
-    }
-
-    if (users[u] && String(users[u].pass) === String(p)) {
-        startSession(users[u]);
-        if (keep) {
-            localStorage.setItem('keepUser', u);
-            localStorage.setItem('keepPass', p);
-        } else {
-            localStorage.removeItem('keepUser');
-            localStorage.removeItem('keepPass');
-        }
-    } else {
-        msg("Error", "Invalid Official ID or Password", "error");
-    }
-}
+    
     
     // --- Login Tab Switcher Logic ---
     function switchLoginTab(tab) {
@@ -864,60 +1006,7 @@ function cleanupLogoutUI() {
 
 
 
-    // --- UI Routing ---
-    function renderTabs() {
-    const t = document.getElementById('tabs'); 
-    t.innerHTML = '';
     
-    if(!curUser) return;
-    if(curUser.role === "Student") { loadTab(0); return; }
-    
-    if(!curUser.access || !Array.isArray(curUser.access)) {
-        t.innerHTML = '<p class="text-red-500 text-xs font-bold">Error: Access denied.</p>';
-        return;
-    }
-
-    const tabConfig = {
-        1:  { name: "Students", icon: "🎓" },
-        2:  { name: "Attendance", icon: "✅" },
-        3:  { name: "Database", icon: "📊" },
-        11: { name: "Pending", icon: "⏳" },
-        4:  { name: "Fee Pay", icon: "💰" },
-        5:  { name: "Receipts", icon: "🧾" },
-        6:  { name: "Logs", icon: "📜" },
-        7:  { name: "Staff", icon: "👔" },
-        8:  { name: "Expenses", icon: "💸" },
-        9:  { name: "Balance", icon: "⚖️" },
-        10: { name: "Live Map", icon: "📍" },
-        13: { name: "Stops & Fees", icon: "🎟️" },
-        12: { name: "Settings", icon: "⚙️" },
-        14: { name: "Cash Book", icon: "📓" }
-    };
-    
-    curUser.access.forEach(id => {
-        if (tabConfig[id]) {
-            const btn = document.createElement('button');
-            // Formats buttons as horizontal list items. 
-            // w-40 holds the width on mobile; lg:w-full expands to fill the sidebar on desktop.
-            btn.className = "flex flex-row items-center gap-3 px-4 py-3 w-40 lg:w-full bg-white border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-300 transition-all shadow-sm active:scale-95 group focus:outline-none text-left shrink-0";
-            
-            btn.innerHTML = `
-                <span class="text-xl group-hover:scale-110 transition-transform">${tabConfig[id].icon}</span>
-                <span class="text-xs font-bold uppercase tracking-wider text-gray-600 group-hover:text-blue-600 leading-none truncate">${tabConfig[id].name}</span>
-            `;
-            
-            btn.onclick = () => {
-                Array.from(t.children).forEach(c => c.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50'));
-                btn.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
-                loadTab(id);
-            };
-            
-            t.appendChild(btn);
-        }
-    });
-
-    if (t.firstChild) t.firstChild.click();
-}
 
     function loadTab(id) {
         if (adminLocInterval) { clearInterval(adminLocInterval); adminLocInterval = null; }
@@ -3367,70 +3456,73 @@ function selectReceiptStudent(name) {
     // --- Core Logic for 'All Fee' Section ---
 
     async function fetchAllReceipts() {
-        try {
-            const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getAllReceipts"})}).then(r=>r.json());
-            if (res.success && res.data) {
-                
-                let receipts = res.data;
-                
-                // FILTERING LOGIC based on user role
-                if (curUser.role === "Teacher") {
-                    // Restrict strictly to Teacher's assigned Class and Division
-                    receipts = receipts.filter(r => r.Class === curUser.tClass && r.Div === curUser.tDiv);
-                } else if (curUser.role === "School") {
-                    // Restrict strictly to School Admin's assigned School
-                    receipts = receipts.filter(r => r.School === curUser.tSchool);
-                }
-                
-                allReceiptsDB = receipts;
-                
-                // Run the sort function using ReceiptNo ascending by default
+    try {
+        const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getAllReceipts"})}).then(r=>r.json());
+        if (res.success && res.data) {
+            let receipts = res.data;
+            
+            // Filtering logic based on user role
+            if (curUser.role === "Teacher") {
+                receipts = receipts.filter(r => r.Class === curUser.tClass && r.Div === curUser.tDiv);
+            } else if (curUser.role === "School") {
+                receipts = receipts.filter(r => r.School === curUser.tSchool);
+            }
+            
+            allReceiptsDB = receipts;
+            
+            // Safe Guard Clause: Only sort and render if the element still exists in the DOM
+            if (document.getElementById('allReceiptsBody')) {
                 sortReceiptTable('ReceiptNo', false);
             }
-        } catch(e) {
-            document.getElementById('allReceiptsBody').innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500 font-bold">Failed to load receipts.</td></tr>';
+        }
+    } catch(e) {
+        const el = document.getElementById('allReceiptsBody');
+        if (el) {
+            el.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500 font-bold">Failed to load receipts.</td></tr>';
         }
     }
+}
 
     function sortReceiptTable(col, forceAsc = null) {
-        if (forceAsc !== null) {
-            receiptSortCol = col;
-            receiptSortAsc = forceAsc;
-        } else if (receiptSortCol === col) {
-            receiptSortAsc = !receiptSortAsc; // Toggle Asc/Desc
+    if (forceAsc !== null) {
+        receiptSortCol = col;
+        receiptSortAsc = forceAsc;
+    } else if (receiptSortCol === col) {
+        receiptSortAsc = !receiptSortAsc;
+    } else {
+        receiptSortCol = col;
+        receiptSortAsc = true;
+    }
+
+    allReceiptsDB.sort((a, b) => {
+        let valA = a[col] || '';
+        let valB = b[col] || '';
+
+        if (col === 'Amount') {
+            valA = parseFloat(valA) || 0;
+            valB = parseFloat(valB) || 0;
         } else {
-            receiptSortCol = col;
-            receiptSortAsc = true;
+            valA = String(valA).toLowerCase();
+            valB = String(valB).toLowerCase();
         }
 
-        allReceiptsDB.sort((a, b) => {
-            let valA = a[col] || '';
-            let valB = b[col] || '';
+        if (col === 'ReceiptNo') {
+            return receiptSortAsc 
+                ? valA.localeCompare(valB, undefined, {numeric: true}) 
+                : valB.localeCompare(valA, undefined, {numeric: true});
+        }
 
-            // Handle Amount numerically
-            if (col === 'Amount') {
-                valA = parseFloat(valA) || 0;
-                valB = parseFloat(valB) || 0;
-            } else {
-                valA = String(valA).toLowerCase();
-                valB = String(valB).toLowerCase();
-            }
+        if (valA < valB) return receiptSortAsc ? -1 : 1;
+        if (valA > valB) return receiptSortAsc ? 1 : -1;
+        return 0;
+    });
 
-            // Handle smart alphanumeric sorting for Receipt No (so 002 comes after 001)
-            if (col === 'ReceiptNo') {
-                return receiptSortAsc 
-                    ? valA.localeCompare(valB, undefined, {numeric: true}) 
-                    : valB.localeCompare(valA, undefined, {numeric: true});
-            }
-
-            // Standard comparison
-            if (valA < valB) return receiptSortAsc ? -1 : 1;
-            if (valA > valB) return receiptSortAsc ? 1 : -1;
-            return 0;
-        });
-
-        document.getElementById('allReceiptsBody').innerHTML = generateReceiptRows(allReceiptsDB);
+    // Safe Guard Clause: Prevent crash if user switched tabs during sorting
+    const el = document.getElementById('allReceiptsBody');
+    if (el) {
+        el.innerHTML = generateReceiptRows(allReceiptsDB);
     }
+}
 
     function generateReceiptRows(data) {
     if (!data || data.length === 0) {
@@ -3957,22 +4049,33 @@ async function reprint(receiptNo, month = 'N/A') {
 }
 
     async function fetchLogs() {
-        try {
-            const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getLogs"})}).then(r=>r.json());
-            const tbody = document.getElementById('logBody');
-            if(res.success && res.data.length > 0) {
-                window.allLogs = res.data; // Save locally for instant searching
-                renderLogTable(res.data);
-            } else {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">No logs found.</td></tr>';
-            }
-        } catch(e) {
-            document.getElementById('logBody').innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500">Failed to load logs.</td></tr>';
+    try {
+        const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getLogs"})}).then(r=>r.json());
+        const tbody = document.getElementById('logBody');
+        
+        // Guard Clause: Exit gracefully if the user switched tabs while loading
+        if (!tbody) return;
+
+        if (res.success && res.data.length > 0) {
+            window.allLogs = res.data; // Save locally for instant searching
+            renderLogTable(res.data);
+        } else {
+            tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-500">No logs found.</td></tr>';
+        }
+    } catch(e) {
+        const tbody = document.getElementById('logBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500">Failed to load logs.</td></tr>';
         }
     }
+}
 
     function renderLogTable(data) {
     const tbody = document.getElementById('logBody');
+    
+    // Guard Clause: Exit gracefully if the user switched tabs during rendering
+    if (!tbody) return;
+
     tbody.innerHTML = data.map(L => {
         const loginStr = L.LoginTime ? new Date(L.LoginTime).toLocaleString('en-GB') : '-';
         const logoutStr = L.LogoutTime ? new Date(L.LogoutTime).toLocaleString('en-GB') : '<span class="text-green-600 font-bold">Active</span>';
@@ -4065,7 +4168,7 @@ async function clearAllLogsUI() {
         <form id="staffForm" onsubmit="saveStaff(event)" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 bg-gray-50 p-4 rounded border text-sm">
             <select id="sf2" required class="p-2 border rounded">
                 <option value="">School</option>
-                <option>TDEMNS-td1</option><option>GTDLPS-34318</option><option>TDTTI-34347</option><option>TDHS-34028</option>
+                <option>TDEMNS-td1</option><option>GTDLPS-34318</option><option>TDTTI-34347</option><option>TDHS-34028</option><option>MANAGEMENT</option>
             </select>                
             
             <input id="sf5" required placeholder="Staff Name" oninput="this.value = this.value.toUpperCase()" class="p-2 border rounded md:col-span-2">
@@ -4074,7 +4177,7 @@ async function clearAllLogsUI() {
             
             <select id="sf12" required class="p-2 border rounded">
                 <option value="">Select Gender</option>
-                <option>M</option><option>F</option>
+                <option>M</option><option>F</option><option>-</option>
             </select>
 
             <input id="sf13" required placeholder="Tenure (1 Year)" oninput="this.value = this.value.toUpperCase()" class="p-2 border rounded">
@@ -4425,6 +4528,9 @@ async function fetchExp() {
         const tbody = document.getElementById('expTableBody');
         const tfoot = document.getElementById('expensesFoot');
         
+        // Safe Guard Clause: Exit if the user switched tabs before the response arrived
+        if (!tbody) return;
+        
         if(res.success && res.data.length > 0) {
             let sumExpenses = 0;
             tbody.innerHTML = res.data.map(ex => {
@@ -4455,7 +4561,10 @@ async function fetchExp() {
             if (tfoot) tfoot.innerHTML = '';
         }
     } catch(e) {
-        document.getElementById('expTableBody').innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500">Error loading data.</td></tr>';
+        const tbody = document.getElementById('expTableBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500">Error loading data.</td></tr>';
+        }
     }
 }
 
@@ -5031,7 +5140,7 @@ function renderTab11(c) {
 
 async function fetchPending() {
     const tbody = document.getElementById('pendingBody');
-    if (!tbody) return;
+    if (!tbody) return; // Safe Guard Clause: Exit if target element is null
 
     if (!db || db.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="p-10 text-center">Fetching database, please wait...</td></tr>';
@@ -5068,10 +5177,16 @@ async function fetchPending() {
 
     list.sort((a, b) => a.StudentName.localeCompare(b.StudentName));
 
+    // Double-check tbody is still present in DOM after sorting/re-evaluating
+    const reCheckedTbody = document.getElementById('pendingBody');
+    if (!reCheckedTbody) return;
+
     if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-10 text-center text-green-600 font-bold">🎉 No pending fees found for ${mon}!</td></tr>`;
-        document.getElementById('pendingGrandTotalVal').innerText = '₹0';
-        document.getElementById('t11CountVal').innerHTML = `M: <span class="text-blue-600 font-bold">0</span> | F: <span class="text-pink-600 font-bold">0</span> | Total: <span class="text-gray-900 font-black">0</span>`;
+        reCheckedTbody.innerHTML = `<tr><td colspan="7" class="p-10 text-center text-green-600 font-bold">🎉 No pending fees found for ${mon}!</td></tr>`;
+        const grandTotalVal = document.getElementById('pendingGrandTotalVal');
+        const countVal = document.getElementById('t11CountVal');
+        if (grandTotalVal) grandTotalVal.innerText = '₹0';
+        if (countVal) countVal.innerHTML = `M: <span class="text-blue-600 font-bold">0</span> | F: <span class="text-pink-600 font-bold">0</span> | Total: <span class="text-gray-900 font-black">0</span>`;
         return;
     }
 
@@ -5080,7 +5195,7 @@ async function fetchPending() {
     let visibleF = 0;
     let visibleCount = 0;
 
-    tbody.innerHTML = list.map((s, idx) => {
+    reCheckedTbody.innerHTML = list.map((s, idx) => {
         const feeAmt = parseFloat(s.Fee) || 0;
         totalDue += feeAmt;
         visibleCount++;
@@ -5101,8 +5216,10 @@ async function fetchPending() {
         </tr>`;
     }).join('');
 
-    document.getElementById('pendingGrandTotalVal').innerText = '₹' + totalDue.toLocaleString('en-IN');
-    document.getElementById('t11CountVal').innerHTML = `M: <span class="text-blue-600 font-bold">${visibleM}</span> | F: <span class="text-pink-600 font-bold">${visibleF}</span> | Total: <span class="text-gray-900 font-black">${visibleCount}</span>`;
+    const grandTotalVal = document.getElementById('pendingGrandTotalVal');
+    const countVal = document.getElementById('t11CountVal');
+    if (grandTotalVal) grandTotalVal.innerText = '₹' + totalDue.toLocaleString('en-IN');
+    if (countVal) countVal.innerHTML = `M: <span class="text-blue-600 font-bold">${visibleM}</span> | F: <span class="text-pink-600 font-bold">${visibleF}</span> | Total: <span class="text-gray-900 font-black">${visibleCount}</span>`;
 }
 
 let editUserId = null;
@@ -6539,12 +6656,19 @@ async function fetchCashBookData() {
             fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getAllReceipts"})}).then(r=>r.json())
         ]);
         
+        // Safe Guard Clause: Exit if the user navigated away from the Cash Book tab
+        const selectEl = document.getElementById('cbReceiptNo');
+        if (!selectEl) {
+            hideLoad();
+            return;
+        }
+
         if (cbRes.success) {
             currentCashBookDB = cbRes.data;
             sortCashBook('date', false); // Sort descending by default
         }
         
-        // Cache receipts globally for instant client-side lookup
+        // Cache receipts globally
         if (recRes.success) {
             window.allReceiptsForCashBook = recRes.data;
         }
@@ -6552,19 +6676,15 @@ async function fetchCashBookData() {
         // Populate dropdown with unused receipts
         if (recRes.success && cbRes.success) {
             const usedReceipts = new Set(cbRes.data.map(item => item.receiptNo).filter(r => r && r !== "-"));
-            const selectEl = document.getElementById('cbReceiptNo');
-            if (selectEl) {
-                selectEl.innerHTML = '<option value="-">N/A (-)</option>';
-                recRes.data.forEach(r => {
-                    // Check if receipt hasn't been used yet
-                    if (r.ReceiptNo && !usedReceipts.has(r.ReceiptNo)) {
-                        const opt = document.createElement('option');
-                        opt.value = r.ReceiptNo;
-                        opt.text = `${r.ReceiptNo} - ${r.Name} (₹${r.Amount})`;
-                        selectEl.appendChild(opt);
-                    }
-                });
-            }
+            selectEl.innerHTML = '<option value="-">N/A (-)</option>';
+            recRes.data.forEach(r => {
+                if (r.ReceiptNo && !usedReceipts.has(r.ReceiptNo)) {
+                    const opt = document.createElement('option');
+                    opt.value = r.ReceiptNo;
+                    opt.text = `${r.ReceiptNo} - ${r.Name} (₹${r.Amount})`;
+                    selectEl.appendChild(opt);
+                }
+            });
         }
     } catch(e) {
         console.error("Error matching Cash Book database: ", e);
