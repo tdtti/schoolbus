@@ -1150,8 +1150,8 @@ function downloadStudentPDF() {
   
     // --- Tab 1: Students Record ---
     function renderTab1(c) {
-    // 1. Get filtered data and apply initial Alphabetical Sorting
-    currentTab1DB = getFilteredDB();
+    // 1. Get filtered data, filter out STAFF to keep students only, and apply initial Alphabetical Sorting
+    currentTab1DB = getFilteredDB().filter(s => s.Class !== 'STAFF');
     currentTab1DB.sort((a, b) => String(a.StudentName).toLowerCase().localeCompare(String(b.StudentName).toLowerCase()));
     
     tab1SortCol = 'StudentName';
@@ -1281,30 +1281,39 @@ function downloadStudentPDF() {
             </button>
         </div>
         
-        <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
-            <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
-                <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
-                    <tr>
-                        <th onclick="sortTab1Table('StudentName')" class="p-3 border cursor-pointer hover:bg-gray-700">Name ↕</th>
-                        <th onclick="sortTab1Table('BusId')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Bus ↕</th>
-                        <th onclick="sortTab1Table('Class')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Class ↕</th>
-                        <th onclick="sortTab1Table('Phone')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Phone ↕</th>
-                        <th onclick="sortTab1Table('Fee')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Fee ↕</th>
-                        <th class="p-3 border text-center cursor-default">Action</th>
-                    </tr>
-                </thead>
-                <tbody id="t1Body">
-                    ${generateTab1Rows(currentTab1DB)}
-                </tbody>
-                <tfoot class="bg-gray-100 border-t-2 border-gray-300 font-extrabold text-xs">
-                    <tr id="t1TotalsRow">
-                        <td colspan="4" class="p-3 text-right uppercase tracking-wider font-extrabold text-gray-700">Grand Total Fee:</td>
-                        <td id="t1GrandTotalVal" class="p-3 text-center font-black text-blue-700 text-sm bg-blue-50/50">₹0</td>
-                        <td class="p-3"></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
+        
+<div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
+    <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
+        <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
+            <tr>
+                <th class="p-3 border text-center w-16">Sl No</th>
+                <th onclick="sortTab1Table('StudentName')" class="p-3 border cursor-pointer hover:bg-gray-700">Name ↕</th>
+                <th onclick="sortTab1Table('BusId')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Bus ↕</th>
+                <th onclick="sortTab1Table('Class')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Class ↕</th>
+                <th onclick="sortTab1Table('Phone')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Phone ↕</th>
+                <th onclick="sortTab1Table('Fee')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Fee ↕</th>
+                <th class="p-3 border text-center cursor-default">Action</th>
+            </tr>
+        </thead>
+        <tbody id="t1Body">
+            ${generateTab1Rows(currentTab1DB)}
+        </tbody>
+        
+        <!-- Summary Stats Footer Row -->
+        <tfoot class="bg-gray-100 border-t-2 border-gray-300 font-extrabold text-xs">
+            <tr id="t1TotalsRow">
+                <td colspan="5" class="p-3 text-right uppercase tracking-wider font-extrabold text-gray-700">
+                    <span id="t1CountVal" class="mr-8 normal-case text-gray-500 font-medium">
+                        M: <span class="text-blue-600 font-bold">0</span> | F: <span class="text-pink-600 font-bold">0</span> | Total: <span class="text-gray-900 font-black">0</span>
+                    </span>
+                    Grand Total Fee:
+                </td>
+                <td id="t1GrandTotalVal" class="p-3 text-center font-black text-blue-700 text-sm bg-blue-50/50">₹0</td>
+                <td class="p-3"></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
         <div id="studentProfileCard" class="hidden mt-8"></div>
     `;
         
@@ -1349,23 +1358,24 @@ function downloadStudentPDF() {
 
     // Generates the table HTML dynamically
     function generateTab1Rows(data) {
-        if (!data || data.length === 0) return '<tr><td colspan="6" class="p-6 text-center text-gray-400 italic">No records found.</td></tr>';
-        
-        return data.map(s => `
-            <tr class="hover:bg-blue-50 bg-white border-b transition">
-                <td class="p-3 border-r font-bold text-gray-800">${s.StudentName}</td>
-                <td class="p-3 border-r text-gray-600 font-medium text-center">${s.BusId}</td>
-                <td class="p-3 border-r text-gray-600 font-medium text-center">${s.Class}-${s.Div}</td>
-                <td class="p-3 border-r text-gray-600 text-center">${s.Phone}</td>
-                <td class="p-3 border-r font-bold text-gray-700 text-center">₹${s.Fee}</td>
-                <td class="p-2 border-r flex flex-wrap justify-center gap-1">
-                    <button type="button" onclick='viewStudentCard(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold shadow-sm">View</button>
-                    <button type="button" onclick='editS(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded text-xs shadow-sm">Edit</button>
-                    <button type="button" onclick="delS(${s._rowIndex})" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs shadow-sm">Del</button>
-                </td>
-            </tr>
-        `).join('');
-    }
+    if (!data || data.length === 0) return '<tr><td colspan="7" class="p-6 text-center text-gray-400 italic">No records found.</td></tr>';
+    
+    return data.map((s, idx) => `
+        <tr class="hover:bg-blue-50 bg-white border-b transition" data-gender="${s.Gender || ''}">
+            <td class="p-3 border-r text-center text-gray-500 font-bold">${idx + 1}</td>
+            <td class="p-3 border-r font-bold text-gray-800">${s.StudentName}</td>
+            <td class="p-3 border-r text-gray-600 font-medium text-center">${s.BusId}</td>
+            <td class="p-3 border-r text-gray-600 font-medium text-center">${s.Class}-${s.Div}</td>
+            <td class="p-3 border-r text-gray-600 text-center">${s.Phone}</td>
+            <td class="p-3 border-r font-bold text-gray-700 text-center">₹${s.Fee}</td>
+            <td class="p-2 border-r flex flex-wrap justify-center gap-1">
+                <button type="button" onclick='viewStudentCard(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold shadow-sm">View</button>
+                <button type="button" onclick='editS(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded text-xs shadow-sm">Edit</button>
+                <button type="button" onclick="delS(${s._rowIndex})" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs shadow-sm">Del</button>
+            </td>
+        </tr>
+    `).join('');
+}
 
     // Core sorting logic for Tab 1
     function sortTab1Table(col) {
@@ -1411,25 +1421,8 @@ function downloadStudentPDF() {
     searchT1();
     }
 
-    // Update Search Function to work with new DOM structure seamlessly
-    function searchT1() { 
-        const searchInput = document.getElementById('sSearchT1');
-        if (!searchInput) return;
-        
-        const q = searchInput.value.toLowerCase(); 
-        Array.from(document.getElementById('t1Body').rows).forEach(r => {
-            r.style.display = r.innerText.toLowerCase().includes(q) ? '' : 'none';
-        }); 
-    }
-    
-    const classMapping = {
-        "TDEMNS-td1":["PREKG-td1", "LKG-td1", "UKG-td1","TEACHER-PPTTC-td1"],
-        "GTDLPS-34318":["I-34318", "II-34318", "III-34318", "IV-34318","TEACHER-LPST-34318"],
-        "TDTTI-34347":["V-34347", "VI-34347", "VII-34347","TEACHER-UPST-34347"],
-        "TDHS-34028":["VIII-34028", "IX-34028", "X-34028","TEACHER-HST-34028"],
-        
-        
-    };
+   
+   
 
     
     
@@ -1553,18 +1546,18 @@ function searchT1() {
     const rows = Array.from(document.getElementById('t1Body').rows);
     
     let visibleFeeSum = 0;
+    let visibleCount = 0;
+    let visibleM = 0;
+    let visibleF = 0;
 
     rows.forEach(r => {
-        // Safe check to avoid index boundary crashes
-        if (r.cells.length < 6) return;
+        if (r.cells.length < 7) return;
         
-        const name = r.cells[0].innerText.toLowerCase();
-        const bus = r.cells[1].innerText.toLowerCase();
-        const classDiv = r.cells[2].innerText.toLowerCase();
-        const phone = r.cells[3].innerText.toLowerCase();
-        
-        // Strip the currency symbol (₹) for direct number matching
-        const feeText = r.cells[4].innerText.replace(/[^\d.]/g, ''); 
+        const name = r.cells[1].innerText.toLowerCase();
+        const bus = r.cells[2].innerText.toLowerCase();
+        const classDiv = r.cells[3].innerText.toLowerCase();
+        const phone = r.cells[4].innerText.toLowerCase();
+        const feeText = r.cells[5].innerText.replace(/[^\d.]/g, ''); 
         const feeVal = parseFloat(feeText) || 0;
 
         const match = name.includes(q) || 
@@ -1575,37 +1568,65 @@ function searchT1() {
 
         if (match) {
             r.style.display = '';
+            visibleCount++;
+            r.cells[0].innerText = visibleCount; // Re-index Sl No for visible rows sequentially
             visibleFeeSum += feeVal;
+            
+            const gender = r.dataset.gender || "";
+            if (gender === "M") visibleM++;
+            else if (gender === "F") visibleF++;
         } else {
             r.style.display = 'none';
         }
     });
 
-    // Update the grand total element instantly
+    // Update Fee Sum
     const totalValEl = document.getElementById('t1GrandTotalVal');
     if (totalValEl) {
         totalValEl.innerText = '₹' + visibleFeeSum.toLocaleString('en-IN');
     }
+    
+    // Update Counts
+    const countEl = document.getElementById('t1CountVal');
+    if (countEl) {
+        countEl.innerHTML = `M: <span class="text-blue-600 font-bold">${visibleM}</span> | F: <span class="text-pink-600 font-bold">${visibleF}</span> | Total: <span class="text-gray-900 font-black">${visibleCount}</span>`;
+    }
 }
 
-// Calculates and renders the grand total for all rows currently populated in Tab 1
 function updateTab1Totals() {
     const tbody = document.getElementById('t1Body');
     if (!tbody) return;
     
     const rows = Array.from(tbody.rows);
     let sum = 0;
+    let visibleCount = 0;
+    let visibleM = 0;
+    let visibleF = 0;
     
     rows.forEach(r => {
-        if (r.cells.length >= 6) {
-            const feeText = r.cells[4].innerText.replace(/[^\d.]/g, '');
+        if (r.cells.length >= 7) {
+            visibleCount++;
+            r.cells[0].innerText = visibleCount; // Ensure sequential numbering is reset
+            
+            const feeText = r.cells[5].innerText.replace(/[^\d.]/g, '');
             sum += (parseFloat(feeText) || 0);
+            
+            const gender = r.dataset.gender || "";
+            if (gender === "M") visibleM++;
+            else if (gender === "F") visibleF++;
         }
     });
     
+    // Update Fee Sum
     const totalValEl = document.getElementById('t1GrandTotalVal');
     if (totalValEl) {
         totalValEl.innerText = '₹' + sum.toLocaleString('en-IN');
+    }
+    
+    // Update Counts
+    const countEl = document.getElementById('t1CountVal');
+    if (countEl) {
+        countEl.innerHTML = `M: <span class="text-blue-600 font-bold">${visibleM}</span> | F: <span class="text-pink-600 font-bold">${visibleF}</span> | Total: <span class="text-gray-900 font-black">${visibleCount}</span>`;
     }
 }
 
