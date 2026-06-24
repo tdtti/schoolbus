@@ -1282,6 +1282,7 @@ function downloadStudentPDF() {
         </div>
         
         
+
 <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
     <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
         <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
@@ -2327,59 +2328,62 @@ function shareAttendanceWA() {
    
     // --- Tab 3: Data ---
     function renderTab3(c) {
-        // 1. Get filtered data and apply initial Alphabetical Sorting
-        currentDataDB = getFilteredDB();
-        currentDataDB.sort((a, b) => String(a.StudentName).toLowerCase().localeCompare(String(b.StudentName).toLowerCase()));
-        
-        // Reset sort trackers
-        dataSortCol = 'StudentName';
-        dataSortAsc = true;
-
-        c.innerHTML = `
-            <h2 class="text-2xl font-bold mb-4">All Students Database</h2>
-            <div class="flex gap-2 mb-6">
-                <input id="dSearch" onkeyup="searchT3()" placeholder="Search Name, Phone, Class..." class="w-full p-2 border-2 border-gray-300 rounded focus:outline-none focus:border-blue-500">
-            </div>
-            
-            <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
-                <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
-                    <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
-                        <tr>
-                            <th onclick="sortDataTable('StudentName')" class="p-4 border cursor-pointer hover:bg-gray-700 sticky left-0 z-10 bg-gray-900 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Name ↕</th>
-                            <th onclick="sortDataTable('Class')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Class ↕</th>
-                            <th onclick="sortDataTable('Phone')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Phone ↕</th>
-                            <th onclick="sortDataTable('Total')" class="p-3 border cursor-pointer hover:bg-green-800 text-center bg-green-900">Total ↕</th>
-                            <th onclick="sortDataTable('Balance')" class="p-3 border cursor-pointer hover:bg-red-800 text-center bg-red-900">Balance ↕</th>
-                            <th class="p-3 border text-center cursor-default">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="t3Body">
-        ${generateDataTableRows(currentDataDB)}
-    </tbody>
+    currentDataDB = getFilteredDB();
+    currentDataDB.sort((a, b) => String(a.StudentName).toLowerCase().localeCompare(String(b.StudentName).toLowerCase()));
     
-<tfoot class="bg-gray-200 font-black border-t-2 border-gray-500">
-    <tr>
-        <td colspan="3" class="p-3 text-right uppercase">Grand Totals:</td>
-        <td id="dataGrandTotal" class="p-3 text-center text-green-700 text-base">₹0</td>
-        <td id="dataGrandBalance" class="p-3 text-center text-red-600 text-base">₹0</td>
-        <td></td>
-    </tr>
-</tfoot>
-</table>
-            </div>
-        `;
-        // Add this as the last line inside function renderTab3(c)
-setTimeout(() => updateDataTotals(currentDataDB), 100);
-    }
+    dataSortCol = 'StudentName';
+    dataSortAsc = true;
+
+    c.innerHTML = `
+        <h2 class="text-2xl font-bold mb-4">All Students Database</h2>
+        <div class="flex gap-2 mb-6">
+            <input id="dSearch" onkeyup="searchT3()" placeholder="Search Name, Phone, Class..." class="w-full p-2 border-2 border-gray-300 rounded focus:outline-none focus:border-blue-500">
+        </div>
+        
+        <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
+            <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
+                <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
+                    <tr>
+                        <th class="p-4 border text-center w-16">Sl No</th>
+                        <th onclick="sortDataTable('StudentName')" class="p-4 border cursor-pointer hover:bg-gray-700 sticky left-0 z-10 bg-gray-900 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Name ↕</th>
+                        <th onclick="sortDataTable('Class')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Class ↕</th>
+                        <th onclick="sortDataTable('Phone')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Phone ↕</th>
+                        <th onclick="sortDataTable('Total')" class="p-3 border cursor-pointer hover:bg-green-800 text-center bg-green-900">Total ↕</th>
+                        <th onclick="sortDataTable('Balance')" class="p-3 border cursor-pointer hover:bg-red-800 text-center bg-red-900">Balance ↕</th>
+                        <th class="p-3 border text-center cursor-default">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="t3Body">
+                    ${generateDataTableRows(currentDataDB)}
+                </tbody>
+                
+                <tfoot class="bg-gray-200 font-black border-t-2 border-gray-500 text-xs">
+                    <tr>
+                        <td colspan="4" class="p-3 text-right uppercase">
+                            <span id="t3CountVal" class="mr-8 normal-case text-gray-500 font-medium">M: 0 | F: 0 | Total: 0</span>
+                            Grand Totals:
+                        </td>
+                        <td id="dataGrandTotal" class="p-3 text-center text-green-700 text-base">₹0</td>
+                        <td id="dataGrandBalance" class="p-3 text-center text-red-600 text-base">₹0</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    `;
+    setTimeout(() => updateDataTotals(currentDataDB), 100);
+}
     
     function updateDataTotals(data) {
     if (!data) return;
 
     let sumPaid = 0;
     let sumBal = 0;
+    let visibleCount = 0;
+    let visibleM = 0;
+    let visibleF = 0;
 
     data.forEach(s => {
-        // This looks for the key regardless of case (Total, total, TOTAL)
         const totalKey = Object.keys(s).find(k => k.toLowerCase().trim() === 'total');
         const balanceKey = Object.keys(s).find(k => k.toLowerCase().trim() === 'balance');
 
@@ -2391,35 +2395,45 @@ setTimeout(() => updateDataTotals(currentDataDB), 100);
             let val = String(s[balanceKey] || "0").replace(/[^\d.]/g, '');
             sumBal += (parseFloat(val) || 0);
         }
+        
+        visibleCount++;
+        const gender = s.Gender || "";
+        if (gender === "M") visibleM++;
+        else if (gender === "F") visibleF++;
     });
 
     const totalEl = document.getElementById('dataGrandTotal');
     const balEl = document.getElementById('dataGrandBalance');
+    const countEl = document.getElementById('t3CountVal');
     
     if (totalEl) totalEl.innerText = '₹' + sumPaid.toLocaleString('en-IN');
     if (balEl) balEl.innerText = '₹' + sumBal.toLocaleString('en-IN');
+    if (countEl) {
+        countEl.innerHTML = `M: <span class="text-blue-600 font-bold">${visibleM}</span> | F: <span class="text-pink-600 font-bold">${visibleF}</span> | Total: <span class="text-gray-900 font-black">${visibleCount}</span>`;
+    }
 }
 
 
     // Generates the table HTML dynamically so we can re-render it instantly when sorted
     function generateDataTableRows(data) {
-        if (!data || data.length === 0) return '<tr><td colspan="6" class="p-6 text-center text-gray-400 italic">No records found.</td></tr>';
-        
-        return data.map(s => `
-            <tr class="hover:bg-blue-50 bg-white border-b transition group">
-                <td class="p-3 border-r font-bold text-gray-800 sticky left-0 z-10 bg-white group-hover:bg-blue-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${s.StudentName}</td>
-                <td class="p-3 border-r text-gray-600 font-medium text-center">${s.Class}-${s.Div}</td>
-                <td class="p-3 border-r text-gray-600 text-center">${s.Phone}</td>
-                <td class="p-3 border-r font-black text-green-700 text-center bg-green-50">₹${s.Total || 0}</td>
-                <td class="p-3 border-r font-black text-red-600 text-center bg-red-50">₹${s.Balance || 0}</td>
-                <td class="p-2 text-center align-middle">
-                    <button onclick="sendReminderWA('${s.Phone}')" class="flex items-center gap-1 bg-green-600 text-white px-3 py-1.5 rounded text-[10px] font-bold hover:bg-green-700 transition mx-auto shadow-sm" title="Send Fee Reminder">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.52 3.48A11.91 11.91 0 0012 0C5.37 0 0 5.37 0 12a11.7 11.7 0 001.95 6L0 24l6-1.95a11.86 11.86 0 005.94 1.7c6.63 0 12-5.37 12-12a11.89 11.89 0 00-3.42-8.27zM12 21a9.25 9.25 0 01-4.77-1.35l-.34-.22-3.57 1.16 1.11-3.48-.22-.36A9.25 9.25 0 012.75 12 9.25 9.25 0 0112 2.75 9.25 9.25 0 0121.25 12 9.25 9.25 0 0112 21zm5.37-6.31l-1.5-.43a.51.51 0 00-.47.14l-.98 1.07a7.38 7.38 0 01-3.46-3.44l1.07-.98a.53.53 0 00.15-.46l-.43-1.51a.54.54 0 00-.66-.37l-2.22.56a.51.51 0 00-.41.64A7 7 0 0014 16a7 7 0 002.37-1.17.5.5 0 00.13-.69z"/></svg> Reminder
-                    </button>
-                </td>
-            </tr>
-        `).join('');
-    }
+    if (!data || data.length === 0) return '<tr><td colspan="7" class="p-6 text-center text-gray-400 italic">No records found.</td></tr>';
+    
+    return data.map((s, idx) => `
+        <tr class="hover:bg-blue-50 bg-white border-b transition group" data-gender="${s.Gender || ''}">
+            <td class="p-3 border-r text-center text-gray-500 font-bold">${idx + 1}</td>
+            <td class="p-3 border-r font-bold text-gray-800 sticky left-0 z-10 bg-white group-hover:bg-blue-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${s.StudentName}</td>
+            <td class="p-3 border-r text-gray-600 font-medium text-center">${s.Class}-${s.Div}</td>
+            <td class="p-3 border-r text-gray-600 text-center">${s.Phone}</td>
+            <td class="p-3 border-r font-black text-green-700 text-center bg-green-50">₹${s.Total || 0}</td>
+            <td class="p-3 border-r font-black text-red-600 text-center bg-red-50">₹${s.Balance || 0}</td>
+            <td class="p-2 text-center align-middle">
+                <button onclick="sendReminderWA('${s.Phone}')" class="flex items-center gap-1 bg-green-600 text-white px-3 py-1.5 rounded text-[10px] font-bold hover:bg-green-700 transition mx-auto shadow-sm" title="Send Fee Reminder">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.52 3.48A11.91 11.91 0 0012 0C5.37 0 0 5.37 0 12a11.7 11.7 0 001.95 6L0 24l6-1.95a11.86 11.86 0 005.94 1.7c6.63 0 12-5.37 12-12a11.89 11.89 0 00-3.42-8.27zM12 21a9.25 9.25 0 01-4.77-1.35l-.34-.22-3.57 1.16 1.11-3.48-.22-.36A9.25 9.25 0 012.75 12 9.25 9.25 0 0112 2.75 9.25 9.25 0 0121.25 12 9.25 9.25 0 0112 21zm5.37-6.31l-1.5-.43a.51.51 0 00-.47.14l-.98 1.07a7.38 7.38 0 01-3.46-3.44l1.07-.98a.53.53 0 00.15-.46l-.43-1.51a.54.54 0 00-.66-.37l-2.22.56a.51.51 0 00-.41.64A7 7 0 0014 16a7 7 0 002.37-1.17.5.5 0 00.13-.69z"/></svg> Reminder
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
 
     // Core sorting logic
     function sortDataTable(col) {
@@ -2465,24 +2479,56 @@ setTimeout(() => updateDataTotals(currentDataDB), 100);
     }
 
     // Maintained DOM Search function
-    function searchT3() { 
+    function searchT3() {
     const searchInput = document.getElementById('dSearch');
     if (!searchInput) return;
     
-    const q = searchInput.value.toLowerCase(); 
+    const q = searchInput.value.toLowerCase();
+    const rows = Array.from(document.getElementById('t3Body').rows);
     
-    // 1. Filter the actual data source
-    const filteredResults = currentDataDB.filter(s => {
-        return s.StudentName.toLowerCase().includes(q) || 
-               s.Phone.toString().includes(q) || 
-               (s.Class + "-" + s.Div).toLowerCase().includes(q);
+    let visibleCount = 0;
+    let visibleM = 0;
+    let visibleF = 0;
+    let sumPaid = 0;
+    let sumBal = 0;
+
+    rows.forEach(r => {
+        if (r.cells.length < 7) return;
+
+        const name = r.cells[1].innerText.toLowerCase();
+        const classDiv = r.cells[2].innerText.toLowerCase();
+        const phone = r.cells[3].innerText.toLowerCase();
+        const paidText = r.cells[4].innerText.replace(/[^\d.]/g, '');
+        const balText = r.cells[5].innerText.replace(/[^\d.]/g, '');
+
+        const match = name.includes(q) || 
+                      classDiv.includes(q) || 
+                      phone.includes(q);
+
+        if (match) {
+            r.style.display = '';
+            visibleCount++;
+            r.cells[0].innerText = visibleCount; // Re-index Sl No sequentially
+            sumPaid += (parseFloat(paidText) || 0);
+            sumBal += (parseFloat(balText) || 0);
+
+            const gender = r.dataset.gender || "";
+            if (gender === "M") visibleM++;
+            else if (gender === "F") visibleF++;
+        } else {
+            r.style.display = 'none';
+        }
     });
 
-    // 2. Update the table body with ONLY filtered results
-    document.getElementById('t3Body').innerHTML = generateDataTableRows(filteredResults);
+    const totalEl = document.getElementById('dataGrandTotal');
+    const balEl = document.getElementById('dataGrandBalance');
+    const countEl = document.getElementById('t3CountVal');
     
-    // 3. Update the Totals based on what is visible
-    updateDataTotals(filteredResults);
+    if (totalEl) totalEl.innerText = '₹' + sumPaid.toLocaleString('en-IN');
+    if (balEl) balEl.innerText = '₹' + sumBal.toLocaleString('en-IN');
+    if (countEl) {
+        countEl.innerHTML = `M: <span class="text-blue-600 font-bold">${visibleM}</span> | F: <span class="text-pink-600 font-bold">${visibleF}</span> | Total: <span class="text-gray-900 font-black">${visibleCount}</span>`;
+    }
 }
     
   function sendReminderWA(phone) {
@@ -2703,6 +2749,10 @@ function updateFeeTotals(data) {
     let totals = { fee: 0, total: 0, balance: 0 };
     months.forEach(m => totals[m] = 0);
 
+    let visibleCount = 0;
+    let visibleM = 0;
+    let visibleF = 0;
+
     data.forEach(s => {
         totals.fee += parseFloat(s.Fee) || 0;
         totals.total += parseFloat(s.Total) || 0;
@@ -2710,6 +2760,10 @@ function updateFeeTotals(data) {
         months.forEach(m => {
             totals[m] += parseFloat(s[m]) || 0;
         });
+
+        visibleCount++;
+        if (s.Gender === "M") visibleM++;
+        else if (s.Gender === "F") visibleF++;
     });
 
     const footer = document.getElementById('feeOverviewFooter');
@@ -2717,7 +2771,10 @@ function updateFeeTotals(data) {
 
     footer.innerHTML = `
         <tr class="text-[11px] uppercase bg-gray-200">
-            <td class="p-3 border sticky left-0 z-10 bg-gray-300 font-black shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Grand Total</td>
+            <td colspan="2" class="p-3 border sticky left-0 z-10 bg-gray-300 font-black shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
+                <span id="t4CountVal" class="mr-6 normal-case text-gray-500 font-medium">M: ${visibleM} | F: ${visibleF} | Total: ${visibleCount}</span>
+                Grand Total
+            </td>
             <td class="p-2 border text-center font-black bg-gray-100">₹${totals.fee.toLocaleString('en-IN')}</td>
             ${months.map(m => `
                 <td class="p-2 border text-center font-black ${totals[m] > 0 ? 'text-green-700' : 'text-gray-400'}">
@@ -2731,14 +2788,15 @@ function updateFeeTotals(data) {
     `;
 }
 
+
 // Generates the table HTML dynamically so we can re-render it instantly when sorted
 function generateFeeTableRows(dbData) {
-    const months =["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+    const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
     if (!dbData || dbData.length === 0) {
-        return '<tr><td colspan="15" class="p-6 text-center text-gray-400 italic">No students found.</td></tr>';
+        return '<tr><td colspan="16" class="p-6 text-center text-gray-400 italic">No students found.</td></tr>';
     }
 
-    return dbData.map(s => {
+    return dbData.map((s, idx) => {
         let monthCells = months.map(m => {
             const amt = parseFloat(s[m]);
             if (amt > 0) {
@@ -2759,7 +2817,8 @@ function generateFeeTableRows(dbData) {
         </button>`;
 
         return `
-        <tr class="hover:bg-blue-50 bg-white group transition">
+        <tr class="hover:bg-blue-50 bg-white group transition" data-gender="${s.Gender || ''}">
+            <td class="p-3 border-r text-center text-gray-500 font-bold">${idx + 1}</td>
             <td class="p-3 border font-bold text-xs sticky left-0 z-10 bg-white group-hover:bg-blue-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                 <div class="whitespace-nowrap text-gray-800 text-sm">${s.StudentName}</div>
                 <div class="text-[10px] font-bold text-blue-600 mt-1 uppercase">${s.Class}-${s.Div}</div>
@@ -2773,6 +2832,7 @@ function generateFeeTableRows(dbData) {
         </tr>`;
     }).join('');
 }
+
 
 // Sorting logic handles text (Name) and numbers (Amounts/Balances) automatically
 function sortFeeTable(col) {
@@ -2811,13 +2871,63 @@ function sortFeeTable(col) {
 
 function searchFeeOverview(q) {
     const query = q.toLowerCase();
-    const filtered = currentFeeDB.filter(s => 
-        s.StudentName.toLowerCase().includes(query) || 
-        s.Phone.toString().includes(query)
-    );
+    const rows = Array.from(document.getElementById('defaultFeeTableBody').rows);
+    const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
     
-    document.getElementById('defaultFeeTableBody').innerHTML = generateFeeTableRows(filtered);
-    updateFeeTotals(filtered); // Totals update to match visible rows
+    let totals = { fee: 0, total: 0, balance: 0 };
+    months.forEach(m => totals[m] = 0);
+
+    let visibleCount = 0;
+    let visibleM = 0;
+    let visibleF = 0;
+
+    rows.forEach(r => {
+        if (r.cells.length < 16) return;
+        
+        const details = r.cells[1].innerText.toLowerCase();
+        const match = details.includes(query);
+
+        if (match) {
+            r.style.display = '';
+            visibleCount++;
+            r.cells[0].innerText = visibleCount; // Re-index Sl No
+
+            totals.fee += parseFloat(r.cells[2].innerText.replace(/[^\d.]/g, '')) || 0;
+            months.forEach((m, idx) => {
+                const monthCellVal = r.cells[3 + idx].innerText.replace(/[^\d.]/g, '');
+                totals[m] += parseFloat(monthCellVal) || 0;
+            });
+            totals.total += parseFloat(r.cells[13].innerText.replace(/[^\d.]/g, '')) || 0;
+            totals.balance += parseFloat(r.cells[14].innerText.replace(/[^\d.]/g, '')) || 0;
+
+            const gender = r.dataset.gender || "";
+            if (gender === "M") visibleM++;
+            else if (gender === "F") visibleF++;
+        } else {
+            r.style.display = 'none';
+        }
+    });
+
+    const footer = document.getElementById('feeOverviewFooter');
+    if (footer) {
+        footer.innerHTML = `
+            <tr class="text-[11px] uppercase bg-gray-200">
+                <td colspan="2" class="p-3 border sticky left-0 z-10 bg-gray-300 font-black shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
+                    <span id="t4CountVal" class="mr-6 normal-case text-gray-500 font-medium">M: ${visibleM} | F: ${visibleF} | Total: ${visibleCount}</span>
+                    Grand Total
+                </td>
+                <td class="p-2 border text-center font-black bg-gray-100">₹${totals.fee.toLocaleString('en-IN')}</td>
+                ${months.map(m => `
+                    <td class="p-2 border text-center font-black ${totals[m] > 0 ? 'text-green-700' : 'text-gray-400'}">
+                        ₹${totals[m].toLocaleString('en-IN')}
+                    </td>
+                `).join('')}
+                <td class="p-2 border text-center font-black text-green-800 bg-green-100">₹${totals.total.toLocaleString('en-IN')}</td>
+                <td class="p-2 border text-center font-black text-red-700 bg-red-100">₹${totals.balance.toLocaleString('en-IN')}</td>
+                <td class="p-2 border"></td>
+            </tr>
+        `;
+    }
 }
 
 
@@ -3182,24 +3292,24 @@ For queries contact: N VINOD - 9747849634
             </div>
             
             <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
-                <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
-                    <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
-                        <tr>
-                            <th onclick="sortReceiptTable('ReceiptNo')" class="cursor-pointer hover:bg-gray-700 p-3 border">Receipt No ↕</th>
-                            <th onclick="sortReceiptTable('Name')" class="cursor-pointer hover:bg-gray-700 p-3 border">Name ↕</th>
-                            <th onclick="sortReceiptTable('Months')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Month ↕</th>
-                            <th onclick="sortReceiptTable('Amount')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Amount ↕</th>
-                            <th onclick="sortReceiptTable('Class')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Class ↕</th>
-                            <th onclick="sortReceiptTable('Div')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Div ↕</th>
-                            <th class="p-3 border text-center cursor-default">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="allReceiptsBody">
-                        <tr><td colspan="7" class="p-4 text-center text-gray-500 animate-pulse font-bold">Loading all receipts...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+    <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
+        <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
+            <tr>
+                <th onclick="sortReceiptTable('ReceiptNo')" class="cursor-pointer hover:bg-gray-700 p-3 border">Receipt No ↕</th>
+                <th onclick="sortReceiptTable('Name')" class="cursor-pointer hover:bg-gray-700 p-3 border">Name ↕</th>
+                <th onclick="sortReceiptTable('Months')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Month ↕</th>
+                <th onclick="sortReceiptTable('Amount')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Amount ↕</th>
+                <th onclick="sortReceiptTable('Class')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Class ↕</th>
+                <th onclick="sortReceiptTable('Div')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Div ↕</th>
+                <th class="p-3 border text-center cursor-default">Action</th>
+            </tr>
+        </thead>
+        <tbody id="allReceiptsBody">
+            <tr><td colspan="7" class="p-4 text-center text-gray-500 animate-pulse font-bold">Loading all receipts...</td></tr>
+        </tbody>
+        <tfoot id="receiptsFoot" class="bg-gray-100 border-t-2 border-gray-300 font-extrabold text-xs"></tfoot>
+    </table>
+</div>
 
         <div id="receiptPreviewContainer" class="hidden mt-6" style="height: 400px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px; background: white; padding: 10px;">
             <div id="receiptPrintArea" class=""></div>
@@ -3311,9 +3421,16 @@ function selectReceiptStudent(name) {
     }
 
     function generateReceiptRows(data) {
-        if (!data || data.length === 0) return '<tr><td colspan="7" class="p-4 text-center text-gray-500 italic">No receipts found.</td></tr>';
-        
-        return data.map(r => `
+    if (!data || data.length === 0) {
+        const foot = document.getElementById('receiptsFoot');
+        if (foot) foot.innerHTML = '';
+        return '<tr><td colspan="7" class="p-4 text-center text-gray-500 italic">No receipts found.</td></tr>';
+    }
+
+    let sumAmount = 0;
+    const rowsHtml = data.map(r => {
+        sumAmount += parseFloat(r.Amount) || 0;
+        return `
             <tr class="hover:bg-blue-50 border-b transition">
                 <td class="p-3 border-r font-bold text-gray-700">${r.ReceiptNo}</td>
                 <td class="p-3 border-r font-semibold text-gray-900">${r.Name}</td>
@@ -3325,8 +3442,22 @@ function selectReceiptStudent(name) {
                     <button onclick="reprintFromAll('${r.ReceiptNo}')" class="text-blue-600 text-[11px] font-black border-2 border-blue-600 px-3 py-1.5 rounded hover:bg-blue-600 hover:text-white transition shadow-sm uppercase">Reprint</button>
                 </td>
             </tr>
-        `).join('');
+        `;
+    }).join('');
+
+    const foot = document.getElementById('receiptsFoot');
+    if (foot) {
+        foot.innerHTML = `
+            <tr>
+                <td colspan="3" class="p-3 text-right uppercase tracking-wider font-extrabold text-gray-700">Grand Total Receipts:</td>
+                <td class="p-3 text-center font-black text-green-700 text-sm bg-green-50/50">₹${sumAmount.toLocaleString('en-IN')}</td>
+                <td colspan="3"></td>
+            </tr>
+        `;
     }
+
+    return rowsHtml;
+}
 
     // Required to reprint straight from the 'All Fees' table 
     function reprintFromAll(receiptNo) {
@@ -3934,10 +4065,7 @@ async function clearAllLogsUI() {
                 <option>M</option><option>F</option>
             </select>
 
-            <!-- STAFF SPECIFIC FIELD: TENURE -->
             <input id="sf13" required placeholder="Tenure (1 Year)" oninput="this.value = this.value.toUpperCase()" class="p-2 border rounded">
-            
-            <!-- STAFF SPECIFIC FIELD: CUSTOM AMOUNT -->
             <input id="sf11" required placeholder="Custom Amount (₹)" type="number" class="p-2 border rounded">
             
             <div class="col-span-2 md:col-span-4 flex gap-2">
@@ -3957,6 +4085,7 @@ async function clearAllLogsUI() {
             <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
                 <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
                     <tr>
+                        <th class="p-3 border text-center w-16">Sl No</th>
                         <th onclick="sortTab7Table('StudentName')" class="p-3 border cursor-pointer hover:bg-gray-700">Staff Name ↕</th>
                         <th onclick="sortTab7Table('School')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">School ↕</th>
                         <th onclick="sortTab7Table('Phone')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Phone ↕</th>
@@ -3968,10 +4097,12 @@ async function clearAllLogsUI() {
                     ${generateTab7Rows(currentTab7DB)}
                 </tbody>
                 
-                <!-- Grand Total Footer Row -->
                 <tfoot class="bg-gray-100 border-t-2 border-gray-300 font-extrabold text-xs">
                     <tr id="t7TotalsRow">
-                        <td colspan="3" class="p-3 text-right uppercase tracking-wider font-extrabold text-gray-700">Grand Total Fee:</td>
+                        <td colspan="4" class="p-3 text-right uppercase tracking-wider font-extrabold text-gray-700">
+                            <span id="t7CountVal" class="mr-8 normal-case text-gray-500 font-medium">M: 0 | F: 0 | Total: 0</span>
+                            Grand Total Fee:
+                        </td>
                         <td id="t7GrandTotalVal" class="p-3 text-center font-black text-blue-700 text-sm bg-blue-50/50">₹0</td>
                         <td class="p-3"></td>
                     </tr>
@@ -3982,7 +4113,6 @@ async function clearAllLogsUI() {
         <div id="studentProfileCard" class="hidden mt-8"></div>
     `;
     
-    // Apply school-level lock restrictions if applicable
     if (curUser.role === "School" || curUser.role === "Teacher") {
         const sf2 = document.getElementById('sf2');
         if (sf2) {
@@ -3991,32 +4121,30 @@ async function clearAllLogsUI() {
         }
     }
 
-    // Refresh dynamic status settings
     if (curUser && curUser.role === "Admin") {
         refreshRegButton('staff');
     }
 
-    // Run the dynamic footer calculations
     updateTab7Totals();
 }
     function generateTab7Rows(data) {
-        if (!data || data.length === 0) return '<tr><td colspan="5" class="p-6 text-center text-gray-400 italic">No staff records found.</td></tr>';
-        
-        return data.map(s => `
-            <tr class="hover:bg-blue-50 bg-white border-b transition">
-                <td class="p-3 border-r font-bold text-gray-800">${s.StudentName}</td>
-                <td class="p-3 border-r text-gray-600 font-medium text-center">${s.School}</td>
-                <td class="p-3 border-r text-gray-600 text-center">${s.Phone}</td>
-                <td class="p-3 border-r font-bold text-gray-700 text-center">₹${s.Fee}</td>
-                <td class="p-2 border-r flex flex-wrap justify-center gap-1">
-                    <button type="button" onclick='viewStudentCard(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold shadow-sm">View</button>
-                    <button type="button" onclick='editStaff(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded text-xs shadow-sm">Edit</button>
-                    <!-- Passes '7' so it knows to return to the Staff tab after deleting -->
-                    <button type="button" onclick="delS(${s._rowIndex}, 7)" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs shadow-sm">Del</button>
-                </td>
-            </tr>
-        `).join('');
-    }
+    if (!data || data.length === 0) return '<tr><td colspan="6" class="p-6 text-center text-gray-400 italic">No staff records found.</td></tr>';
+    
+    return data.map((s, idx) => `
+        <tr class="hover:bg-blue-50 bg-white border-b transition" data-gender="${s.Gender || ''}">
+            <td class="p-3 border-r text-center text-gray-500 font-bold">${idx + 1}</td>
+            <td class="p-3 border-r font-bold text-gray-800">${s.StudentName}</td>
+            <td class="p-3 border-r text-gray-600 font-medium text-center">${s.School}</td>
+            <td class="p-3 border-r text-gray-600 text-center">${s.Phone}</td>
+            <td class="p-3 border-r font-bold text-gray-700 text-center">₹${s.Fee}</td>
+            <td class="p-2 border-r flex flex-wrap justify-center gap-1">
+                <button type="button" onclick='viewStudentCard(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold shadow-sm">View</button>
+                <button type="button" onclick='editStaff(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded text-xs shadow-sm">Edit</button>
+                <button type="button" onclick="delS(${s._rowIndex}, 7)" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs shadow-sm">Del</button>
+            </td>
+        </tr>
+    `).join('');
+}
 
     function sortTab7Table(col) {
         if (tab7SortCol === col) tab7SortAsc = !tab7SortAsc; 
@@ -4082,14 +4210,17 @@ function searchT7() {
     const rows = Array.from(document.getElementById('t7Body').rows);
     
     let visibleFeeSum = 0;
+    let visibleCount = 0;
+    let visibleM = 0;
+    let visibleF = 0;
 
     rows.forEach(r => {
-        if (r.cells.length < 5) return;
+        if (r.cells.length < 6) return;
         
-        const name = r.cells[0].innerText.toLowerCase();
-        const school = r.cells[1].innerText.toLowerCase();
-        const phone = r.cells[2].innerText.toLowerCase();
-        const feeText = r.cells[3].innerText.replace(/[^\d.]/g, ''); 
+        const name = r.cells[1].innerText.toLowerCase();
+        const school = r.cells[2].innerText.toLowerCase();
+        const phone = r.cells[3].innerText.toLowerCase();
+        const feeText = r.cells[4].innerText.replace(/[^\d.]/g, ''); 
         const feeVal = parseFloat(feeText) || 0;
 
         const match = name.includes(q) || 
@@ -4099,7 +4230,13 @@ function searchT7() {
 
         if (match) {
             r.style.display = '';
+            visibleCount++;
+            r.cells[0].innerText = visibleCount; // Re-index Sl No
             visibleFeeSum += feeVal;
+
+            const gender = r.dataset.gender || "";
+            if (gender === "M") visibleM++;
+            else if (gender === "F") visibleF++;
         } else {
             r.style.display = 'none';
         }
@@ -4109,6 +4246,11 @@ function searchT7() {
     if (totalValEl) {
         totalValEl.innerText = '₹' + visibleFeeSum.toLocaleString('en-IN');
     }
+
+    const countEl = document.getElementById('t7CountVal');
+    if (countEl) {
+        countEl.innerHTML = `M: <span class="text-blue-600 font-bold">${visibleM}</span> | F: <span class="text-pink-600 font-bold">${visibleF}</span> | Total: <span class="text-gray-900 font-black">${visibleCount}</span>`;
+    }
 }
 
 function updateTab7Totals() {
@@ -4117,17 +4259,32 @@ function updateTab7Totals() {
     
     const rows = Array.from(tbody.rows);
     let sum = 0;
+    let visibleCount = 0;
+    let visibleM = 0;
+    let visibleF = 0;
     
     rows.forEach(r => {
-        if (r.cells.length >= 5) {
-            const feeText = r.cells[3].innerText.replace(/[^\d.]/g, '');
+        if (r.cells.length >= 6) {
+            visibleCount++;
+            r.cells[0].innerText = visibleCount; // sequential Sl No
+
+            const feeText = r.cells[4].innerText.replace(/[^\d.]/g, '');
             sum += (parseFloat(feeText) || 0);
+
+            const gender = r.dataset.gender || "";
+            if (gender === "M") visibleM++;
+            else if (gender === "F") visibleF++;
         }
     });
     
     const totalValEl = document.getElementById('t7GrandTotalVal');
     if (totalValEl) {
         totalValEl.innerText = '₹' + sum.toLocaleString('en-IN');
+    }
+
+    const countEl = document.getElementById('t7CountVal');
+    if (countEl) {
+        countEl.innerHTML = `M: <span class="text-blue-600 font-bold">${visibleM}</span> | F: <span class="text-pink-600 font-bold">${visibleF}</span> | Total: <span class="text-gray-900 font-black">${visibleCount}</span>`;
     }
 }
     
@@ -4177,23 +4334,24 @@ function updateTab7Totals() {
         </h3>
         
         <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
-            <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
-                <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider">
-                    <tr>
-                        <th class="p-4 border-r border-gray-700">Date & Time</th>
-                        <th class="p-4 border-r border-gray-700">Bus ID</th>
-                        <th class="p-4 border-r border-gray-700">Voucher</th>
-                        <th class="p-4 border-r border-gray-700">Category</th>
-                        <th class="p-4 border-r border-gray-700">Remarks</th>
-                        <th class="p-4 border-r border-gray-700 text-right">Amount</th>
-                        <th class="p-4">Authorised By</th>
-                    </tr>
-                </thead>
-                <tbody id="expTableBody">
-                    <tr><td colspan="7" class="p-8 text-center text-gray-400 animate-pulse font-bold">Loading expense database...</td></tr>
-                </tbody>
-            </table>
-        </div>
+    <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
+        <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider">
+            <tr>
+                <th class="p-4 border-r border-gray-700">Date & Time</th>
+                <th class="p-4 border-r border-gray-700">Bus ID</th>
+                <th class="p-4 border-r border-gray-700">Voucher</th>
+                <th class="p-4 border-r border-gray-700">Category</th>
+                <th class="p-4 border-r border-gray-700">Remarks</th>
+                <th class="p-4 border-r border-gray-700 text-right">Amount</th>
+                <th class="p-4">Authorised By</th>
+            </tr>
+        </thead>
+        <tbody id="expTableBody">
+            <tr><td colspan="7" class="p-8 text-center text-gray-400 animate-pulse font-bold">Loading expense database...</td></tr>
+        </tbody>
+        <tfoot id="expensesFoot" class="bg-gray-100 border-t-2 border-gray-300 font-extrabold text-xs"></tfoot>
+    </table>
+</div>
     `;
     fetchExp();
     generateNextVoucher(); // Added: Automatic calculation
@@ -4253,24 +4411,39 @@ async function fetchExp() {
     try {
         const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getExpenses"})}).then(r=>r.json());
         const tbody = document.getElementById('expTableBody');
+        const tfoot = document.getElementById('expensesFoot');
+        
         if(res.success && res.data.length > 0) {
-            tbody.innerHTML = res.data.map(ex => `
-    <tr class="border-b hover:bg-gray-50">
-        <td class="p-3 text-gray-700 font-mono text-xs">${ex.dateTime}</td> <!-- Clean DD/MM/YYYY HH:MM:SS -->
-        <td class="p-3 font-bold">${ex.busId}</td>
-        <td class="p-3">${ex.voucherNo || '-'}</td>
-        <td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-red-100 text-red-700">${ex.title}</span></td>
-        <td class="p-3"font-bold bg-red-100 text-red-700">${ex.remarks}</td>
-        <td class="p-3 font-black text-red-600">₹${ex.amount}</td>
-        <td class="p-3 text-gray-600">${ex.authorisedBy}</td>
-    </tr>
-    
-`).join('');
+            let sumExpenses = 0;
+            tbody.innerHTML = res.data.map(ex => {
+                sumExpenses += parseFloat(ex.amount.toString().replace(/[^\d.]/g, '')) || 0;
+                return `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-3 text-gray-700 font-mono text-xs">${ex.dateTime}</td>
+                    <td class="p-3 font-bold">${ex.busId}</td>
+                    <td class="p-3">${ex.voucherNo || '-'}</td>
+                    <td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold bg-red-100 text-red-700">${ex.title}</span></td>
+                    <td class="p-3 font-medium text-slate-700">${ex.remarks}</td>
+                    <td class="p-3 font-black text-red-600">₹${ex.amount}</td>
+                    <td class="p-3 text-gray-600">${ex.authorisedBy}</td>
+                </tr>`;
+            }).join('');
+
+            if (tfoot) {
+                tfoot.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="p-3 text-right uppercase tracking-wider font-extrabold text-gray-700">Grand Total Expenses:</td>
+                        <td class="p-3 text-left font-black text-red-600 text-sm bg-red-50/50">₹${sumExpenses.toLocaleString('en-IN')}</td>
+                        <td></td>
+                    </tr>
+                `;
+            }
         } else {
-            tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">No expenses found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">No expenses found.</td></tr>';
+            if (tfoot) tfoot.innerHTML = '';
         }
     } catch(e) {
-        document.getElementById('expTableBody').innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500">Error loading data.</td></tr>';
+        document.getElementById('expTableBody').innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500">Error loading data.</td></tr>';
     }
 }
 
@@ -4752,11 +4925,8 @@ async function adminEndBusLocation(busId) {
 
 function renderTab11(c) {
     const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
-    
-    // Auto-calculate current academic month
     const now = new Date();
     const curMonthIdx = now.getMonth(); 
-    // Added 3 (April) to the map
     const academicMap = {5:"Jun", 6:"Jul", 7:"Aug", 8:"Sep", 9:"Oct", 10:"Nov", 11:"Dec", 0:"Jan", 1:"Feb", 2:"Mar", 3:"Mar"};
     const defaultMonth = academicMap[curMonthIdx] || "Jun";
 
@@ -4791,6 +4961,7 @@ function renderTab11(c) {
             <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
                 <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider">
                     <tr>
+                        <th class="p-4 border-r border-gray-700 w-16 text-center">Sl No</th>
                         <th class="p-4 border-r border-gray-700">Student Name</th>
                         <th class="p-4 border-r border-gray-700">Class</th>
                         <th class="p-4 border-r border-gray-700">Phone</th>
@@ -4800,12 +4971,21 @@ function renderTab11(c) {
                     </tr>
                 </thead>
                 <tbody id="pendingBody"></tbody>
-                <tfoot id="pendingFoot" class="bg-gray-100 font-black border-t-2 border-gray-300"></tfoot>
+                
+                <tfoot class="bg-gray-100 font-black border-t-2 border-gray-300 text-xs">
+                    <tr id="t11TotalsRow">
+                        <td colspan="5" class="p-3 text-right uppercase text-gray-700">
+                            <span id="t11CountVal" class="mr-8 normal-case text-gray-500 font-medium">M: 0 | F: 0 | Total: 0</span>
+                            Total Expected Collection:
+                        </td>
+                        <td id="pendingGrandTotalVal" class="p-3 text-center text-red-700 text-lg">₹0</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     `;
 
-    // Teacher & School Restricted Initialization
     if(curUser.role === "School") {
         const uSchool = curUser.tschool || curUser.tSchool;
         document.getElementById('pSch').value = uSchool;
@@ -4815,8 +4995,6 @@ function renderTab11(c) {
     else if(curUser.role === "Teacher") {
         const uClass = curUser.tclass || curUser.tClass;
         const uDiv = curUser.tdiv || curUser.tDiv;
-        
-        // Find matching school by checking the class suffix (e.g., 34347)
         const schoolOptions = ["TDEMNS-td1", "GTDLPS-34318", "TDTTI-34347", "TDHS-34028"];
         const mySchool = schoolOptions.find(s => uClass.includes(s.split('-')[1]));
         
@@ -4831,8 +5009,6 @@ function renderTab11(c) {
         
         clsD.value = uClass;
         divD.value = uDiv;
-
-        // Lock fields for teachers
         schD.disabled = true;
         clsD.disabled = true;
         divD.disabled = true;
@@ -4843,11 +5019,10 @@ function renderTab11(c) {
 
 async function fetchPending() {
     const tbody = document.getElementById('pendingBody');
-    const tfoot = document.getElementById('pendingFoot');
+    if (!tbody) return;
 
-    // Ensure database is loaded
     if (!db || db.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center">Fetching database, please wait...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="p-10 text-center">Fetching database, please wait...</td></tr>';
         await fetchData();
     }
 
@@ -4856,26 +5031,22 @@ async function fetchPending() {
     const div = document.getElementById('pDiv').value;
     const mon = document.getElementById('pMon').value;
 
-    tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center animate-pulse text-gray-400">Filtering records...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="p-10 text-center animate-pulse text-gray-400">Filtering records...</td></tr>';
 
     let list = db.filter(s => {
-        // 1. Check if unpaid
         const isUnpaid = !s[mon] || parseFloat(s[mon]) === 0;
         if (!isUnpaid) return false;
 
-        // 2. Role Based Access
         if (curUser.role === "Teacher") {
             const uClass = curUser.tclass || curUser.tClass;
             const uDiv = curUser.tdiv || curUser.tDiv;
             return String(s.Class) === String(uClass) && String(s.Div) === String(uDiv);
         }
-        
         if (curUser.role === "School") {
             const uSchool = curUser.tschool || curUser.tSchool;
             return s.School === uSchool;
         }
 
-        // 3. Admin / General Filters (remains identical...)
         const matchSch = !sch || s.School === sch;
         const matchCls = !cls || s.Class === cls;
         const matchDiv = !div || s.Div === div;
@@ -4886,17 +5057,27 @@ async function fetchPending() {
     list.sort((a, b) => a.StudentName.localeCompare(b.StudentName));
 
     if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-green-600 font-bold">🎉 No pending fees found for ${mon}!</td></tr>`;
-        tfoot.innerHTML = '';
+        tbody.innerHTML = `<tr><td colspan="7" class="p-10 text-center text-green-600 font-bold">🎉 No pending fees found for ${mon}!</td></tr>`;
+        document.getElementById('pendingGrandTotalVal').innerText = '₹0';
+        document.getElementById('t11CountVal').innerHTML = `M: <span class="text-blue-600 font-bold">0</span> | F: <span class="text-pink-600 font-bold">0</span> | Total: <span class="text-gray-900 font-black">0</span>`;
         return;
     }
 
     let totalDue = 0;
-    tbody.innerHTML = list.map(s => {
+    let visibleM = 0;
+    let visibleF = 0;
+    let visibleCount = 0;
+
+    tbody.innerHTML = list.map((s, idx) => {
         const feeAmt = parseFloat(s.Fee) || 0;
         totalDue += feeAmt;
+        visibleCount++;
+        if (s.Gender === "M") visibleM++;
+        else if (s.Gender === "F") visibleF++;
+
         return `
-        <tr class="border-b hover:bg-red-50 transition">
+        <tr class="border-b hover:bg-red-50 transition" data-gender="${s.Gender || ''}">
+            <td class="p-3 border-r text-center text-gray-500 font-bold">${idx + 1}</td>
             <td class="p-3 border-r font-bold text-gray-800">${s.StudentName}</td>
             <td class="p-3 border-r text-gray-600 text-xs">${s.Class}-${s.Div}</td>
             <td class="p-3 border-r text-gray-600">${s.Phone}</td>
@@ -4908,13 +5089,8 @@ async function fetchPending() {
         </tr>`;
     }).join('');
 
-    tfoot.innerHTML = `
-        <tr>
-            <td colspan="4" class="p-3 text-right text-gray-700 uppercase">Total Expected Collection (${mon}):</td>
-            <td class="p-3 text-center text-red-700 text-lg">₹${totalDue.toLocaleString('en-IN')}</td>
-            <td></td>
-        </tr>
-    `;
+    document.getElementById('pendingGrandTotalVal').innerText = '₹' + totalDue.toLocaleString('en-IN');
+    document.getElementById('t11CountVal').innerHTML = `M: <span class="text-blue-600 font-bold">${visibleM}</span> | F: <span class="text-pink-600 font-bold">${visibleF}</span> | Total: <span class="text-gray-900 font-black">${visibleCount}</span>`;
 }
 
 let editUserId = null;
@@ -5356,18 +5532,19 @@ async function renderTab13(c) {
 
         <!-- STOPS TABLE (ALPHABETICAL) -->
         <div class="overflow-x-auto shadow-sm rounded-2xl border border-gray-200 bg-white">
-            <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
-                <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider">
-                    <tr>
-                        <th class="p-3 border">Stop Name ↕ (Alphabetical)</th>
-                        <th class="p-3 border text-center">Bus ID</th>
-                        <th class="p-3 border text-center">Fee (₹)</th>
-                        <th class="p-3 border text-center">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="stopsTblBody"></tbody>
-            </table>
-        </div>
+    <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
+        <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider">
+            <tr>
+                <th class="p-3 border text-center w-16">Sl No</th>
+                <th class="p-3 border">Stop Name ↕ (Alphabetical)</th>
+                <th class="p-3 border text-center">Bus ID</th>
+                <th class="p-3 border text-center">Fee (₹)</th>
+                <th class="p-3 border text-center">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="stopsTblBody"></tbody>
+    </table>
+</div>
     `;
     
     loadStopsTable('');
@@ -5382,11 +5559,12 @@ function loadStopsTable(selectedBus) {
         data = data.filter(s => s.BusId === selectedBus);
     }
 
-    // Enforce strict Alphabetical Sorting
+    // Enforce alphabetical sorting
     data.sort((a, b) => String(a.StopName).localeCompare(String(b.StopName)));
 
-    tbody.innerHTML = data.map(s => `
+    tbody.innerHTML = data.map((s, idx) => `
         <tr class="hover:bg-blue-50/50 transition border-b">
+            <td class="p-3 border-r text-center text-gray-500 font-bold">${idx + 1}</td>
             <td class="p-3 border-r font-bold text-gray-800">${s.StopName}</td>
             <td class="p-3 border-r text-center font-medium text-gray-600">${s.BusId}</td>
             <td class="p-3 border-r text-center font-black text-blue-600">₹${s.Fee || 0}</td>
