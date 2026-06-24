@@ -114,10 +114,10 @@ input, select, textarea, [contenteditable="true"] {
 <body class="bg-gray-100 text-gray-800 font-sans">
     <div id="loaderOverlay"><div class="loader mb-2"></div><p class="font-bold text-blue-600">Processing...</p></div>
 
-    <header id="appHeader" class="hidden sticky top-0 z-50 bg-gradient-to-r from-blue-700 to-indigo-800 text-white px-4 py-3 shadow-lg flex flex-col sm:flex-row justify-between items-center gap-3 border-b border-blue-600/50 backdrop-blur-md bg-opacity-95">
+    <header id="appHeader" class="hidden sticky top-0 z-[100] bg-gradient-to-r from-blue-700 to-indigo-800 text-white px-4 py-3 shadow-lg flex flex-col sm:flex-row justify-between items-center gap-3 border-b border-blue-600/50 backdrop-blur-md bg-opacity-95">
     <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
         <div class="flex items-center gap-2">
-            <!-- Explicit White Background for School Logo preserved -->
+            <!-- School Logo -->
             <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow-inner border border-white/20 p-1">
                 <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLs9jyTEZv_qb7Sl-eWiCONiB_n-Jjv4icm2S3lPnmoqXnCQedYEs_cA3dwEleMx_hl9ByCEFyLE2nH6wyatT_dKjQNScu5jwkMJngSC3q9RNdZmUaa12r1jmURQM8VnhQKugi1wCklnSYOWiG7uP2E1gNmCA29pXFrrMvw0yMoAhWhZA/s1600/Logo2.png" alt="School Logo" class="w-full h-full object-contain">
             </div>
@@ -126,11 +126,9 @@ input, select, textarea, [contenteditable="true"] {
                 <span class="text-[9px] text-blue-200 font-bold uppercase tracking-widest">Bus Management Portal</span>
             </div>
         </div>
-        <!-- Logout button explicitly positioned for easy access on mobile devices -->
         <button onclick="logout()" class="sm:hidden bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-xl text-xs font-black shadow-md active:scale-95 transition-all">Logout</button>
     </div>
     
-    <!-- User welcome and session status metadata cards -->
     <div class="flex flex-row items-center gap-4 w-full sm:w-auto justify-between sm:justify-end bg-blue-900/30 sm:bg-transparent p-2.5 sm:p-0 rounded-2xl border border-blue-500/20 sm:border-none">
         <div class="text-left sm:text-right">
             <div class="flex items-center gap-1.5 justify-start sm:justify-end">
@@ -253,12 +251,13 @@ input, select, textarea, [contenteditable="true"] {
     </div>
 
     <!-- Main App Container: Stacks vertically on mobile, switches to a side-by-side layout on large screens -->
+<!-- Updated mainApp container with min-w-0 added to tabContent -->
 <div id="mainApp" class="hidden flex flex-col lg:flex-row gap-6 p-4 max-w-[1600px] mx-auto items-start">
-    <!-- Sidebar Navigation (Left on desktop, swipeable horizontal row on mobile) -->
+    <!-- Left Sticky Sidebar -->
     <div id="tabs" class="flex flex-row lg:flex-col lg:w-64 w-full overflow-x-auto lg:overflow-x-visible lg:overflow-y-auto gap-2 pb-4 lg:pb-0 lg:sticky lg:top-24 z-40 shrink-0"></div>
     
-    <!-- Workspace Panel (Right, expands to fill remaining space) -->
-    <div id="tabContent" class="flex-grow w-full bg-white p-6 rounded-3xl shadow-sm border border-gray-100 min-h-[70vh]"></div>
+    <!-- Workspace Panel (min-w-0 applied to enforce internal horizontal scrollbars) -->
+    <div id="tabContent" class="flex-grow w-full min-w-0 bg-white p-6 rounded-3xl shadow-sm border border-gray-100 min-h-[70vh]"></div>
 </div>
 <!-- STANDALONE SELF-REGISTRATION FORM -->
 <div id="selfRegisterSection" class="hidden min-h-screen flex items-center justify-center p-4 lg:p-8 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 z-10 relative">
@@ -2699,8 +2698,8 @@ Contact Your Class Teacher !!!
                 <span class="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-md font-bold">${currentFeeDB.length} Students</span>
             </h3>
             
-            <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
-                <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
+            <div class="w-full overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
+    <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
                     <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
                         <tr>
                             <th onclick="sortFeeTable('StudentName')" class="cursor-pointer hover:bg-gray-700 p-4 border sticky left-0 z-10 bg-gray-900 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Name & Details ↕</th>
@@ -4346,7 +4345,7 @@ function updateTab7Totals() {
             <span class="w-2 h-6 bg-red-600 rounded-full"></span> Recent Expenses Log
         </h3>
         
-        <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
+        <div class="w-full overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
     <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
         <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider">
             <tr>
@@ -6498,8 +6497,8 @@ function renderTab14(c) {
                     <h3 class="text-white font-bold text-sm uppercase tracking-widest">Daily Cash Book Register</h3>
                     <input type="text" id="cbSearch" onkeyup="searchCashBook()" placeholder="Type to filter transactions..." class="p-2 border rounded-xl text-xs outline-none w-full md:w-1/3">
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs border-collapse whitespace-nowrap">
+                <div class="w-full overflow-x-auto shadow-sm rounded-3xl border border-slate-200 bg-white">
+    <table class="w-full text-left text-xs border-collapse whitespace-nowrap">
                         <thead class="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-200 select-none">
                             <tr>
                                 <th onclick="sortCashBook('date')" class="p-4 cursor-pointer hover:bg-slate-100">Date ↕</th>
