@@ -459,19 +459,22 @@ document.addEventListener('keydown', event => {
     }
     
     // This triggers immediately when the user closes the browser tab or navigates away
-    window.addEventListener('beforeunload', function() {
-        if (curUser && loginDT) {
-            const payload = JSON.stringify({
-                action: "log",
-                UserId: curUser.id || curUser.name,
-                Role: curUser.role,
-                Name: curUser.name,
-                type: "logout"
-            });
-            // sendBeacon forces an instant background request even while the tab is closing
-            navigator.sendBeacon(API_URL, payload);
-        }
-    });
+    // This triggers immediately when the user closes the browser tab or navigates away
+window.addEventListener('beforeunload', function() {
+    if (curUser && loginDT) {
+        const payload = JSON.stringify({
+            action: "log",
+            UserId: curUser.id || curUser.name || curUser.StudentName || "Unknown",
+            Role: curUser.role,
+            Name: curUser.name || curUser.Name || curUser.StudentName || "Unknown",
+            type: "logout"
+        });
+        
+        // Wrapping inside a native application/json Blob bypasses candid browser preflight rejections
+        const blob = new Blob([payload], { type: 'application/json' });
+        navigator.sendBeacon(API_URL, blob);
+    }
+});
     
     
     window.onload = async () => {
@@ -715,7 +718,6 @@ async function fetchData(forceFetch = false) {
     loginDT = new Date(); 
     resetTimer();
 
-    // 1. INSTANT UI SWITCH
     const displayName = u.name || u.Name || u.StudentName || "User";
 
     document.getElementById('loginSection').classList.add('hidden');
@@ -723,31 +725,34 @@ async function fetchData(forceFetch = false) {
     document.getElementById('mainApp').classList.remove('hidden');
     document.getElementById('welcomeUser').innerText = `Hello, ${displayName}`;
 
-    // 2. LOG LOGIN (Fire and forget, don't wait for it)
-    navigator.sendBeacon(API_URL, JSON.stringify({
-        action: "log", UserId: u.id || u.name, Role: u.role, Name: u.name, type: "login"
-    }));
+    // 2. LOG LOGIN (Standard fetch guarantees the session row is written instantly in the background)
+    fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+            action: "log", 
+            UserId: u.id || u.name || u.StudentName || "Unknown", 
+            Role: u.role, 
+            Name: u.name || u.Name || u.StudentName || "Unknown", 
+            type: "login"
+        })
+    }).catch(e => console.error("Session login logging failed: ", e));
 
     // 3. BACKGROUND INITIALIZATION
     if (u.role !== "Student") {
         renderTabs();
-        // Load the first tab with a localized spinner so the whole app isn't stuck
         document.getElementById('tabContent').innerHTML = `
             <div class="flex flex-col items-center justify-center h-64">
                 <div class="loader mb-4"></div>
                 <p class="text-blue-600 font-bold animate-pulse">Establishing Secure Connection...</p>
             </div>`;
         
-        // Fetch data in background
         fetchData().then(() => {
-            loadTab(u.access[0]); // Refresh the tab once data arrives
-            
+            loadTab(u.access[0]);
         });
     } else {
-        renderTabs(); // Students already have their data from the loginStudent step
+        renderTabs();
     }
 
-    // Session Timer
     if (durInt) clearInterval(durInt);
     durInt = setInterval(() => {
         const d = Math.floor((new Date() - loginDT) / 1000);
@@ -777,37 +782,36 @@ async function logout() {
         return;
     }
 
-    showLoad(); // Show spinner overlay
+    showLoad(); // Show processing spinner
 
     const logoutDT = new Date();
-    const durationSecs = Math.floor((logoutDT - loginDT) / 0);
-
-    // Wait 2 seconds (simulate delay)
-    await new Promise(resolve => setTimeout(resolve, 1));
+    // Corrected: Convert milliseconds to seconds by dividing by 1000 instead of 0
+    const durationSecs = Math.floor((logoutDT - loginDT) / 1000);
 
     try {
+        // Enforce guaranteed standard POST request for active manual logouts
         await fetch(API_URL, {
             method: 'POST',
             body: JSON.stringify({
                 action: "log",
-                UserId: curUser.id || curUser.name,
+                UserId: curUser.id || curUser.name || curUser.StudentName || "Unknown",
                 Role: curUser.role,
-                Name: curUser.name,
+                Name: curUser.name || curUser.Name || curUser.StudentName || "Unknown",
                 LogoutTime: logoutDT.toISOString(),
                 Duration: durationSecs,
                 type: "logout"
             })
         });
     } catch (e) {
-        console.error("Error logging logout:", e);
+        console.error("Error logging manual logout session:", e);
     }
 
-    hideLoad();  // Hide spinner overlay
+    hideLoad(); // Hide spinner
     cleanupLogoutUI();
 }
 
 function cleanupLogoutUI() {
-    // If they are currently live, kill the broadcast before logging out
+    // If they are currently live, terminate the GPS broadcast on logout
     if (locWatchId || currentSharingBusId) {
         stopLocationTracking(); 
     }
@@ -822,12 +826,14 @@ function cleanupLogoutUI() {
     clearTimeout(inactTimer);
     localStorage.removeItem('keepUser');
     localStorage.removeItem('keepPass');
+    
     document.getElementById('loginSection').classList.remove('hidden');
     document.getElementById('appHeader').classList.add('hidden');
     document.getElementById('mainApp').classList.add('hidden');
     ['stuSearch','offUser','offPass'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('keepLogin').checked = false;
-    sessionStorage.removeItem('student_db'); // Clears cache on logout
+    
+    sessionStorage.removeItem('student_db'); // Flush browser cache on exit
 }
 
 
