@@ -380,7 +380,7 @@ input, select, textarea, [contenteditable="true"] {
     </button>
 </form>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbykvRTF_zZr5qM04jz1bjK7_Jw7kBxQQAgMgVWEJdXgjZEiGvsq8hZTWa4ZqLEy2lJdpA/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbwiBeVm7U7F1Ph-_6TpXLu5jbggml4H9MOuLQXBiMBQny-gWgGJHAkhGzLAiMNgWS6Gmg/exec";
 
     // Disable context menu (Right-Click)
 document.addEventListener('contextmenu', event => event.preventDefault());
@@ -847,6 +847,7 @@ function cleanupLogoutUI() {
     }
 
     // MAP OF ICONS AND NAMES
+    // MAP OF ICONS AND NAMES
     const tabConfig = {
         1:  { name: "Students", icon: "🎓" },
         2:  { name: "Attendance", icon: "✅" },
@@ -861,7 +862,7 @@ function cleanupLogoutUI() {
         10: { name: "Live Map", icon: "📍" },
         13: { name: "Stops & Fees", icon: "🎟️" },
         12: { name: "Settings", icon: "⚙️" },
-        
+        14: { name: "Cash Book", icon: "📓" } // Added
     };
     
     curUser.access.forEach(id => {
@@ -892,7 +893,6 @@ function cleanupLogoutUI() {
 }
 
     function loadTab(id) {
-        // Stop admin tracking if switching away from the Location tab
         if (adminLocInterval) { clearInterval(adminLocInterval); adminLocInterval = null; }
         if (adminTickInterval) { clearInterval(adminTickInterval); adminTickInterval = null; }
         const c = document.getElementById('tabContent');
@@ -910,6 +910,7 @@ function cleanupLogoutUI() {
         if(id === 11) renderTab11(c);
         if(id === 12) renderTab12(c);
         if(id === 13) renderTab13(c);
+        if(id === 14) renderTab14(c); // Added
     }
 
     // Handles user filtering correctly by resolving case-sensitive parameters safely
@@ -2529,41 +2530,35 @@ Contact Your Class Teacher !!!
     function searchT3() { const q=document.getElementById('dSearch').value.toLowerCase(); Array.from(document.getElementById('t3Body').rows).forEach(r=> r.style.display = r.innerText.toLowerCase().includes(q)?'':'none'); }
 
     // --- Tab 4: Fee ---
-    // In renderTab4 add a wrapper div with id "feeMgmtHeader", initially visible
-function renderTab4(c) {
-    // 1. Get filtered data and apply initial Alphabetical Sorting
+    function renderTab4(c) {
     currentFeeDB = getFilteredDB();
     currentFeeDB.sort((a, b) => String(a.StudentName).toLowerCase().localeCompare(String(b.StudentName).toLowerCase()));
     
-    // Reset sort state trackers
     feeSortCol = 'StudentName';
     feeSortAsc = true;
 
-    const months =["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+    const months = ["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
 
     c.innerHTML = `
-        <!-- Top Search Header -->
-        <div id="feeMgmtHeader">
+        <div id="feeMgmtHeader" class="relative">
             <h2 class="text-2xl font-bold mb-4">Fee Management</h2>
-            <div class="flex gap-2 mb-6">
-                <input type="text" id="fSearch" placeholder="Phone or Name (To Pay Fee)" class="p-2 border-2 border-gray-300 rounded w-1/2 focus:outline-none focus:border-blue-500">
-                <button onclick="findFeeStu()" class="bg-blue-600 text-white px-5 rounded font-bold shadow hover:bg-blue-700 transition">Find & Pay</button>
+            <div class="flex gap-2 mb-6 relative">
+                <div class="relative w-full md:w-1/2">
+                    <input type="text" id="fSearch" oninput="instantFeeSearch(this.value)" placeholder="Type Phone or Name to search instantly..." class="p-2 border-2 border-gray-300 rounded w-full focus:outline-none focus:border-blue-500">
+                    <div id="feeSuggestions" class="absolute z-50 w-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg hidden max-h-60 overflow-y-auto"></div>
+                </div>
             </div>
         </div>
         
-        <!-- Individual Payment Area (Hidden by Default) -->
         <div id="feeArea" class="hidden mb-10 pb-8 border-b-2 border-gray-200">
             <div class="flex justify-between items-center mb-2">
                 <h3 class="font-bold text-lg text-gray-800">Processing Payment</h3>
                 <button onclick="document.getElementById('feeArea').classList.add('hidden')" class="text-sm font-bold text-red-500 hover:bg-red-50 px-3 py-1 rounded">Close</button>
             </div>
-            
             <div class="bg-blue-50 p-4 rounded mb-4 shadow-sm border border-blue-200" id="feeDetails"></div>
             
             <div id="feeAddSection" class="flex gap-2 mb-4 bg-white p-4 rounded border shadow-sm items-center">
-                <select id="feeMon" class="p-2.5 border rounded outline-none focus:border-blue-500 font-bold text-sm">
-                    <option>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option><option>Oct</option><option>Nov</option><option>Dec</option><option>Jan</option><option>Feb</option><option>Mar</option>
-                </select>
+                <select id="feeMon" class="p-2.5 border rounded outline-none focus:border-blue-500 font-bold text-sm"></select>
                 <input type="number" id="feeAmt" placeholder="Amount (₹)" class="p-2.5 border rounded outline-none focus:border-blue-500 font-bold text-sm flex-grow">
                 <button onclick="payFee()" class="bg-green-600 text-white px-8 py-2.5 rounded font-black hover:bg-green-700 shadow-md">ADD</button>
             </div>
@@ -2582,13 +2577,11 @@ function renderTab4(c) {
                     Share / Print Profile
                 </button>
                 <button onclick="shareFeeWA()" title="Share via WhatsApp" class="bg-green-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-green-700 transition shadow-lg shadow-green-100 no-print">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.52 3.48A11.91 11.91 0 0012 0C5.37 0 0 5.37 0 12a11.7 11.7 0 001.95 6L0 24l6-1.95a11.86 11.86 0 005.94 1.7c6.63 0 12-5.37 12-12a11.89 11.89 0 00-3.42-8.27zM12 21a9.25 9.25 0 01-4.77-1.35l-.34-.22-3.57 1.16 1.11-3.48-.22-.36A9.25 9.25 0 012.75 12 9.25 9.25 0 0112 2.75 9.25 9.25 0 0121.25 12 9.25 9.25 0 0112 21zm5.37-6.31l-1.5-.43a.51.51 0 00-.47.14l-.98 1.07a7.38 7.38 0 01-3.46-3.44l1.07-.98a.53.53 0 00.15-.46l-.43-1.51a.54.54 0 00-.66-.37l-2.22.56a.51.51 0 00-.41.64A7 7 0 0014 16a7 7 0 002.37-1.17.5.5 0 00.13-.69z"/></svg>
                     WhatsApp Report
                 </button>
             </div>
         </div>
         
-        <!-- Massive Default Overview Table (Visible by Default) -->
         <div id="defaultFeeTableSection">
             <h3 class="text-xl font-black mb-4 text-gray-800 flex items-center gap-2">
                 <span class="w-3 h-3 rounded-full bg-blue-500"></span> 
@@ -2600,7 +2593,6 @@ function renderTab4(c) {
                 <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
                     <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
                         <tr>
-                            <!-- Added cursor-pointer, hover effects, and sorting calls to ALL headers -->
                             <th onclick="sortFeeTable('StudentName')" class="cursor-pointer hover:bg-gray-700 p-4 border sticky left-0 z-10 bg-gray-900 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Name & Details ↕</th>
                             <th onclick="sortFeeTable('Fee')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center text-[10px] text-gray-300">Fee Base ↕</th>
                             ${months.map(m => `<th onclick="sortFeeTable('${m}')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center text-[11px] min-w-[100px]">${m} ↕</th>`).join('')}
@@ -2610,16 +2602,48 @@ function renderTab4(c) {
                         </tr>
                     </thead>
                     <tbody id="defaultFeeTableBody">
-    ${generateFeeTableRows(currentFeeDB)}
-</tbody>
-<tfoot id="feeOverviewFooter" class="bg-gray-200 font-black border-t-2 border-gray-500">
-    <!-- Totals will be injected here -->
-</tfoot>
+                        ${generateFeeTableRows(currentFeeDB)}
+                    </tbody>
+                    <tfoot id="feeOverviewFooter" class="bg-gray-200 font-black border-t-2 border-gray-500"></tfoot>
                 </table>
             </div>
         </div>
     `;
     setTimeout(() => updateFeeTotals(currentFeeDB), 100);
+}
+
+function instantFeeSearch(q) {
+    const suggestionsDiv = document.getElementById('feeSuggestions');
+    q = q.trim().toLowerCase();
+    if (!q) {
+        suggestionsDiv.classList.add('hidden');
+        return;
+    }
+    
+    const matches = getFilteredDB().filter(s => 
+        String(s.StudentName).toLowerCase().includes(q) || 
+        String(s.Phone).includes(q)
+    );
+    
+    if (matches.length === 0) {
+        suggestionsDiv.innerHTML = `<div class="p-3 text-sm text-gray-500 italic">No matches found</div>`;
+        suggestionsDiv.classList.remove('hidden');
+        return;
+    }
+    
+    suggestionsDiv.innerHTML = matches.map(s => `
+        <div onclick="selectFeeStudent('${s.StudentName}')" class="p-3 text-sm font-bold text-gray-800 hover:bg-blue-50 border-b cursor-pointer flex justify-between">
+            <span>${s.StudentName} (${s.Class}-${s.Div})</span>
+            <span class="text-xs text-gray-500 font-medium">${s.Phone}</span>
+        </div>
+    `).join('');
+    suggestionsDiv.classList.remove('hidden');
+}
+
+function selectFeeStudent(name) {
+    document.getElementById('fSearch').value = name;
+    document.getElementById('feeSuggestions').classList.add('hidden');
+    findFeeStu();
 }
 
 function updateFeeTotals(data) {
@@ -3077,62 +3101,95 @@ For queries contact: N VINOD - 9747849634
 
     
     function renderTab5(c) {
-        c.innerHTML = `
-            <div class="mb-8">
-                <h2 class="text-2xl font-bold mb-4">Search & Generate Receipt</h2>
-                <div class="flex gap-2 mb-6">
-                    <input type="text" id="rSearch" placeholder="Phone No or Name" class="p-2 border rounded w-1/2">
-                    <button onclick="findReceiptStu()" class="bg-blue-600 text-white px-6 rounded font-bold">Search</button>
-                </div>
-                
-                <div id="receiptResult" class="hidden mb-8 border-b pb-8">
-                    <div class="grid grid-cols-2 gap-4 mb-4 p-4 bg-blue-50 rounded border" id="rStuInfo"></div>
-                    <div class="overflow-x-auto mb-6">
-                        <table class="w-full text-sm border"><tr class="bg-gray-100"><th class="p-2 border">Month</th><th class="p-2 border">Amount</th><th class="p-2 border">Receipt No</th><th class="p-2 border">Action</th></tr>
-                        <tbody id="rPaymentTbl"></tbody></table>
-                    </div>
-                    <h3 class="font-bold text-sm mb-2 text-gray-500 uppercase">Generated History for Student</h3>
-                    <div id="historyArea" class="space-y-2"></div>
+    c.innerHTML = `
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-4">Search & Generate Receipt</h2>
+            <div class="flex gap-2 mb-6 relative">
+                <div class="relative w-full md:w-1/2">
+                    <input type="text" id="rSearch" oninput="instantReceiptSearch(this.value)" placeholder="Type Phone No or Name to search instantly..." class="p-2 border rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <div id="receiptSuggestions" class="absolute z-50 w-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg hidden max-h-60 overflow-y-auto"></div>
                 </div>
             </div>
+            
+            <div id="receiptResult" class="hidden mb-8 border-b pb-8">
+                <div class="grid grid-cols-2 gap-4 mb-4 p-4 bg-blue-50 rounded border" id="rStuInfo"></div>
+                <div class="overflow-x-auto mb-6">
+                    <table class="w-full text-sm border"><tr class="bg-gray-100"><th class="p-2 border">Month</th><th class="p-2 border">Amount</th><th class="p-2 border">Receipt No</th><th class="p-2 border">Action</th></tr>
+                    <tbody id="rPaymentTbl"></tbody></table>
+                </div>
+                <h3 class="font-bold text-sm mb-2 text-gray-500 uppercase">Generated History for Student</h3>
+                <div id="historyArea" class="space-y-2"></div>
+            </div>
+        </div>
 
-            <div id="allReceiptsSection" class="mt-8">
-                <div class="flex justify-between items-end mb-4 border-b border-gray-200 pb-2">
-                    <h2 class="text-2xl font-black text-gray-800 flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-blue-500"></span> All Generated Fees
-                    </h2>
-                    <button onclick="fetchAllReceipts()" class="text-xs font-bold bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded transition">Refresh List</button>
-                </div>
-                
-                <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
-                    <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
-                        <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
-                            <tr>
-                                <th onclick="sortReceiptTable('ReceiptNo')" class="cursor-pointer hover:bg-gray-700 p-3 border">Receipt No ↕</th>
-                                <th onclick="sortReceiptTable('Name')" class="cursor-pointer hover:bg-gray-700 p-3 border">Name ↕</th>
-                                <th onclick="sortReceiptTable('Months')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Month ↕</th>
-                                <th onclick="sortReceiptTable('Amount')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Amount ↕</th>
-                                <th onclick="sortReceiptTable('Class')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Class ↕</th>
-                                <th onclick="sortReceiptTable('Div')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Div ↕</th>
-                                <th class="p-3 border text-center cursor-default">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="allReceiptsBody">
-                            <tr><td colspan="7" class="p-4 text-center text-gray-500 animate-pulse font-bold">Loading all receipts...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+        <div id="allReceiptsSection" class="mt-8">
+            <div class="flex justify-between items-end mb-4 border-b border-gray-200 pb-2">
+                <h2 class="text-2xl font-black text-gray-800 flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-blue-500"></span> All Generated Fees
+                </h2>
+                <button onclick="fetchAllReceipts()" class="text-xs font-bold bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded transition">Refresh List</button>
             </div>
+            
+            <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200 bg-white">
+                <table class="w-full text-left text-sm border-collapse bg-white whitespace-nowrap">
+                    <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
+                        <tr>
+                            <th onclick="sortReceiptTable('ReceiptNo')" class="cursor-pointer hover:bg-gray-700 p-3 border">Receipt No ↕</th>
+                            <th onclick="sortReceiptTable('Name')" class="cursor-pointer hover:bg-gray-700 p-3 border">Name ↕</th>
+                            <th onclick="sortReceiptTable('Months')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Month ↕</th>
+                            <th onclick="sortReceiptTable('Amount')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Amount ↕</th>
+                            <th onclick="sortReceiptTable('Class')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Class ↕</th>
+                            <th onclick="sortReceiptTable('Div')" class="cursor-pointer hover:bg-gray-700 p-3 border text-center">Div ↕</th>
+                            <th class="p-3 border text-center cursor-default">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allReceiptsBody">
+                        <tr><td colspan="7" class="p-4 text-center text-gray-500 animate-pulse font-bold">Loading all receipts...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-            <!-- Print Area (Hidden safely out of view) -->
-            <div id="receiptPreviewContainer" class="hidden mt-6" style="height: 400px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px; background: white; padding: 10px;">
-                <div id="receiptPrintArea" class=""></div>
-            </div>
-        `;
-        
-        // Auto-load all receipts
-        fetchAllReceipts();
+        <div id="receiptPreviewContainer" class="hidden mt-6" style="height: 400px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px; background: white; padding: 10px;">
+            <div id="receiptPrintArea" class=""></div>
+        </div>
+    `;
+    fetchAllReceipts();
+}
+
+function instantReceiptSearch(q) {
+    const suggestionsDiv = document.getElementById('receiptSuggestions');
+    q = q.trim().toLowerCase();
+    if (!q) {
+        suggestionsDiv.classList.add('hidden');
+        return;
     }
+    
+    const matches = getFilteredDB().filter(s => 
+        String(s.StudentName).toLowerCase().includes(q) || 
+        String(s.Phone).includes(q)
+    );
+    
+    if (matches.length === 0) {
+        suggestionsDiv.innerHTML = `<div class="p-3 text-sm text-gray-500 italic">No matches found</div>`;
+        suggestionsDiv.classList.remove('hidden');
+        return;
+    }
+    
+    suggestionsDiv.innerHTML = matches.map(s => `
+        <div onclick="selectReceiptStudent('${s.StudentName}')" class="p-3 text-sm font-bold text-gray-800 hover:bg-blue-50 border-b cursor-pointer flex justify-between">
+            <span>${s.StudentName} (${s.Class}-${s.Div})</span>
+            <span class="text-xs text-gray-500 font-medium">${s.Phone}</span>
+        </div>
+    `).join('');
+    suggestionsDiv.classList.remove('hidden');
+}
+
+function selectReceiptStudent(name) {
+    document.getElementById('rSearch').value = name;
+    document.getElementById('receiptSuggestions').classList.add('hidden');
+    findReceiptStu();
+}
 
     // --- Core Logic for 'All Fee' Section ---
 
@@ -4024,13 +4081,11 @@ function updateTab7Totals() {
 }
     
     
-  function renderTab8(c) {
+ function renderTab8(c) {
     c.innerHTML = `
         <h2 class="text-2xl font-bold mb-4 text-red-700">Expense Management</h2>
         
-        <!-- Expense Form (Keep as is) -->
         <form id="expForm" onsubmit="saveExp(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 bg-red-50 p-6 rounded-2xl border border-red-100 shadow-sm">
-            <!-- ... form fields stay the same ... -->
             <div>
                 <label class="block text-xs font-bold text-red-400 mb-1 uppercase">Bus ID</label>
                 <select id="exBus" required class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
@@ -4049,7 +4104,7 @@ function updateTab7Totals() {
             </div>
             <div>
                 <label class="block text-xs font-bold text-red-400 mb-1 uppercase">Voucher No</label>
-                <input type="text" id="exVoucher" placeholder="V-001" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
+                <input type="text" id="exVoucher" readonly placeholder="Generating..." class="w-full p-2.5 border rounded-xl bg-gray-100 font-bold outline-none cursor-not-allowed">
             </div>
             <div class="md:col-span-2">
                 <label class="block text-xs font-bold text-red-400 mb-1 uppercase">Remarks / Description</label>
@@ -4090,6 +4145,35 @@ function updateTab7Totals() {
         </div>
     `;
     fetchExp();
+    generateNextVoucher(); // Added: Automatic calculation
+}
+
+async function generateNextVoucher() {
+    const el = document.getElementById('exVoucher');
+    if (!el) return;
+    
+    try {
+        const res = await fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getExpenses"})}).then(r=>r.json());
+        let maxNum = 0;
+        const currentYear = new Date().getFullYear();
+        
+        if (res.success && res.data && res.data.length > 0) {
+            res.data.forEach(ex => {
+                const v = ex.voucherNo || "";
+                if (v.includes("/")) {
+                    const parts = v.split("/");
+                    const num = parseInt(parts[0], 10);
+                    if (!isNaN(num) && num > maxNum) {
+                        maxNum = num;
+                    }
+                }
+            });
+        }
+        const nextNum = maxNum + 1;
+        el.value = `${String(nextNum).padStart(3, '0')}/${currentYear}`;
+    } catch(e) {
+        el.value = `001/${new Date().getFullYear()}`;
+    }
 }
 
 async function saveExp(e) {
@@ -6100,6 +6184,314 @@ function localRecalculateRegFee() {
     }
     txtFee.innerText = '₹' + baseFee;
 }
+
+
+let currentCashBookDB = [];
+let cashBookSortCol = 'date';
+let cashBookSortAsc = false;
+
+function renderTab14(c) {
+    const today = new Date();
+    const formattedDate = today.toISOString().split('T')[0]; // YYYY-MM-DD format for form inputs
+    const formattedTime = today.toTimeString().split(' ')[0]; // HH:MM:SS format
+    
+    c.innerHTML = `
+        <div class="animate-fadeIn">
+            <h2 class="text-2xl font-black mb-6 text-slate-800 flex items-center gap-2">
+                <span class="bg-blue-600 text-white p-2 rounded-lg text-sm">📓</span>
+                Cash Book Handling
+            </h2>
+            
+            <!-- Cash Book Log Form -->
+            <form id="cashBookForm" onsubmit="saveCashBookEntry(event)" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-sm">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Date</label>
+                    <input type="date" id="cbDate" required value="${formattedDate}" class="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Time</label>
+                    <input type="text" id="cbTime" required value="${formattedTime}" placeholder="HH:MM:SS" class="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">To Whom Paid</label>
+                    <input type="text" id="cbToWhomPaid" required placeholder="Enter recipient name" class="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Who Paid</label>
+                    <input type="text" id="cbWhoPaid" required placeholder="Enter remitter name" class="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Mode of Payment</label>
+                    <select id="cbMode" required class="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                        <option value="">Select Mode</option>
+                        <option>CASH</option>
+                        <option>GPAY</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Amount (₹)</label>
+                    <input type="number" id="cbAmount" required placeholder="0.00" step="any" class="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-700">
+                </div>
+                <div>
+    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Receipt No (Single Use Only)</label>
+    <select id="cbReceiptNo" onchange="autoFillCashBookFromReceipt(this.value)" class="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white font-bold">
+        <option value="-">N/A (-)</option>
+    </select>
+</div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Reference</label>
+                    <input type="text" id="cbReference" required placeholder="Details/Reference No" class="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                
+                <div class="col-span-2 md:col-span-4 mt-2">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-3 rounded-2xl font-bold shadow-lg transition-all active:scale-95">
+                        Save Cash Entry
+                    </button>
+                </div>
+            </form>
+
+            <!-- Table Logs -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="bg-slate-800 p-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <h3 class="text-white font-bold text-sm uppercase tracking-widest">Daily Cash Book Register</h3>
+                    <input type="text" id="cbSearch" onkeyup="searchCashBook()" placeholder="Type to filter transactions..." class="p-2 border rounded-xl text-xs outline-none w-full md:w-1/3">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse whitespace-nowrap">
+                        <thead class="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-200 select-none">
+                            <tr>
+                                <th onclick="sortCashBook('date')" class="p-4 cursor-pointer hover:bg-slate-100">Date ↕</th>
+                                <th onclick="sortCashBook('time')" class="p-4 cursor-pointer hover:bg-slate-100 text-center">Time ↕</th>
+                                <th onclick="sortCashBook('toWhomPaid')" class="p-4 cursor-pointer hover:bg-slate-100">To Whom Paid ↕</th>
+                                <th onclick="sortCashBook('whoPaid')" class="p-4 cursor-pointer hover:bg-slate-100">Who Paid ↕</th>
+                                <th onclick="sortCashBook('mode')" class="p-4 cursor-pointer hover:bg-slate-100 text-center">Mode ↕</th>
+                                <th onclick="sortCashBook('amount')" class="p-4 cursor-pointer hover:bg-slate-100 text-center">Amount ↕</th>
+                                <th onclick="sortCashBook('receiptNo')" class="p-4 cursor-pointer hover:bg-slate-100 text-center">Receipt No ↕</th>
+                                <th onclick="sortCashBook('reference')" class="p-4 cursor-pointer hover:bg-slate-100">Reference ↕</th>
+                                <th onclick="sortCashBook('user')" class="p-4 cursor-pointer hover:bg-slate-100">Logged By ↕</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cashBookTableBody">
+                            <tr><td colspan="9" class="p-10 text-center animate-pulse text-slate-400 font-bold">Syncing Cash Book...</td></tr>
+                        </tbody>
+                        <tfoot class="bg-slate-100 font-black border-t-2 border-slate-200">
+                            <tr>
+                                <td colspan="5" class="p-4 text-right uppercase text-gray-700">Grand Total Cash Flow:</td>
+                                <td id="cbGrandTotal" class="p-4 text-center text-blue-700 text-sm font-black bg-blue-50/50">₹0</td>
+                                <td colspan="3"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    fetchCashBookData();
+}
+
+async function fetchCashBookData() {
+    showLoad();
+    try {
+        const [cbRes, recRes] = await Promise.all([
+            fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getCashBook"})}).then(r=>r.json()),
+            fetch(API_URL, {method:'POST', body:JSON.stringify({action:"getAllReceipts"})}).then(r=>r.json())
+        ]);
+        
+        if (cbRes.success) {
+            currentCashBookDB = cbRes.data;
+            sortCashBook('date', false); // Sort descending by default
+        }
+        
+        // Cache receipts globally for instant client-side lookup
+        if (recRes.success) {
+            window.allReceiptsForCashBook = recRes.data;
+        }
+        
+        // Populate dropdown with unused receipts
+        if (recRes.success && cbRes.success) {
+            const usedReceipts = new Set(cbRes.data.map(item => item.receiptNo).filter(r => r && r !== "-"));
+            const selectEl = document.getElementById('cbReceiptNo');
+            if (selectEl) {
+                selectEl.innerHTML = '<option value="-">N/A (-)</option>';
+                recRes.data.forEach(r => {
+                    // Check if receipt hasn't been used yet
+                    if (r.ReceiptNo && !usedReceipts.has(r.ReceiptNo)) {
+                        const opt = document.createElement('option');
+                        opt.value = r.ReceiptNo;
+                        opt.text = `${r.ReceiptNo} - ${r.Name} (₹${r.Amount})`;
+                        selectEl.appendChild(opt);
+                    }
+                });
+            }
+        }
+    } catch(e) {
+        console.error("Error matching Cash Book database: ", e);
+    }
+    hideLoad();
+}
+
+function renderCashBookRows(data) {
+    const tbody = document.getElementById('cashBookTableBody');
+    if (!tbody) return;
+    
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="p-10 text-center text-slate-400 italic">No logged cash handling records in this scope.</td></tr>';
+        document.getElementById('cbGrandTotal').innerText = '₹0';
+        return;
+    }
+    
+    tbody.innerHTML = data.map(cb => {
+        let cleanDate = cb.date;
+        if (cb.date && cb.date.includes('-')) {
+            const dateParts = cb.date.split('-');
+            if (dateParts[0].length === 4) { // Convert native HTML ISO format to DD/MM/YYYY
+                cleanDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+            }
+        }
+        return `
+            <tr class="hover:bg-blue-50/30 border-b border-slate-100 transition-colors">
+                <td class="p-4 font-semibold text-slate-700">${cleanDate}</td>
+                <td class="p-4 text-center font-mono text-slate-600">${cb.time}</td>
+                <td class="p-4 font-bold text-slate-900">${cb.toWhomPaid}</td>
+                <td class="p-4 font-bold text-slate-900">${cb.whoPaid}</td>
+                <td class="p-4 text-center"><span class="px-2.5 py-1 rounded text-[10px] font-black ${cb.mode === 'GPAY' ? 'bg-purple-100 text-purple-700':'bg-amber-100 text-amber-700'}">${cb.mode}</span></td>
+                <td class="p-4 text-center font-black text-slate-800">₹${parseFloat(cb.amount).toLocaleString('en-IN')}</td>
+                <td class="p-4 text-center font-bold text-blue-600">${cb.receiptNo}</td>
+                <td class="p-4 text-slate-500 font-medium">${cb.reference}</td>
+                <td class="p-4 font-bold text-slate-600">${cb.user}</td>
+            </tr>
+        `;
+    }).join('');
+    
+    const total = data.reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
+    document.getElementById('cbGrandTotal').innerText = '₹' + total.toLocaleString('en-IN');
+}
+
+function sortCashBook(col, toggle = true) {
+    if (toggle) {
+        if (cashBookSortCol === col) {
+            cashBookSortAsc = !cashBookSortAsc;
+        } else {
+            cashBookSortCol = col;
+            cashBookSortAsc = true;
+        }
+    } else {
+        cashBookSortCol = col;
+    }
+    
+    currentCashBookDB.sort((a, b) => {
+        let valA = a[col];
+        let valB = b[col];
+        
+        if (col === 'amount') {
+            valA = parseFloat(valA) || 0;
+            valB = parseFloat(valB) || 0;
+        } else {
+            valA = String(valA || "").toLowerCase();
+            valB = String(valB || "").toLowerCase();
+        }
+        
+        if (valA < valB) return cashBookSortAsc ? -1 : 1;
+        if (valA > valB) return cashBookSortAsc ? 1 : -1;
+        return 0;
+    });
+    
+    renderCashBookRows(currentCashBookDB);
+}
+
+function searchCashBook() {
+    const q = document.getElementById('cbSearch').value.toLowerCase();
+    const filtered = currentCashBookDB.filter(cb => 
+        String(cb.date).includes(q) || 
+        String(cb.toWhomPaid).toLowerCase().includes(q) || 
+        String(cb.whoPaid).toLowerCase().includes(q) || 
+        String(cb.mode).toLowerCase().includes(q) || 
+        String(cb.receiptNo).toLowerCase().includes(q) || 
+        String(cb.reference).toLowerCase().includes(q) || 
+        String(cb.user).toLowerCase().includes(q)
+    );
+    renderCashBookRows(filtered);
+}
+
+async function saveCashBookEntry(e) {
+    e.preventDefault();
+    const amountVal = parseFloat(document.getElementById('cbAmount').value);
+    if (isNaN(amountVal) || amountVal <= 0) {
+        return msg("Invalid Input", "Please enter a valid amount.", "warning");
+    }
+    
+    const rawDate = document.getElementById('cbDate').value;
+    let formattedDateString = rawDate;
+    if (rawDate && rawDate.includes('-')) {
+        const parts = rawDate.split('-');
+        formattedDateString = `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    
+    const payload = {
+        date: formattedDateString,
+        time: document.getElementById('cbTime').value.trim(),
+        toWhomPaid: document.getElementById('cbToWhomPaid').value.trim(),
+        whoPaid: document.getElementById('cbWhoPaid').value.trim(),
+        mode: document.getElementById('cbMode').value,
+        amount: amountVal,
+        receiptNo: document.getElementById('cbReceiptNo').value,
+        reference: document.getElementById('cbReference').value.trim()
+    };
+    
+    showLoad();
+    try {
+        const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: "saveCashBook",
+                data: payload,
+                user: curUser.name || curUser.id
+            })
+        }).then(r => r.json());
+        
+        hideLoad();
+        if (res.success) {
+            msg("Success", "Cash entry recorded!", "success");
+            renderTab14(document.getElementById('tabContent'));
+        } else {
+            msg("Error", res.message || "Failed to log entries.", "error");
+        }
+    } catch(err) {
+        hideLoad();
+        msg("Error", "Network connection failed.", "error");
+    }
+}
+
+function autoFillCashBookFromReceipt(receiptNo) {
+    const amountInput = document.getElementById('cbAmount');
+    const refInput = document.getElementById('cbReference');
+    const whoPaidInput = document.getElementById('cbWhoPaid');
+
+    // If "N/A" is selected, clear the fields
+    if (receiptNo === "-") {
+        amountInput.value = "";
+        refInput.value = "";
+        return;
+    }
+
+    if (window.allReceiptsForCashBook) {
+        const match = window.allReceiptsForCashBook.find(r => r.ReceiptNo === receiptNo);
+        if (match) {
+            // Auto-fill Amount
+            amountInput.value = match.Amount || "";
+            
+            // Auto-fill Reference with informative metadata
+            refInput.value = `Mapped to Receipt No: ${match.ReceiptNo} for ${match.Name} (${match.Months})`;
+            
+            // Auto-fill the remitter name if empty
+            if (whoPaidInput && !whoPaidInput.value) {
+                whoPaidInput.value = match.Name || "";
+            }
+        }
+    }
+}
+
 </script>
 </body>
 </html>
