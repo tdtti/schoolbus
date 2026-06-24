@@ -252,10 +252,13 @@ input, select, textarea, [contenteditable="true"] {
         </div>
     </div>
 
-    <div id="mainApp" class="hidden p-4 max-w-7xl mx-auto">
-    <!-- Centered layout classes added to tabs container -->
-    <div id="tabs" class="flex flex-wrap justify-center items-center gap-2.5 sm:gap-3.5 mb-6 pb-4 border-b border-gray-200"></div>
-    <div id="tabContent" class="bg-white p-4 rounded-lg shadow min-h-[60vh]"></div>
+    <!-- Main App Container: Stacks vertically on mobile, switches to a side-by-side layout on large screens -->
+<div id="mainApp" class="hidden flex flex-col lg:flex-row gap-6 p-4 max-w-[1600px] mx-auto items-start">
+    <!-- Sidebar Navigation (Left on desktop, swipeable horizontal row on mobile) -->
+    <div id="tabs" class="flex flex-row lg:flex-col lg:w-64 w-full overflow-x-auto lg:overflow-x-visible lg:overflow-y-auto gap-2 pb-4 lg:pb-0 lg:sticky lg:top-24 z-40 shrink-0"></div>
+    
+    <!-- Workspace Panel (Right, expands to fill remaining space) -->
+    <div id="tabContent" class="flex-grow w-full bg-white p-6 rounded-3xl shadow-sm border border-gray-100 min-h-[70vh]"></div>
 </div>
 <!-- STANDALONE SELF-REGISTRATION FORM -->
 <div id="selfRegisterSection" class="hidden min-h-screen flex items-center justify-center p-4 lg:p-8 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 z-10 relative">
@@ -895,12 +898,13 @@ function cleanupLogoutUI() {
     curUser.access.forEach(id => {
         if (tabConfig[id]) {
             const btn = document.createElement('button');
-            // Uniform structural sizing applied for mobile responsiveness
-            btn.className = "flex flex-col items-center justify-center p-2.5 w-[76px] sm:w-[92px] h-[76px] sm:h-[92px] bg-white border border-gray-200 rounded-2xl hover:bg-blue-50 hover:border-blue-300 transition-all shadow-sm active:scale-95 group focus:outline-none";
+            // Formats buttons as horizontal list items. 
+            // w-40 holds the width on mobile; lg:w-full expands to fill the sidebar on desktop.
+            btn.className = "flex flex-row items-center gap-3 px-4 py-3 w-40 lg:w-full bg-white border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-300 transition-all shadow-sm active:scale-95 group focus:outline-none text-left shrink-0";
             
             btn.innerHTML = `
-                <span class="text-xl sm:text-2xl mb-1 group-hover:scale-110 transition-transform">${tabConfig[id].icon}</span>
-                <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-tight text-gray-500 text-center leading-none group-hover:text-blue-600 max-w-full truncate px-1">${tabConfig[id].name}</span>
+                <span class="text-xl group-hover:scale-110 transition-transform">${tabConfig[id].icon}</span>
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-600 group-hover:text-blue-600 leading-none truncate">${tabConfig[id].name}</span>
             `;
             
             btn.onclick = () => {
