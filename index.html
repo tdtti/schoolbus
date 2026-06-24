@@ -114,20 +114,34 @@ input, select, textarea, [contenteditable="true"] {
 <body class="bg-gray-100 text-gray-800 font-sans">
     <div id="loaderOverlay"><div class="loader mb-2"></div><p class="font-bold text-blue-600">Processing...</p></div>
 
-    <header id="appHeader" class="hidden bg-blue-700 text-white p-4 shadow flex justify-between items-center">
+    <header id="appHeader" class="hidden sticky top-0 z-50 bg-gradient-to-r from-blue-700 to-indigo-800 text-white px-4 py-3 shadow-lg flex flex-col sm:flex-row justify-between items-center gap-3 border-b border-blue-600/50 backdrop-blur-md bg-opacity-95">
+    <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
         <div class="flex items-center gap-2">
-            <!-- REPLACED TEXT "LOGO" WITH ACTUAL IMAGE -->
-            <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden">
-                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLs9jyTEZv_qb7Sl-eWiCONiB_n-Jjv4icm2S3lPnmoqXnCQedYEs_cA3dwEleMx_hl9ByCEFyLE2nH6wyatT_dKjQNScu5jwkMJngSC3q9RNdZmUaa12r1jmURQM8VnhQKugi1wCklnSYOWiG7uP2E1gNmCA29pXFrrMvw0yMoAhWhZA/s1600/Logo2.png" alt="School Logo" class="w-full h-full object-contain p-1">
+            <!-- Explicit White Background for School Logo preserved -->
+            <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow-inner border border-white/20 p-1">
+                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLs9jyTEZv_qb7Sl-eWiCONiB_n-Jjv4icm2S3lPnmoqXnCQedYEs_cA3dwEleMx_hl9ByCEFyLE2nH6wyatT_dKjQNScu5jwkMJngSC3q9RNdZmUaa12r1jmURQM8VnhQKugi1wCklnSYOWiG7uP2E1gNmCA29pXFrrMvw0yMoAhWhZA/s1600/Logo2.png" alt="School Logo" class="w-full h-full object-contain">
             </div>
-            <h1 class="text-xl font-bold">Bus Portal</h1>
+            <div>
+                <h1 class="text-base font-black tracking-tight leading-none">TD Schools</h1>
+                <span class="text-[9px] text-blue-200 font-bold uppercase tracking-widest">Bus Management Portal</span>
+            </div>
         </div>
-        <div class="text-right">
-            <p id="welcomeUser" class="font-semibold"></p>
-            <p id="sessionTime" class="text-xs text-blue-200"></p>
+        <!-- Logout button explicitly positioned for easy access on mobile devices -->
+        <button onclick="logout()" class="sm:hidden bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-xl text-xs font-black shadow-md active:scale-95 transition-all">Logout</button>
+    </div>
+    
+    <!-- User welcome and session status metadata cards -->
+    <div class="flex flex-row items-center gap-4 w-full sm:w-auto justify-between sm:justify-end bg-blue-900/30 sm:bg-transparent p-2.5 sm:p-0 rounded-2xl border border-blue-500/20 sm:border-none">
+        <div class="text-left sm:text-right">
+            <div class="flex items-center gap-1.5 justify-start sm:justify-end">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                <p id="welcomeUser" class="text-xs sm:text-sm font-black text-white"></p>
+            </div>
+            <p id="sessionTime" class="text-[10px] sm:text-xs text-blue-200 font-mono font-semibold mt-0.5"></p>
         </div>
-        <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded text-sm font-bold shadow">Logout</button>
-    </header>
+        <button onclick="logout()" class="hidden sm:block bg-red-500 hover:bg-red-600 px-5 py-2 rounded-xl text-xs font-black shadow-md hover:shadow-red-500/20 active:scale-95 transition-all">Logout</button>
+    </div>
+</header>
 
     <!-- MODERN SWAPPABLE LOGIN SECTION -->
     <div id="loginSection" class="min-h-screen flex items-center justify-center p-4 lg:p-8 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
@@ -239,9 +253,10 @@ input, select, textarea, [contenteditable="true"] {
     </div>
 
     <div id="mainApp" class="hidden p-4 max-w-7xl mx-auto">
-        <div id="tabs" class="flex flex-wrap gap-2 mb-4 border-b pb-2"></div>
-        <div id="tabContent" class="bg-white p-4 rounded-lg shadow min-h-[60vh]"></div>
-    </div>
+    <!-- Centered layout classes added to tabs container -->
+    <div id="tabs" class="flex flex-wrap justify-center items-center gap-2.5 sm:gap-3.5 mb-6 pb-4 border-b border-gray-200"></div>
+    <div id="tabContent" class="bg-white p-4 rounded-lg shadow min-h-[60vh]"></div>
+</div>
 <!-- STANDALONE SELF-REGISTRATION FORM -->
 <div id="selfRegisterSection" class="hidden min-h-screen flex items-center justify-center p-4 lg:p-8 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 z-10 relative">
     <div class="bg-white/95 backdrop-blur-2xl rounded-[2rem] shadow-xl w-full max-w-lg p-8 border border-white/20">
@@ -380,7 +395,7 @@ input, select, textarea, [contenteditable="true"] {
     </button>
 </form>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwiBeVm7U7F1Ph-_6TpXLu5jbggml4H9MOuLQXBiMBQny-gWgGJHAkhGzLAiMNgWS6Gmg/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbyMo97OBzEUgkVgJ6zVUh2_Plq0OWGGBilvxRiipaQSuGIYbtHzwTc6ZBIT2lHJrX4uzA/exec";
 
     // Disable context menu (Right-Click)
 document.addEventListener('contextmenu', event => event.preventDefault());
@@ -481,16 +496,30 @@ window.addEventListener('beforeunload', function() {
     showLoad();
 
     const controller = new AbortController();
-    // OPTIMIZATION: Increased timeout to 12 seconds to safely allow for Google cold starts
-    const timeoutId = setTimeout(() => controller.abort(), 12000); 
+    const timeoutId = setTimeout(() => controller.abort(), 15000); 
 
     try {
-        await fetchStops(controller.signal);
+        // SINGLE UNIFIED BOOTSTRAP NETWORK REQUEST
+        const res = await fetch(API_URL, {
+            method: 'POST', 
+            body: JSON.stringify({ action: "getBootstrapData" }),
+            signal: controller.signal
+        }).then(x => x.json());
+        
         clearTimeout(timeoutId);
-
-        // Skip fetching users if in public registration mode to save bandwidth/speed
-        if (!isPublicRegistration) {
-            await fetchUsers(); 
+        
+        if (res.success && res.data) {
+            const boot = res.data;
+            stopsRawDB = boot.stops || [];
+            allStops = stopsRawDB.map(item => `${item.StopName}-${item.BusId}`);
+            users = boot.users || {};
+            db = boot.students || [];
+            todayAtt = boot.todayAttendance || [];
+            
+            sessionStorage.setItem('student_db', JSON.stringify(db));
+            console.log("Bootstrap synchronization completed successfully.");
+        } else {
+            throw new Error("Bootstrap payload invalid");
         }
 
         hideLoad();
@@ -504,24 +533,22 @@ window.addEventListener('beforeunload', function() {
         clearTimeout(timeoutId);
         hideLoad();
         
-        // Check if the error is a genuine timeout abort
         if (error.name === 'AbortError') {
             document.body.innerHTML = `
                 <div class="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-6 text-center">
                     <span class="text-5xl mb-4">📶</span>
                     <h2 class="text-xl font-bold mb-2">Weak Connection Detected</h2>
-                    <p class="text-sm text-slate-400 max-w-md">Your internet connection is too slow to retrieve the transport database safely. Please move to a stronger coverage area and try again.</p>
+                    <p class="text-sm text-slate-400 max-w-md">Your internet connection is taking too long to respond. Please try reloading in a better coverage area.</p>
                     <button onclick="window.location.reload()" class="mt-6 bg-blue-600 hover:bg-blue-700 px-6 py-2.5 rounded-xl font-bold text-sm transition">Retry Loading</button>
                 </div>
             `;
         } else {
-            // Diagnostic screen: Shows you the EXACT script or API error that is failing
             console.error("System Initialization Failure:", error);
             document.body.innerHTML = `
                 <div class="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-gray-800 p-6 text-center">
                     <span class="text-5xl mb-4">⚠️</span>
                     <h2 class="text-xl font-bold text-red-600 mb-2">System Configuration Error</h2>
-                    <p class="text-sm text-gray-600 max-w-lg mb-4">The application failed to load due to a system configuration error. This is usually caused by an incorrect Web App URL, missing database sheet, or incorrect deployment settings.</p>
+                    <p class="text-sm text-gray-600 max-w-lg mb-4">The application failed to initialize. Please check your Web App deployment settings.</p>
                     <div class="bg-gray-200 text-left font-mono text-xs p-4 rounded-xl border border-gray-300 max-w-lg overflow-x-auto w-full mb-4">
                         <strong>Details:</strong> ${error.message || error.toString()}
                     </div>
@@ -531,6 +558,44 @@ window.addEventListener('beforeunload', function() {
         }
     }
 };
+
+async function fetchData(forceFetch = false) {
+    const cachedData = sessionStorage.getItem('student_db');
+    
+    // Parse from memory instantly if available
+    if (cachedData) {
+        db = JSON.parse(cachedData);
+        if (curUser && curUser.role !== "Student" && document.getElementById('tabs').firstChild) {
+            const activeTab = document.querySelector('#tabs .ring-2');
+            if (!activeTab && curUser.access) {
+                loadTab(curUser.access[0]);
+            }
+        }
+    }
+
+    // Quietly update in the background if forcing or missing cache
+    if (!cachedData || forceFetch) {
+        try {
+            const r = await fetch(API_URL, {
+                method: 'POST', 
+                body: JSON.stringify({ action: "getStudents" })
+            }).then(x => x.json());
+            
+            if (r.success) {
+                db = r.data;
+                sessionStorage.setItem('student_db', JSON.stringify(db));
+                
+                const activeTab = document.querySelector('#tabs .ring-2');
+                if (activeTab) {
+                    const activeTabId = curUser.access[Array.from(activeTab.parentNode.children).indexOf(activeTab)];
+                    if (activeTabId) loadTab(activeTabId);
+                }
+            }
+        } catch (e) {
+            console.warn("Silent background update failed.");
+        }
+    }
+}
 
 // Simple auto-login helper
 function handleAutoLogin() {
@@ -580,63 +645,8 @@ async function fetchStops() {
     }
 }
 
-    // High-speed, network-resilient database loader
-async function fetchData(forceFetch = false) {
-    const cachedData = sessionStorage.getItem('student_db');
     
-    // 1. INSTANT LOAD: If cache exists, parse and use it immediately for zero-lag rendering
-    if (cachedData) {
-        db = JSON.parse(cachedData);
-        // If we are already inside the dashboard, update current view instantly
-        if (curUser && curUser.role !== "Student" && document.getElementById('tabs').firstChild) {
-            const activeTab = document.querySelector('#tabs .ring-2');
-            if (!activeTab && curUser.access) {
-                loadTab(curUser.access[0]);
-            }
-        }
-    }
 
-    // If no cache exists, show the loader. Otherwise, fetch quietly in the background.
-    if (!cachedData || forceFetch) {
-        showLoad();
-    }
-
-    try {
-        // 2. NETWORK PROTECTION: Abort request after 12 seconds on slow networks instead of hanging
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 12000); 
-
-        const r = await fetch(API_URL, {
-            method: 'POST', 
-            body: JSON.stringify({ action: "getStudents" }),
-            signal: controller.signal
-        }).then(x => x.json());
-        
-        clearTimeout(timeoutId);
-        
-        if (r.success) {
-            db = r.data;
-            // Update browser session cache
-            sessionStorage.setItem('student_db', JSON.stringify(db));
-            
-            // Quietly redraw current active tab with fresh sheet data if changed
-            if (curUser && curUser.role !== "Student") {
-                const activeTab = document.querySelector('#tabs .ring-2');
-                if (activeTab) {
-                    // Retain current tab view seamlessly
-                    const activeTabId = curUser.access[Array.from(activeTab.parentNode.children).indexOf(activeTab)];
-                    if (activeTabId) loadTab(activeTabId);
-                }
-            }
-        }
-    } catch (e) {
-        console.warn("Low speed network detected. Operating in safe local database mode.");
-        if (!cachedData) {
-            msg("Network Slow", "Connecting is taking longer than expected. Retrying...", "warning");
-        }
-    }
-    hideLoad();
-}
 
     async function loginStudent() {
     const q = document.getElementById('stuSearch').value.trim();
@@ -865,8 +875,6 @@ function cleanupLogoutUI() {
         return;
     }
 
-    // MAP OF ICONS AND NAMES
-    // MAP OF ICONS AND NAMES
     const tabConfig = {
         1:  { name: "Students", icon: "🎓" },
         2:  { name: "Attendance", icon: "✅" },
@@ -881,24 +889,22 @@ function cleanupLogoutUI() {
         10: { name: "Live Map", icon: "📍" },
         13: { name: "Stops & Fees", icon: "🎟️" },
         12: { name: "Settings", icon: "⚙️" },
-        14: { name: "Cash Book", icon: "📓" } // Added
+        14: { name: "Cash Book", icon: "📓" }
     };
     
     curUser.access.forEach(id => {
         if (tabConfig[id]) {
             const btn = document.createElement('button');
-            // Styled as a card-style icon button
-            btn.className = "flex flex-col items-center justify-center p-3 min-w-[80px] bg-white border border-gray-200 rounded-2xl hover:bg-blue-50 hover:border-blue-300 transition-all shadow-sm active:scale-95 group";
+            // Uniform structural sizing applied for mobile responsiveness
+            btn.className = "flex flex-col items-center justify-center p-2.5 w-[76px] sm:w-[92px] h-[76px] sm:h-[92px] bg-white border border-gray-200 rounded-2xl hover:bg-blue-50 hover:border-blue-300 transition-all shadow-sm active:scale-95 group focus:outline-none";
             
             btn.innerHTML = `
-                <span class="text-2xl mb-1 group-hover:scale-110 transition-transform">${tabConfig[id].icon}</span>
-                <span class="text-[10px] font-black uppercase tracking-tighter text-gray-500 group-hover:text-blue-600">${tabConfig[id].name}</span>
+                <span class="text-xl sm:text-2xl mb-1 group-hover:scale-110 transition-transform">${tabConfig[id].icon}</span>
+                <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-tight text-gray-500 text-center leading-none group-hover:text-blue-600 max-w-full truncate px-1">${tabConfig[id].name}</span>
             `;
             
             btn.onclick = () => {
-                // Remove active styling from others
                 Array.from(t.children).forEach(c => c.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50'));
-                // Add active styling to this one
                 btn.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
                 loadTab(id);
             };
@@ -907,7 +913,6 @@ function cleanupLogoutUI() {
         }
     });
 
-    // Auto-click the first tab to load it
     if (t.firstChild) t.firstChild.click();
 }
 
@@ -2345,7 +2350,8 @@ function shareAttendanceWA() {
                 <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider select-none">
                     <tr>
                         <th class="p-4 border text-center w-16">Sl No</th>
-                        <th onclick="sortDataTable('StudentName')" class="p-4 border cursor-pointer hover:bg-gray-700 sticky left-0 z-10 bg-gray-900 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Name ↕</th>
+                        <!-- Sticky classes removed from Name column for standard scrolling -->
+                        <th onclick="sortDataTable('StudentName')" class="p-4 border cursor-pointer hover:bg-gray-700">Name ↕</th>
                         <th onclick="sortDataTable('Class')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Class ↕</th>
                         <th onclick="sortDataTable('Phone')" class="p-3 border cursor-pointer hover:bg-gray-700 text-center">Phone ↕</th>
                         <th onclick="sortDataTable('Total')" class="p-3 border cursor-pointer hover:bg-green-800 text-center bg-green-900">Total ↕</th>
@@ -2372,6 +2378,27 @@ function shareAttendanceWA() {
         </div>
     `;
     setTimeout(() => updateDataTotals(currentDataDB), 100);
+}
+
+function generateDataTableRows(data) {
+    if (!data || data.length === 0) return '<tr><td colspan="7" class="p-6 text-center text-gray-400 italic">No records found.</td></tr>';
+    
+    return data.map((s, idx) => `
+        <tr class="hover:bg-blue-50 bg-white border-b transition group" data-gender="${s.Gender || ''}">
+            <td class="p-3 border-r text-center text-gray-500 font-bold">${idx + 1}</td>
+            <!-- Sticky classes removed from Name column cell to ensure smooth scroll -->
+            <td class="p-3 border-r font-bold text-gray-800">${s.StudentName}</td>
+            <td class="p-3 border-r text-gray-600 font-medium text-center">${s.Class}-${s.Div}</td>
+            <td class="p-3 border-r text-gray-600 text-center">${s.Phone}</td>
+            <td class="p-3 border-r font-black text-green-700 text-center bg-green-50">₹${s.Total || 0}</td>
+            <td class="p-3 border-r font-black text-red-600 text-center bg-red-50">₹${s.Balance || 0}</td>
+            <td class="p-2 text-center align-middle">
+                <button onclick="sendReminderWA('${s.Phone}')" class="flex items-center gap-1 bg-green-600 text-white px-3 py-1.5 rounded text-[10px] font-bold hover:bg-green-700 transition mx-auto shadow-sm" title="Send Fee Reminder">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.52 3.48A11.91 11.91 0 0012 0C5.37 0 0 5.37 0 12a11.7 11.7 0 001.95 6L0 24l6-1.95a11.86 11.86 0 005.94 1.7c6.63 0 12-5.37 12-12a11.89 11.89 0 00-3.42-8.27zM12 21a9.25 9.25 0 01-4.77-1.35l-.34-.22-3.57 1.16 1.11-3.48-.22-.36A9.25 9.25 0 012.75 12 9.25 9.25 0 0112 2.75 9.25 9.25 0 0121.25 12 9.25 9.25 0 0112 21zm5.37-6.31l-1.5-.43a.51.51 0 00-.47.14l-.98 1.07a7.38 7.38 0 01-3.46-3.44l1.07-.98a.53.53 0 00.15-.46l-.43-1.51a.54.54 0 00-.66-.37l-2.22.56a.51.51 0 00-.41.64A7 7 0 0014 16a7 7 0 002.37-1.17.5.5 0 00.13-.69z"/></svg> Reminder
+                </button>
+            </td>
+        </tr>
+    `).join('');
 }
     
     function updateDataTotals(data) {
@@ -2414,26 +2441,8 @@ function shareAttendanceWA() {
 }
 
 
-    // Generates the table HTML dynamically so we can re-render it instantly when sorted
-    function generateDataTableRows(data) {
-    if (!data || data.length === 0) return '<tr><td colspan="7" class="p-6 text-center text-gray-400 italic">No records found.</td></tr>';
     
-    return data.map((s, idx) => `
-        <tr class="hover:bg-blue-50 bg-white border-b transition group" data-gender="${s.Gender || ''}">
-            <td class="p-3 border-r text-center text-gray-500 font-bold">${idx + 1}</td>
-            <td class="p-3 border-r font-bold text-gray-800 sticky left-0 z-10 bg-white group-hover:bg-blue-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${s.StudentName}</td>
-            <td class="p-3 border-r text-gray-600 font-medium text-center">${s.Class}-${s.Div}</td>
-            <td class="p-3 border-r text-gray-600 text-center">${s.Phone}</td>
-            <td class="p-3 border-r font-black text-green-700 text-center bg-green-50">₹${s.Total || 0}</td>
-            <td class="p-3 border-r font-black text-red-600 text-center bg-red-50">₹${s.Balance || 0}</td>
-            <td class="p-2 text-center align-middle">
-                <button onclick="sendReminderWA('${s.Phone}')" class="flex items-center gap-1 bg-green-600 text-white px-3 py-1.5 rounded text-[10px] font-bold hover:bg-green-700 transition mx-auto shadow-sm" title="Send Fee Reminder">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.52 3.48A11.91 11.91 0 0012 0C5.37 0 0 5.37 0 12a11.7 11.7 0 001.95 6L0 24l6-1.95a11.86 11.86 0 005.94 1.7c6.63 0 12-5.37 12-12a11.89 11.89 0 00-3.42-8.27zM12 21a9.25 9.25 0 01-4.77-1.35l-.34-.22-3.57 1.16 1.11-3.48-.22-.36A9.25 9.25 0 012.75 12 9.25 9.25 0 0112 2.75 9.25 9.25 0 0121.25 12 9.25 9.25 0 0112 21zm5.37-6.31l-1.5-.43a.51.51 0 00-.47.14l-.98 1.07a7.38 7.38 0 01-3.46-3.44l1.07-.98a.53.53 0 00.15-.46l-.43-1.51a.54.54 0 00-.66-.37l-2.22.56a.51.51 0 00-.41.64A7 7 0 0014 16a7 7 0 002.37-1.17.5.5 0 00.13-.69z"/></svg> Reminder
-                </button>
-            </td>
-        </tr>
-    `).join('');
-}
+    
 
     // Core sorting logic
     function sortDataTable(col) {
