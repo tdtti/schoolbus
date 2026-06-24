@@ -452,11 +452,7 @@ document.addEventListener('keydown', event => {
     const hideLoad = () => document.getElementById('loaderOverlay').style.display='none';
     const msg = (t, txt, i="info") => Swal.fire({title:t, text:txt, icon:i, confirmButtonColor:'#3b82f6'});
 
-    // --- Session & Core ---
-    function resetTimer() {
-        clearTimeout(inactTimer);
-        if(curUser) inactTimer = setTimeout(logout, 600000);
-    }
+    
     
     // This triggers immediately when the user closes the browser tab or navigates away
     // This triggers immediately when the user closes the browser tab or navigates away
@@ -776,37 +772,54 @@ async function fetchData(forceFetch = false) {
     document.getElementById('keepLogin').checked = false;
     
 }
+function resetTimer() {
+    clearTimeout(inactTimer);
+    // 10-minute inactivity limit (600,000 milliseconds)
+    if (curUser) inactTimer = setTimeout(() => logout(true), 600000); 
+}
+
+// Reset timer on basic user actions to avoid logging out active administrators or typists
+['click', 'touchstart', 'keydown'].forEach(evt => {
+    document.addEventListener(evt, () => {
+        if (curUser) resetTimer();
+    });
+});
+
 async function logout() {
+    // If the browser tries to log out a tracking bus, prevent it
+    if (curUser && (locWatchId || currentSharingBusId)) {
+        resetTimer(); // Defer inactivity timer
+        return;
+    }
+
     if (!curUser || !loginDT) {
         cleanupLogoutUI();
         return;
     }
 
-    showLoad(); // Show processing spinner
+    showLoad();
 
     const logoutDT = new Date();
-    // Corrected: Convert milliseconds to seconds by dividing by 1000 instead of 0
     const durationSecs = Math.floor((logoutDT - loginDT) / 1000);
 
     try {
-        // Enforce guaranteed standard POST request for active manual logouts
         await fetch(API_URL, {
             method: 'POST',
             body: JSON.stringify({
                 action: "log",
-                UserId: curUser.id || curUser.name || curUser.StudentName || "Unknown",
+                UserId: curUser.id || curUser.name,
                 Role: curUser.role,
-                Name: curUser.name || curUser.Name || curUser.StudentName || "Unknown",
+                Name: curUser.name,
                 LogoutTime: logoutDT.toISOString(),
                 Duration: durationSecs,
                 type: "logout"
             })
         });
     } catch (e) {
-        console.error("Error logging manual logout session:", e);
+        console.error("Error logging logout:", e);
     }
 
-    hideLoad(); // Hide spinner
+    hideLoad();
     cleanupLogoutUI();
 }
 
@@ -1851,18 +1864,26 @@ _This is a system generated statement._
         window.open(waUrl, '_blank');
     }
     
-    function startLocationTracking() {
+    async function startLocationTracking() {
     const busId = document.getElementById('aBus').value;
     if(!busId) return msg("Error", "Select a bus first", "warning");
     if (!navigator.geolocation) return msg("Error", "GPS not supported", "error");
 
     document.getElementById('btnStartTrack').classList.add('hidden');
     document.getElementById('btnStopTrack').classList.remove('hidden');
-    document.getElementById('locStatusDot').className = "w-3 h-3 rounded-full bg-green-500 animate-ping absolute";
-    document.getElementById('locStatusText').innerText = "Broadcasting Live Location...";
+    
+    // Safety check for target element
+    const statusDot = document.getElementById('locStatusDot');
+    if (statusDot) statusDot.className = "w-3 h-3 rounded-full bg-green-500 animate-ping absolute";
+    
+    const statusText = document.getElementById('locStatusText');
+    if (statusText) statusText.innerText = "Broadcasting Live Location...";
     
     locStartTime = Date.now();
     currentSharingBusId = busId; // Store globally
+
+    // Request device to keep screen active
+    await requestWakeLock();
 
     locDurationInterval = setInterval(() => {
         const diff = Math.floor((Date.now() - locStartTime) / 1000);
@@ -1878,7 +1899,6 @@ _This is a system generated statement._
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
             try {
-                // Background update
                 fetch(API_URL, {
                     method:'POST', 
                     mode: 'no-cors', 
@@ -1887,7 +1907,7 @@ _This is a system generated statement._
             } catch(e) {}
         },
         (err) => {
-            msg("GPS Error", "Please enable GPS/Location", "error");
+            msg("GPS Error", "Please enable GPS/Location access", "error");
             stopLocationTracking();
         },
         { enableHighAccuracy: true, maximumAge: 5000, timeout: 5000 }
@@ -1899,25 +1919,26 @@ async function stopLocationTracking() {
     if (locWatchId) navigator.geolocation.clearWatch(locWatchId);
     if (locDurationInterval) clearInterval(locDurationInterval);
     
-    // Use the ID from the dropdown if the global variable is empty
+    // Release Wake Lock
+    releaseWakeLock();
+    
     const busId = currentSharingBusId || document.getElementById('aBus').value;
 
     if (busId) {
-        showLoad(); // Show spinner to confirm server update
+        showLoad();
         try {
-            // 2. FORCE DELETE on Server (Setting lat/lng to null)
             await fetch(API_URL, {
                 method: 'POST', 
                 body: JSON.stringify({ action: "updateBusLocation", busId: busId, lat: null, lng: null })
             });
             console.log("Broadcast Terminated for " + busId);
         } catch(e) {
-            console.error("Server update failed, broadcast might linger.");
+            console.error("Server update failed:", e);
         }
         hideLoad();
     }
 
-    // 3. Reset UI Elements
+    // Reset UI Elements
     locWatchId = null;
     locDurationInterval = null;
     locStartTime = null;
@@ -1929,9 +1950,8 @@ async function stopLocationTracking() {
     if (document.getElementById('locStatusText')) document.getElementById('locStatusText').innerText = "Live GPS Tracking (Offline)";
     if (document.getElementById('locDurationText')) document.getElementById('locDurationText').innerText = "Duration: 00:00:00";
     
-    msg("Ended", "Live broadcasting has been stopped for everyone.", "success");
+    msg("Ended", "Live broadcasting has been stopped.", "success");
 }
-    
     // --- Tab 2: Attendance ---
     
     let currentHistoryData = []; // To store search results for printing/sharing
@@ -6497,6 +6517,38 @@ function autoFillCashBookFromReceipt(receiptNo) {
         }
     }
 }
+
+
+let wakeLock = null;
+
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Screen Wake Lock acquired. Screen will stay active.');
+        } else {
+            console.warn('Screen Wake Lock is not supported on this browser/device.');
+        }
+    } catch (err) {
+        console.error(`Failed to acquire Wake Lock: ${err.name}, ${err.message}`);
+    }
+}
+
+function releaseWakeLock() {
+    if (wakeLock !== null) {
+        wakeLock.release().then(() => {
+            wakeLock = null;
+            console.log('Screen Wake Lock released.');
+        });
+    }
+}
+
+// Re-request Wake Lock if tab visibility returns to the foreground during active tracking
+document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible' && (locWatchId || currentSharingBusId)) {
+        await requestWakeLock();
+    }
+});
 
 </script>
 </body>
