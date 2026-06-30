@@ -595,28 +595,29 @@ function renderTabs() {
     }
 
     const tabConfig = {
-        1:  { name: "Students", icon: "🎓" },
-        2:  { name: "Attendance", icon: "✅" },
-        3:  { name: "Database", icon: "📊" },
-        11: { name: "Pending", icon: "⏳" },
-        4:  { name: "Fee Pay", icon: "💰" },
-        5:  { name: "Receipts", icon: "🧾" },
-        6:  { name: "Logs", icon: "📜" },
-        7:  { name: "Staff", icon: "👔" },
-        8:  { name: "Expenses", icon: "💸" },
-        9:  { name: "Balance", icon: "⚖️" },
-        10: { name: "Live Map", icon: "📍" },
-        13: { name: "Stops & Fees", icon: "🎟️" },
-        12: { name: "Settings", icon: "⚙️" },
-        14: { name: "Cash Book", icon: "📓" }
-    };
+    1:  { name: "Students", icon: "🎓" },
+    15: { name: "Bus Register", icon: "🚍" }, // Added right after Students
+    2:  { name: "Attendance", icon: "✅" },
+    3:  { name: "Database", icon: "📊" },
+    11: { name: "Pending", icon: "⏳" },
+    4:  { name: "Fee Pay", icon: "💰" },
+    5:  { name: "Receipts", icon: "🧾" },
+    6:  { name: "Logs", icon: "📜" },
+    7:  { name: "Staff", icon: "👔" },
+    8:  { name: "Expenses", icon: "💸" },
+    9:  { name: "Balance", icon: "⚖️" },
+    10: { name: "Live Map", icon: "📍" },
+    13: { name: "Stops & Fees", icon: "🎟️" },
+    12: { name: "Settings", icon: "⚙️" },
+    14: { name: "Cash Book", icon: "📓" }
+};
 
-    const categories = {
-        "Transit & Ops": [1, 2, 11, 10],
-        "Financials": [4, 5, 8, 9, 14],
-        "Administration": [3, 7, 13],
-        "System": [6, 12]
-    };
+const categories = {
+    "Transit & Ops": [1, 15, 2, 11, 10], // Included Tab 15 here
+    "Financials": [4, 5, 8, 9, 14],
+    "Administration": [3, 7, 13],
+    "System": [6, 12]
+};
 
     let firstBtnToClick = null;
 
@@ -1026,7 +1027,8 @@ function cleanupLogoutUI() {
         if(id === 11) renderTab11(c);
         if(id === 12) renderTab12(c);
         if(id === 13) renderTab13(c);
-        if(id === 14) renderTab14(c); // Added
+        if(id === 14) renderTab14(c); 
+        if(id === 15) renderTab15(c); // Added
     }
 
     // Handles user filtering correctly by resolving case-sensitive parameters safely
@@ -1365,10 +1367,12 @@ function downloadStudentPDF() {
                 <option>SPONSER</option>
             </select>
             <input id="f11" required placeholder="Fee Amount" type="number" oninput="this.dataset.baseFee = this.value; applyFeeReduction();" class="p-2 border rounded">
-            <div class="col-span-2 md:col-span-4 flex gap-2">
-                <button type="submit" id="sBtn" class="bg-blue-600 text-white px-6 py-2 rounded font-bold">Save</button>
-                <button type="button" onclick="renderTab1(document.getElementById('tabContent'))" class="bg-gray-400 text-white px-4 py-2 rounded hidden" id="cBtn">Cancel</button>
-            </div>
+            <div class="col-span-2 md:col-span-4 flex flex-wrap gap-2">
+    <button type="submit" id="sBtn" class="bg-blue-600 text-white px-6 py-2 rounded font-bold">Save</button>
+    <button type="button" onclick="renderTab1(document.getElementById('tabContent'))" class="bg-gray-400 text-white px-4 py-2 rounded hidden" id="cBtn">Cancel</button>
+    <!-- Added Sync Button -->
+    <button type="button" onclick="syncStudentsSheet()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold shadow transition-all">🔄 Sync Data</button>
+</div>
         </form>
         
         <div class="flex flex-wrap gap-2 mb-4">
@@ -4189,10 +4193,12 @@ async function clearAllLogsUI() {
             <input id="sf13" required placeholder="Tenure (1 Year)" oninput="this.value = this.value.toUpperCase()" class="p-2 border rounded">
             <input id="sf11" required placeholder="Custom Amount (₹)" type="number" class="p-2 border rounded">
             
-            <div class="col-span-2 md:col-span-4 flex gap-2">
-                <button type="submit" id="staffBtn" class="bg-blue-600 text-white px-6 py-2 rounded font-bold">Save</button>
-                <button type="button" onclick="renderTab7(document.getElementById('tabContent'))" class="bg-gray-400 text-white px-4 py-2 rounded hidden" id="staffCBtn">Cancel</button>
-            </div>
+            <div class="col-span-2 md:col-span-4 flex flex-wrap gap-2">
+    <button type="submit" id="staffBtn" class="bg-blue-600 text-white px-6 py-2 rounded font-bold">Save</button>
+    <button type="button" onclick="renderTab7(document.getElementById('tabContent'))" class="bg-gray-400 text-white px-4 py-2 rounded hidden" id="staffCBtn">Cancel</button>
+    <!-- Added Sync Button -->
+    <button type="button" onclick="syncStaffSheet()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold shadow transition-all">🔄 Sync with Google Sheet</button>
+</div>
         </form>
         
         <div class="flex flex-wrap gap-2 mb-4">
@@ -6890,6 +6896,255 @@ document.addEventListener('visibilitychange', async () => {
         await requestWakeLock();
     }
 });
+
+// Synchronizers for Student and Staff sheets
+async function syncStudentsSheet() {
+    showLoad();
+    await fetchData(true); // Forces a bypass of sessionStorage caches to load fresh sheet rows
+    renderTab1(document.getElementById('tabContent'));
+    hideLoad();
+    msg("Synced", "Student records synchronized with Google Sheets.", "success");
+}
+
+async function syncStaffSheet() {
+    showLoad();
+    await fetchData(true); // Forces a bypass of sessionStorage caches
+    renderTab7(document.getElementById('tabContent'));
+    hideLoad();
+    msg("Synced", "Staff records synchronized with Google Sheets.", "success");
+}
+
+// --- TAB 15: BUS REGISTER TAB FUNCTIONS ---
+let busRegSortCol = 'StudentName';
+let busRegSortAsc = true;
+
+function renderTab15(c) {
+    c.innerHTML = `
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 animate-fadeIn">
+            <div>
+                <h2 class="text-2xl font-black text-slate-800">🚍 Bus Transit Register</h2>
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Grouped by active bus routes</p>
+            </div>
+            <button onclick="printBusRegister()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-2">
+                🖨️ Print Landscape Register (A4)
+            </button>
+        </div>
+
+        <div id="busRegisterTablesContainer" class="space-y-10"></div>
+    `;
+    
+    loadBusRegisterTables();
+}
+
+function loadBusRegisterTables() {
+    const container = document.getElementById('busRegisterTablesContainer');
+    if (!container) return;
+
+    // Filter to include only students (excluding STAFF and empty routes)
+    let rawList = getFilteredDB().filter(s => s.Class !== 'STAFF' && s.BusId && s.BusId !== 'OFFICE');
+    
+    if (rawList.length === 0) {
+        container.innerHTML = `<p class="p-10 text-center text-slate-400 italic">No registered students found on any active bus route.</p>`;
+        return;
+    }
+
+    const uniqueBuses = [...new Set(rawList.map(s => s.BusId))].sort();
+    let html = '';
+
+    uniqueBuses.forEach(busId => {
+        let students = rawList.filter(s => s.BusId === busId);
+        
+        // Sorting logic based on selected column
+        students.sort((a, b) => {
+            let valA = a[busRegSortCol] || '';
+            let valB = b[busRegSortCol] || '';
+
+            if (busRegSortCol === 'StudentName' || busRegSortCol === 'Class' || busRegSortCol === 'School' || busRegSortCol === 'Entry' || busRegSortCol === 'Exit') {
+                valA = String(valA).toLowerCase();
+                valB = String(valB).toLowerCase();
+            } else if (busRegSortCol === 'Phone') {
+                valA = parseFloat(String(valA).replace(/\D/g, '')) || 0;
+                valB = parseFloat(String(valB).replace(/\D/g, '')) || 0;
+            }
+
+            if (valA < valB) return busRegSortAsc ? -1 : 1;
+            if (valA > valB) return busRegSortAsc ? 1 : -1;
+            return 0;
+        });
+
+        html += `
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+                <!-- Bus Header Card -->
+                <div class="bg-slate-800 p-4 flex justify-between items-center text-white">
+                    <h3 class="font-black text-sm uppercase tracking-widest flex items-center gap-2">
+                        <span>🚌</span> BUS ID: ${busId}
+                    </h3>
+                    <span class="text-xs bg-slate-700 px-3 py-1 rounded-full font-bold">${students.length} Students</span>
+                </div>
+                
+                <div class="w-full overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse whitespace-nowrap">
+                        <thead class="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-200 select-none">
+                            <tr>
+                                <th class="p-3 border text-center w-16">Sl No</th>
+                                <th onclick="sortBusRegister('StudentName')" class="p-3 border cursor-pointer hover:bg-slate-100">Name ↕</th>
+                                <th onclick="sortBusRegister('Class')" class="p-3 border cursor-pointer hover:bg-slate-100 text-center">Class ↕</th>
+                                <th onclick="sortBusRegister('Div')" class="p-3 border cursor-pointer hover:bg-slate-100 text-center">Div ↕</th>
+                                <th onclick="sortBusRegister('School')" class="p-3 border cursor-pointer hover:bg-slate-100">School ↕</th>
+                                <th onclick="sortBusRegister('Entry')" class="p-3 border cursor-pointer hover:bg-slate-100">Entry Stop ↕</th>
+                                <th onclick="sortBusRegister('Exit')" class="p-3 border cursor-pointer hover:bg-slate-100">Exit Stop ↕</th>
+                                <th onclick="sortBusRegister('Phone')" class="p-3 border cursor-pointer hover:bg-slate-100 text-center">Phone No ↕</th>
+                                <th class="p-3 border">Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${students.map((s, idx) => `
+                                <tr class="hover:bg-blue-50/20 border-b border-slate-100 transition-colors">
+                                    <td class="p-3 border-r text-center text-slate-500 font-bold">${idx + 1}</td>
+                                    <td class="p-3 border-r font-bold text-slate-900">${s.StudentName}</td>
+                                    <td class="p-3 border-r text-center font-semibold text-slate-700">${s.Class}</td>
+                                    <td class="p-3 border-r text-center font-semibold text-slate-700">${s.Div || '-'}</td>
+                                    <td class="p-3 border-r font-semibold text-slate-600">${s.School}</td>
+                                    <td class="p-3 border-r text-slate-600">${s.Entry ? s.Entry.split('-')[0] : '-'}</td>
+                                    <td class="p-3 border-r text-slate-600">${s.Exit ? s.Exit.split('-')[0] : '-'}</td>
+                                    <td class="p-3 border-r text-center font-mono text-slate-500">${s.Phone}</td>
+                                    <!-- Remarks displays current Travel status details -->
+                                    <td class="p-3 text-slate-400 italic">${s.Status || 'Both Time'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function sortBusRegister(col) {
+    if (busRegSortCol === col) {
+        busRegSortAsc = !busRegSortAsc;
+    } else {
+        busRegSortCol = col;
+        busRegSortAsc = true;
+    }
+    loadBusRegisterTables();
+}
+
+function printBusRegister() {
+    let rawList = getFilteredDB().filter(s => s.Class !== 'STAFF' && s.BusId && s.BusId !== 'OFFICE');
+    if (rawList.length === 0) return;
+
+    const uniqueBuses = [...new Set(rawList.map(s => s.BusId))].sort();
+    let printHtml = '';
+
+    uniqueBuses.forEach((busId, bIdx) => {
+        let students = rawList.filter(s => s.BusId === busId);
+        // Default alphabetical sort for printed register
+        students.sort((a, b) => a.StudentName.localeCompare(b.StudentName));
+
+        const rowsHtml = students.map((s, idx) => `
+            <tr style="border-bottom: 1px solid #cbd5e1;">
+                <td style="border: 1px solid #cbd5e1; padding: 5px; text-align: center; font-weight: bold;">${idx + 1}</td>
+                <td style="border: 1px solid #cbd5e1; padding: 5px; font-weight: bold; color: #0f172a;">${s.StudentName}</td>
+                <td style="border: 1px solid #cbd5e1; padding: 5px; text-align: center;">${s.Class}</td>
+                <td style="border: 1px solid #cbd5e1; padding: 5px; text-align: center;">${s.Div || '-'}</td>
+                <td style="border: 1px solid #cbd5e1; padding: 5px;">${s.School}</td>
+                <td style="border: 1px solid #cbd5e1; padding: 5px;">${s.Entry ? s.Entry.split('-')[0] : '-'}</td>
+                <td style="border: 1px solid #cbd5e1; padding: 5px;">${s.Exit ? s.Exit.split('-')[0] : '-'}</td>
+                <td style="border: 1px solid #cbd5e1; padding: 5px; text-align: center; font-family: monospace;">${s.Phone}</td>
+                <td style="border: 1px solid #cbd5e1; padding: 5px; font-style: italic; color: #475569;">${s.Status || 'Both Time'}</td>
+            </tr>
+        `).join('');
+
+        // Apply page-break-after rule to isolate routes [1]
+        const pageBreakStyle = (bIdx === uniqueBuses.length - 1) ? 'page-break-after: avoid;' : 'page-break-after: always;';
+
+        printHtml += `
+            <div class="print-page" style="box-sizing: border-box; padding: 10mm; background: white; font-family: sans-serif; ${pageBreakStyle}">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #1e3a8a; padding-bottom: 8px; margin-bottom: 15px;">
+                    <div>
+                        <h1 style="margin: 0; font-size: 18px; font-weight: 900; color: #1e3a8a; text-transform: uppercase;">TD Schools Thuravoor</h1>
+                        <p style="margin: 4px 0 0 0; font-size: 12px; color: #475569; font-weight: bold;">BUS TRANSIT REGISTER • ROUTE ID: ${busId}</p>
+                    </div>
+                    <div style="text-align: right; font-size: 10px; color: #64748b;">
+                        <p style="margin: 0;"><b>Page:</b> ${bIdx + 1} of ${uniqueBuses.length}</p>
+                        <p style="margin: 2px 0 0 0;">Printed: ${new Date().toLocaleDateString('en-GB')}</p>
+                    </div>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                    <thead>
+                        <tr style="background-color: #1e293b; color: white; text-transform: uppercase;">
+                            <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 40px;">Sl No</th>
+                            <th style="border: 1px solid #475569; padding: 6px; text-align: left;">Student Name</th>
+                            <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 60px;">Class</th>
+                            <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 40px;">Div</th>
+                            <th style="border: 1px solid #475569; padding: 6px; text-align: left; width: 120px;">School</th>
+                            <th style="border: 1px solid #475569; padding: 6px; text-align: left; width: 130px;">Entry Stop</th>
+                            <th style="border: 1px solid #475569; padding: 6px; text-align: left; width: 130px;">Exit Stop</th>
+                            <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 90px;">Phone No</th>
+                            <th style="border: 1px solid #475569; padding: 6px; text-align: left; width: 90px;">Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    });
+
+    let printContainer = document.getElementById('landscapeRosterPrintContainer');
+    if (!printContainer) {
+        printContainer = document.createElement('div');
+        printContainer.id = 'landscapeRosterPrintContainer';
+        document.body.appendChild(printContainer);
+    }
+    printContainer.innerHTML = printHtml;
+
+    let printStyle = document.getElementById('landscapeRosterPrintStyle');
+    if (!printStyle) {
+        printStyle = document.createElement('style');
+        printStyle.id = 'landscapeRosterPrintStyle';
+        document.head.appendChild(printStyle);
+    }
+
+    printStyle.innerHTML = `
+        @media print {
+            body * { visibility: hidden !important; }
+            #landscapeRosterPrintContainer, #landscapeRosterPrintContainer * { visibility: visible !important; }
+            #landscapeRosterPrintContainer {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+            }
+            @page { 
+                size: A4 landscape; 
+                margin: 5mm; 
+            }
+            .print-page {
+                page-break-after: always;
+            }
+            .print-page:last-child {
+                page-break-after: avoid;
+            }
+        }
+    `;
+
+    setTimeout(() => {
+        window.print();
+        setTimeout(() => {
+            printContainer.innerHTML = '';
+            printStyle.innerHTML = '';
+        }, 500);
+    }, 250);
+}
 
 </script>
 </body>
